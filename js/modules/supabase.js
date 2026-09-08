@@ -8,6 +8,8 @@ window.FlowSupabase = (() => {
     url:    window.SUPABASE_URL    || '',
     anonKey: window.SUPABASE_ANON_KEY || '',
   };
+console.log("URL:", CONFIG.url);
+console.log("Anon key existe:", !!CONFIG.anonKey);
 
   let _client = null;
 
