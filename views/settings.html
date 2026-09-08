@@ -14,49 +14,7 @@
       <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="s-email" placeholder="tu@email.com"></div>
     </section>
 
-    <!-- IA Local -->
-    <section class="settings-section">
-      <h2 class="settings-section-title">🤖 IA Local</h2>
-      <p class="settings-desc">FocusAI usa IA 100% local y gratuita. No necesita internet ni API key de pago.</p>
-
-      <div class="form-group">
-        <label class="form-label">Proveedor</label>
-        <select class="form-input form-select" id="s-ai-provider">
-          <option value="ollama">Ollama (recomendado) — localhost:11434</option>
-          <option value="lmstudio">LM Studio — localhost:1234</option>
-          <option value="jan">Jan — localhost:1337</option>
-          <option value="localai">LocalAI — localhost:8080</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">URL del servidor</label><input class="form-input" id="s-ai-url" placeholder="http://localhost:11434"></div>
-      <div class="form-group"><label class="form-label">Modelo</label>
-        <div class="input-inline">
-          <input class="form-input" id="s-ai-model" placeholder="ej: llama3.2">
-          <button class="btn btn-ghost btn-sm" id="detect-models-btn">🔍 Detectar</button>
-        </div>
-        <div id="model-list" class="model-list" hidden></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Temperatura (0-1)</label><input class="form-input" type="number" id="s-ai-temp" min="0" max="1" step="0.1" value="0.7"></div>
-        <div class="form-group"><label class="form-label">Max tokens</label><input class="form-input" type="number" id="s-ai-tokens" min="100" max="4096" value="1024"></div>
-      </div>
-      <div class="settings-ai-status">
-        <button class="btn btn-ghost btn-sm" id="test-ai-btn">🔌 Probar conexión</button>
-        <span id="ai-status-badge" class="status-badge"></span>
-      </div>
-      <div class="ai-install-guide">
-        <details>
-          <summary>📖 Cómo instalar Ollama</summary>
-          <ol>
-            <li>Descarga Ollama desde <strong>ollama.com</strong></li>
-            <li>Instala y ejecuta Ollama</li>
-            <li>En la terminal: <code>ollama pull llama3.2</code></li>
-            <li>Vuelve aquí y haz clic en "Detectar"</li>
-          </ol>
-          <p>Modelos recomendados: <code>llama3.2</code>, <code>mistral</code>, <code>gemma2</code>, <code>phi3</code>, <code>qwen2.5</code></p>
-        </details>
-      </div>
-    </section>
+  
 
     <!-- Apariencia -->
     <section class="settings-section">
