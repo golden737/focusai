@@ -1,6 +1,0 @@
-/views/* /views/:splat 200
-/components/* /components/:splat 200
-/js/* /js/:splat 200
-/css/* /css/:splat 200
-/data/* /data/:splat 200
-/* /index.html 200
