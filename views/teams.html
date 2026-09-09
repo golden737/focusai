@@ -1,0 +1,238 @@
+<!-- ── Teams / Salas de colaboración ─────────────────────────────────────── -->
+<div class="view teams-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Equipos</h1><p class="view-subtitle text-muted">Colabora con tu equipo en tiempo real</p></div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="join-team-btn">🔗 Unirse con código</button>
+      <button class="btn btn-primary" id="create-team-btn">+ Nuevo equipo</button>
+    </div>
+  </header>
+
+  <div id="teams-list" class="teams-list"></div>
+
+  <!-- Vista de equipo activo -->
+  <div id="team-detail" class="team-detail" hidden>
+    <div class="team-detail-header">
+      <button class="btn btn-ghost btn-sm" id="back-teams-btn">← Volver</button>
+      <h2 class="team-name" id="team-detail-name"></h2>
+      <div class="team-actions">
+        <button class="btn btn-ghost btn-sm" id="invite-btn">📋 Copiar código de invitación</button>
+      </div>
+    </div>
+
+    <div class="team-body">
+      <div class="team-tasks-col">
+        <div class="section-header">
+          <h3 class="section-title">Tareas del equipo</h3>
+          <button class="btn btn-primary btn-sm" id="team-new-task-btn">+ Tarea</button>
+        </div>
+        <div id="team-tasks-list" class="task-list"></div>
+      </div>
+      <div class="team-members-col">
+        <h3 class="section-title">Miembros</h3>
+        <div id="team-members-list" class="team-members-list"></div>
+        <div class="team-chat">
+          <h3 class="section-title">Chat del equipo</h3>
+          <div id="team-chat-messages" class="team-chat-messages"></div>
+          <div class="team-chat-input-row">
+            <input class="form-input" id="team-chat-input" placeholder="Escribe un mensaje…">
+            <button class="btn btn-primary btn-sm" id="team-send-btn">↑</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let activeTeam = null;
+
+  async function init(){
+    await renderTeams();
+    bindButtons();
+  }
+
+  async function renderTeams(){
+    const el = document.getElementById('teams-list'); if(!el) return;
+    let teams = [];
+    if(FlowSupabase.isConfigured()){
+      teams = await FlowSupabase.getMyTeams();
+    } else {
+      teams = FlowState.get('collaboration.teams') || [];
+    }
+    if(!teams.length){
+      el.innerHTML=`<div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <p>No tienes equipos aún</p>
+        <p class="text-muted">Crea uno nuevo o únete con un código de invitación</p>
+        <button class="btn btn-primary" onclick="document.getElementById('create-team-btn').click()">Crear equipo</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = teams.map(t => `
+      <div class="team-card" onclick="openTeam('${t.id}','${FlowHelpers.escapeHTML(t.name)}')">
+        <div class="team-card-icon">${t.icon||'👥'}</div>
+        <div class="team-card-info">
+          <div class="team-card-name">${FlowHelpers.escapeHTML(t.name)}</div>
+          <div class="team-card-desc">${FlowHelpers.escapeHTML(t.description||'')}</div>
+          <div class="team-card-meta">
+            <span class="meta-tag">${t.myRole||'miembro'}</span>
+            ${t.invite_code ? `<span class="meta-tag">Código: ${t.invite_code}</span>` : ''}
+          </div>
+        </div>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`).join('');
+  }
+
+  window.openTeam = async function(teamId, teamName) {
+    activeTeam = teamId;
+    document.getElementById('teams-list').hidden   = true;
+    document.getElementById('team-detail').hidden  = false;
+    document.getElementById('team-detail-name').textContent = teamName;
+
+    // Cargar tareas del equipo
+    const taskEl = document.getElementById('team-tasks-list');
+    let tasks = [];
+    if(FlowSupabase.isConfigured()){
+      const sb = FlowSupabase.getClient();
+      const {data} = await sb.from('team_tasks').select('*').eq('team_id', teamId);
+      tasks = data || [];
+    }
+    taskEl.innerHTML = tasks.length ? tasks.map(t => `
+      <div class="task-card priority-${t.priority||'none'}">
+        <div class="task-card-main">
+          <span class="task-check ${t.completed?'checked':''}"></span>
+          <div class="task-card-body">
+            <div class="task-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+            ${t.assigned_to ? `<div class="task-card-meta"><span class="meta-tag">👤 ${t.assigned_to}</span></div>` : ''}
+          </div>
+        </div>
+      </div>`).join('') : '<div class="empty-state-sm">Sin tareas en este equipo</div>';
+
+    // Cargar miembros
+    const membersEl = document.getElementById('team-members-list');
+    let members = [];
+    if(FlowSupabase.isConfigured()){
+      members = await FlowSupabase.getTeamMembers(teamId);
+    }
+    membersEl.innerHTML = members.map(m => `
+      <div class="team-member-item">
+        <div class="user-avatar" style="width:32px;height:32px;font-size:.75rem">${(m.user_id||'?').substring(0,2).toUpperCase()}</div>
+        <div>
+          <div style="font-size:.875rem;font-weight:500">${m.user_id}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">${m.role}</div>
+        </div>
+      </div>`).join('') || '<div class="empty-state-sm">Solo tú por ahora</div>';
+  };
+
+  function bindButtons(){
+    document.getElementById('back-teams-btn')?.addEventListener('click', () => {
+      document.getElementById('teams-list').hidden  = false;
+      document.getElementById('team-detail').hidden = true;
+      activeTeam = null;
+    });
+
+    document.getElementById('create-team-btn')?.addEventListener('click', () => {
+      FlowApp.showModal({ title:'Nuevo equipo', content:`
+        <form id="team-form" class="task-form">
+          <div class="form-group"><label class="form-label">Nombre del equipo *</label><input class="form-input" name="name" placeholder="Ej: Equipo de ventas" required autofocus></div>
+          <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" name="description" placeholder="Opcional"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Crear equipo</button>
+          </div>
+        </form>`
+      });
+      setTimeout(()=>{
+        document.getElementById('team-form')?.addEventListener('submit', async e=>{
+          e.preventDefault();
+          const fd=new FormData(e.target);
+          try {
+            if(FlowSupabase.isConfigured()){
+              await FlowSupabase.createTeam(fd.get('name'), fd.get('description'));
+            } else {
+              await FlowCollaboration.createTeam(fd.get('name'), fd.get('description'));
+            }
+            FlowApp.closeModal();
+            await renderTeams();
+            FlowApp.toast('Equipo creado', 'success');
+          } catch(err) {
+            FlowApp.toast(err.message, 'error');
+          }
+        });
+      },50);
+    });
+
+    document.getElementById('join-team-btn')?.addEventListener('click', () => {
+      FlowApp.showModal({ title:'Unirse a un equipo', content:`
+        <form id="join-form" class="task-form">
+          <div class="form-group">
+            <label class="form-label">Código de invitación</label>
+            <input class="form-input" name="code" placeholder="Ej: ABC12345" required autofocus style="text-transform:uppercase;letter-spacing:.1em">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Unirse</button>
+          </div>
+        </form>`
+      });
+      setTimeout(()=>{
+        document.getElementById('join-form')?.addEventListener('submit', async e=>{
+          e.preventDefault();
+          const fd=new FormData(e.target);
+          try {
+            await FlowSupabase.joinTeam(fd.get('code').toUpperCase());
+            FlowApp.closeModal();
+            await renderTeams();
+            FlowApp.toast('Te uniste al equipo', 'success');
+          } catch(err) {
+            FlowApp.toast(err.message, 'error');
+          }
+        });
+      },50);
+    });
+
+    document.getElementById('invite-btn')?.addEventListener('click', async () => {
+      if(!activeTeam) return;
+      const sb = FlowSupabase.getClient();
+      const {data} = await sb.from('teams').select('invite_code').eq('id', activeTeam).single();
+      if(data?.invite_code){
+        FlowHelpers.copyToClipboard(data.invite_code);
+        FlowApp.toast('Código copiado: ' + data.invite_code, 'success');
+      }
+    });
+
+    document.getElementById('team-send-btn')?.addEventListener('click', sendMessage);
+    document.getElementById('team-chat-input')?.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
+  }
+
+  async function sendMessage(){
+    const input = document.getElementById('team-chat-input');
+    const text  = input?.value.trim();
+    if(!text || !activeTeam) return;
+    input.value = '';
+    try {
+      await FlowCollaboration.sendMessage(activeTeam, text);
+      renderMessages();
+    } catch(e) {
+      FlowApp.toast('Error enviando mensaje', 'error');
+    }
+  }
+
+  function renderMessages(){
+    const el = document.getElementById('team-chat-messages'); if(!el) return;
+    const msgs = FlowState.get('collaboration.messages') || [];
+    const teamMsgs = msgs.filter(m => m.teamId === activeTeam).slice(-50);
+    el.innerHTML = teamMsgs.map(m => `
+      <div class="chat-message ${m.authorId === FlowState.get('user.id') ? 'mine' : ''}">
+        <span class="chat-author">${FlowHelpers.escapeHTML(m.authorName||'Usuario')}</span>
+        <span class="chat-text">${FlowHelpers.escapeHTML(m.text)}</span>
+        <span class="chat-time">${new Date(m.createdAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</span>
+      </div>`).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  init();
+})();
+</script>

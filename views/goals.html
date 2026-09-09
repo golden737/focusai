@@ -1,0 +1,190 @@
+<!-- ── Goals View ─────────────────────────────────────────────────────────── -->
+<div class="view goals-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Objetivos</h1></div>
+    <div class="header-actions">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">Todos</button>
+        <button class="filter-tab" data-filter="short">Corto plazo</button>
+        <button class="filter-tab" data-filter="long">Largo plazo</button>
+        <button class="filter-tab" data-filter="active">Activos</button>
+        <button class="filter-tab" data-filter="completed">Completados</button>
+      </div>
+      <button class="btn btn-primary" id="new-goal-btn">+ Nuevo objetivo</button>
+    </div>
+  </header>
+
+  <div class="goals-stats-row">
+    <div class="goal-stat"><span id="gs-total">0</span><small>Total</small></div>
+    <div class="goal-stat"><span id="gs-active">0</span><small>Activos</small></div>
+    <div class="goal-stat"><span id="gs-done">0</span><small>Completados</small></div>
+    <div class="goal-stat"><span id="gs-avg">0%</span><small>Progreso medio</small></div>
+  </div>
+
+  <div id="goals-list" class="goals-list"></div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _render();
+    _bind();
+    FlowState.subscribe('goals.items', _render);
+    FlowState.subscribe('goals.filter', _render);
+  }
+
+  function _render(){
+    _renderStats();
+    _renderGoals();
+  }
+
+  function _renderStats(){
+    const s=FlowGoals.getStats();
+    _t('gs-total', s.total); _t('gs-active', s.active); _t('gs-done', s.completed); _t('gs-avg', s.avgProgress+'%');
+  }
+
+  function _renderGoals(){
+    const el=document.getElementById('goals-list'); if(!el) return;
+    const goals=FlowGoals.getFiltered();
+    if(!goals.length){
+      el.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><p>Sin objetivos. ¡Crea tu primer objetivo!</p><button class="btn btn-primary" id="empty-new-goal">Crear objetivo</button></div>';
+      document.getElementById('empty-new-goal')?.addEventListener('click', _openNewModal);
+      return;
+    }
+    el.innerHTML=goals.map(g=>{
+      const tasks    = FlowTasks.getForGoal(g.id);
+      const doneTasks= tasks.filter(t=>t.completed).length;
+      const daysLeft = FlowGoals.getDaysRemaining(g.id);
+      const milestones=g.milestones||[];
+      const msDone   = milestones.filter(m=>m.completed).length;
+      return `
+      <div class="goal-card ${g.completed?'goal-done':''}" style="border-left-color:${g.color||'#6366f1'}">
+        <div class="goal-card-header">
+          <div class="goal-icon-title">
+            <span class="goal-icon" style="background:${g.color||'#6366f1'}22">${g.icon||'🎯'}</span>
+            <div>
+              <div class="goal-title">${FlowHelpers.escapeHTML(g.title)}</div>
+              <div class="goal-meta">
+                <span class="goal-type-badge">${g.type==='short'?'Corto plazo':'Largo plazo'}</span>
+                ${g.targetDate?`<span class="goal-date ${daysLeft!==null&&daysLeft<0?'overdue':''}">${daysLeft!==null?(daysLeft<0?`Vencido hace ${-daysLeft}d`:`${daysLeft}d restantes`):'Sin fecha'}</span>`:''}
+              </div>
+            </div>
+          </div>
+          <div class="goal-actions">
+            ${!g.completed?`<button class="btn btn-ghost btn-sm" onclick="FlowAI.isConfigured()?FlowGoals.breakdownWithAI('${g.id}'):FlowApp.toast('Configura la IA primero','warning')">✨ IA</button>`:''}
+            <button class="icon-btn" onclick="_editGoal('${g.id}')">✏️</button>
+            <button class="icon-btn" onclick="if(confirm('¿Eliminar?'))FlowGoals.remove('${g.id}')">🗑</button>
+          </div>
+        </div>
+        ${g.description?`<p class="goal-desc">${FlowHelpers.escapeHTML(g.description)}</p>`:''}
+
+        <div class="goal-progress-row">
+          <div class="goal-progress-bar-wrap">
+            <div class="goal-progress-bar" style="width:${g.progress||0}%;background:${g.color||'#6366f1'}"></div>
+          </div>
+          <span class="goal-progress-pct">${g.progress||0}%</span>
+          <input type="range" class="goal-range" min="0" max="100" value="${g.progress||0}"
+            oninput="this.nextElementSibling.textContent=this.value+'%'"
+            onchange="FlowGoals.setProgress('${g.id}',this.value)">
+        </div>
+
+        ${milestones.length?`
+          <div class="goal-milestones">
+            ${milestones.map(m=>`
+              <div class="milestone-item ${m.completed?'done':''}">
+                <button class="milestone-check" onclick="FlowGoals.toggleMilestone('${g.id}','${m.id}')">${m.completed?'☑':'☐'}</button>
+                <span>${FlowHelpers.escapeHTML(m.title)}</span>
+              </div>`).join('')}
+          </div>`:''}
+
+        <div class="goal-footer">
+          ${tasks.length?`<span class="goal-tasks-count">☑ ${doneTasks}/${tasks.length} tareas</span>`:''}
+          ${milestones.length?`<span class="goal-ms-count">🏁 ${msDone}/${milestones.length} hitos</span>`:''}
+          ${!g.completed?`<button class="btn btn-success btn-sm" onclick="FlowGoals.complete('${g.id}')">✓ Completar</button>`:'<span class="badge badge-success">✓ Completado</span>'}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function _editGoal(id){
+    const g=FlowState.array.find('goals.items',x=>x.id===id); if(!g) return;
+    FlowApp.showModal({ title:'Editar objetivo', size:'lg', content:_goalForm(g) });
+    setTimeout(()=>_bindGoalForm(id), 50);
+  }
+  window._editGoal=_editGoal;
+
+  function _openNewModal(){
+    FlowApp.showModal({ title:'Nuevo objetivo', size:'lg', content:_goalForm() });
+    setTimeout(()=>_bindGoalForm(null), 50);
+  }
+
+  function _goalForm(g={}){
+    return `<form id="goal-form" class="task-form">
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 60px"><label class="form-label">Icono</label><input class="form-input" name="icon" value="${g.icon||'🎯'}" maxlength="2"></div>
+        <div class="form-group"><label class="form-label">Título *</label><input class="form-input" name="title" value="${FlowHelpers.escapeHTML(g.title||'')}" required autofocus placeholder="¿Qué quieres lograr?"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input form-textarea" name="description" rows="2" placeholder="Detalla tu objetivo…">${FlowHelpers.escapeHTML(g.description||'')}</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-input form-select" name="type">
+            <option value="short" ${g.type==='short'||!g.type?'selected':''}>Corto plazo</option>
+            <option value="long"  ${g.type==='long'?'selected':''}>Largo plazo</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" type="date" name="targetDate" value="${g.targetDate||''}"></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${g.color||'#6366f1'}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Medible (¿cómo sabrás que lo lograste?)</label><input class="form-input" name="measurable" value="${FlowHelpers.escapeHTML(g.measurable||'')}" placeholder="Ej: 10.000 pasos diarios durante 30 días"></div>
+      <div class="form-group"><label class="form-label">Nuevo hito</label>
+        <div class="input-inline"><input class="form-input" id="ms-input" placeholder="Ej: Completar semana 1"><button type="button" class="btn btn-ghost" id="add-ms-btn">+ Agregar</button></div>
+      </div>
+      <div id="ms-list" class="ms-preview-list">${(g.milestones||[]).map(m=>`<div class="ms-preview">${m.completed?'☑':'☐'} ${FlowHelpers.escapeHTML(m.title)}</div>`).join('')}</div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">${g.id?'Guardar':'Crear objetivo'}</button>
+      </div>
+    </form>`;
+  }
+
+  function _bindGoalForm(id){
+    const form=document.getElementById('goal-form'); if(!form) return;
+    const pendingMilestones=[];
+    document.getElementById('add-ms-btn')?.addEventListener('click',()=>{
+      const inp=document.getElementById('ms-input');
+      if(!inp?.value.trim()) return;
+      pendingMilestones.push(inp.value.trim());
+      const list=document.getElementById('ms-list');
+      if(list){ const d=document.createElement('div'); d.className='ms-preview'; d.textContent='☐ '+inp.value.trim(); list.appendChild(d); }
+      inp.value='';
+    });
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const fd=new FormData(form);
+      const data={ title:fd.get('title'), description:fd.get('description'), type:fd.get('type'), targetDate:fd.get('targetDate')||null, color:fd.get('color'), icon:fd.get('icon'), measurable:fd.get('measurable') };
+      if(id){
+        await FlowGoals.update(id,data);
+        for(const ms of pendingMilestones) await FlowGoals.addMilestone(id,ms);
+      } else {
+        const goal=await FlowGoals.create(data);
+        for(const ms of pendingMilestones) await FlowGoals.addMilestone(goal.id,ms);
+      }
+      FlowApp.closeModal();
+    });
+  }
+
+  function _bind(){
+    document.getElementById('new-goal-btn')?.addEventListener('click', _openNewModal);
+    document.querySelectorAll('.filter-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        FlowState.set('goals.filter', tab.dataset.filter);
+      });
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>

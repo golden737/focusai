@@ -1,0 +1,95 @@
+/* ── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn    { from { opacity:0 } to { opacity:1 } }
+@keyframes slideUp   { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+@keyframes scaleIn   { from { opacity:0; transform:scale(.96) } to { opacity:1; transform:scale(1) } }
+@keyframes bounce    { 0%,80%,100% { transform:scale(0) } 40% { transform:scale(1) } }
+@keyframes pulse     { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+@keyframes spin      { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
+@keyframes shimmer   { from { background-position:-200% 0 } to { background-position:200% 0 } }
+
+.fade-in   { animation: fadeIn   .2s ease both; }
+.slide-up  { animation: slideUp  .2s ease both; }
+.scale-in  { animation: scaleIn  .15s ease both; }
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-overlay) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius);
+}
+
+/* Level up confetti */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10px) rotate(0deg); opacity:1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity:0; }
+}
+.confetti-piece {
+  position: fixed; width: 10px; height: 10px; border-radius: 2px;
+  animation: confetti-fall 2s ease-in forwards;
+  z-index: 9999; pointer-events: none;
+}
+
+/* Habit completion pulse */
+@keyframes habit-pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.habit-check-btn.done { animation: habit-pulse .3s ease; }
+
+/* XP gain flash */
+@keyframes xp-flash {
+  0%   { opacity:0; transform:translateY(0); }
+  20%  { opacity:1; }
+  100% { opacity:0; transform:translateY(-30px); }
+}
+.xp-flash {
+  position: fixed; color: var(--warning); font-weight: 700;
+  font-size: 1rem; pointer-events: none; z-index: 9998;
+  animation: xp-flash 1.2s ease forwards;
+}
+
+/* Timer ring */
+@keyframes timer-ring {
+  from { stroke-dashoffset: 283; }
+}
+.timer-ring-fill { transition: stroke-dashoffset .5s linear; }
+
+/* Smooth transitions for view changes */
+.view-container { transition: opacity .18s ease, transform .18s ease; }
+
+/* Focus mode transition */
+.focus-mode * { transition: opacity var(--transition-slow) !important; }
+
+/* Notification badge pop */
+@keyframes badge-pop {
+  0%   { transform: scale(0); }
+  70%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.nav-badge { animation: badge-pop .25s ease; }
+
+/* Card hover lift */
+.metric-card, .task-card, .habit-card, .kanban-card, .goal-card {
+  will-change: transform;
+}
+
+/* Pomodoro phase transition */
+.timer-display { transition: color .4s ease; }
+
+/* Loading spinner */
+.spinner {
+  width: 24px; height: 24px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
