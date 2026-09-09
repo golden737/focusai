@@ -1,0 +1,123 @@
+<!-- ── Stats View ────────────────────────────────────────────────────────── -->
+<div class="view stats-view">
+  <header class="view-header">
+    <h1 class="view-title">Estadísticas</h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" id="generate-report-btn">✨ Generar reporte IA</button>
+      <button class="btn btn-ghost btn-sm" id="export-stats-btn">⬇ Exportar</button>
+    </div>
+  </header>
+
+  <!-- KPIs -->
+  <div class="stats-kpi-row">
+    <div class="kpi-card"><span class="kpi-value" id="kpi-tasks-done">0</span><span class="kpi-label">Tareas completadas hoy</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-time-today">0m</span><span class="kpi-label">Tiempo hoy</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-time-week">0h</span><span class="kpi-label">Tiempo esta semana</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-habits">0%</span><span class="kpi-label">Hábitos hoy</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-streak">0</span><span class="kpi-label">Racha productividad</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-overdue">0</span><span class="kpi-label">Tareas vencidas</span></div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="stats-grid">
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Tareas completadas — últimos 7 días</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-tasks-day"></canvas></div>
+    </div>
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Tiempo trabajado — últimos 7 días (horas)</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-time-day"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Tareas por prioridad</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-priority"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Tiempo por proyecto</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-projects"></canvas></div>
+    </div>
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Cumplimiento de hábitos — últimas 4 semanas</h3>
+      <div class="chart-container" style="height:180px"><canvas id="chart-habits"></canvas></div>
+    </div>
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Comparativa semanal — Tiempo trabajado</h3>
+      <div class="chart-container" style="height:180px"><canvas id="chart-week-compare"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Productividad por hora del día</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-by-hour"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Estado de ánimo — últimas 2 semanas</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-mood"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Reporte IA -->
+  <div id="ai-report-section" class="ai-report-section" hidden>
+    <div class="section-header"><h2 class="section-title">📊 Reporte de productividad</h2></div>
+    <div id="ai-report-content" class="ai-report-content"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _renderKPIs();
+    _renderCharts();
+    _bind();
+  }
+
+  function _renderKPIs(){
+    const m = FlowStats.getDashboardMetrics();
+    _t('kpi-tasks-done', m.tasks.completedToday);
+    _t('kpi-time-today', m.time.todayFormatted);
+    _t('kpi-time-week',  m.time.weekFormatted);
+    _t('kpi-habits',     m.habits.todayRate+'%');
+    _t('kpi-streak',     m.productivity.streak+' días');
+    _t('kpi-overdue',    m.tasks.overdue);
+  }
+
+  function _renderCharts(){
+    FlowCharts.bar('chart-tasks-day',    FlowStats.getTasksCompletedByDay(7));
+    FlowCharts.bar('chart-time-day',     FlowStats.getTimeByDay(7));
+    FlowCharts.doughnut('chart-priority',FlowStats.getTasksByPriority());
+    FlowCharts.doughnut('chart-projects',FlowStats.getTimeByProject());
+    FlowCharts.bar('chart-habits',       FlowStats.getHabitComplianceByWeek());
+    const cmp = FlowStats.getWeekComparison();
+    FlowCharts.bar('chart-week-compare', { labels: cmp.labels, datasets: cmp.timeChart.datasets });
+    FlowCharts.bar('chart-by-hour',      FlowStats.getProductivityByHour(), { plugins:{ legend:{display:false} }, scales:{ x:{ ticks:{ maxTicksLimit:8 } } } });
+    FlowCharts.line('chart-mood',        FlowPersonal.getMoodChartData(14));
+  }
+
+  function _bind(){
+    document.getElementById('generate-report-btn')?.addEventListener('click', async ()=>{
+      const btn = document.getElementById('generate-report-btn');
+      btn.textContent = '⏳ Generando…'; btn.disabled=true;
+      const report = await FlowStats.generateReport('week');
+      const sec  = document.getElementById('ai-report-section');
+      const cont = document.getElementById('ai-report-content');
+      if(sec && cont){
+        cont.innerHTML = report.replace(/\n/g,'<br>');
+        sec.hidden = false;
+        sec.scrollIntoView({ behavior:'smooth' });
+      }
+      btn.textContent='✨ Generar reporte IA'; btn.disabled=false;
+    });
+
+    document.getElementById('export-stats-btn')?.addEventListener('click', ()=>{
+      const data = {
+        exportedAt: new Date().toISOString(),
+        metrics:    FlowStats.getDashboardMetrics(),
+        tasksByDay: FlowStats.getTasksCompletedByDay(30),
+        timeByDay:  FlowStats.getTimeByDay(30),
+      };
+      FlowHelpers.downloadJSON(data, `focusai-stats-${FlowDate.today()}.json`);
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
