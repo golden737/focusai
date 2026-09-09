@@ -1,0 +1,184 @@
+<!-- ── Tasks View ─────────────────────────────────────────────────────────── -->
+<div class="view tasks-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Tareas</h1></div>
+    <div class="header-actions">
+      <div class="search-inline"><input id="task-search" class="form-input" placeholder="Buscar tareas…" autocomplete="off"></div>
+      <div class="view-toggle">
+        <button class="icon-btn view-btn active" data-view="list" title="Lista">☰</button>
+        <button class="icon-btn view-btn" data-view="board" title="Tablero">⊞</button>
+      </div>
+      <button class="btn btn-primary" id="new-task-btn">+ Nueva tarea</button>
+    </div>
+  </header>
+
+  <div class="tasks-toolbar">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="filter-tab active" data-filter="all">Todas</button>
+      <button class="filter-tab" data-filter="today">Hoy</button>
+      <button class="filter-tab" data-filter="upcoming">Próximas</button>
+      <button class="filter-tab" data-filter="overdue">Vencidas</button>
+      <button class="filter-tab" data-filter="completed">Completadas</button>
+    </div>
+    <div class="sort-controls">
+      <select class="form-input form-select sort-select" id="sort-select">
+        <option value="priority">Por prioridad</option>
+        <option value="dueDate">Por fecha</option>
+        <option value="title">Por nombre</option>
+        <option value="createdAt">Por creación</option>
+      </select>
+      <button class="icon-btn" id="sort-dir-btn" title="Cambiar orden">↕</button>
+    </div>
+  </div>
+
+  <div class="label-filters" id="label-filters"></div>
+
+  <div id="tasks-container" class="tasks-container"></div>
+
+  <div class="tasks-footer">
+    <span class="tasks-count" id="tasks-count"></span>
+    <button class="btn btn-ghost btn-sm" id="ai-suggest-btn">✨ IA: Sugerir prioridades</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  let sortDir = 'asc';
+
+  function init(){
+    _renderLabels();
+    _renderTasks();
+    _bind();
+    FlowState.subscribe('tasks.items', _renderTasks);
+    FlowState.subscribe('tasks.filter', _renderTasks);
+    FlowState.subscribe('tasks.searchQuery', _renderTasks);
+    FlowState.subscribe('tasks.activeLabels', _renderTasks);
+  }
+
+  function _renderTasks(){
+    const container = document.getElementById('tasks-container'); if(!container) return;
+    const view  = FlowState.get('tasks.view') || 'list';
+    const tasks = FlowTasks.getFiltered();
+    _t('tasks-count', `${tasks.length} tarea${tasks.length!==1?'s':''}`);
+
+    if(!tasks.length){
+      container.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>Sin tareas en esta vista</p><button class="btn btn-primary" onclick="FlowTasks.openNewTaskModal()">Crear tarea</button></div>';
+      return;
+    }
+
+    if(view==='list'){
+      container.className='tasks-container list-view';
+      container.innerHTML=`<div class="task-list">${tasks.map(_taskCard).join('')}</div>`;
+    } else {
+      container.className='tasks-container board-view';
+      const priorities=[{id:'high',label:'Alta 🔴'},{id:'medium',label:'Media 🟡'},{id:'low',label:'Baja 🔵'},{id:'none',label:'Sin prioridad'}];
+      container.innerHTML=priorities.map(p=>{
+        const col=tasks.filter(t=>t.priority===p.id);
+        return `<div class="board-col"><div class="board-col-header">${p.label} <span class="board-count">${col.length}</span></div>
+          <div class="board-col-body">${col.map(_taskCard).join('')}</div></div>`;
+      }).join('');
+    }
+
+    // Bind acciones de tarea
+    container.querySelectorAll('[data-complete]').forEach(btn=>btn.addEventListener('click',()=>FlowTasks.complete(btn.dataset.complete)));
+    container.querySelectorAll('[data-edit]').forEach(btn=>btn.addEventListener('click',()=>FlowTasks.openEditModal(btn.dataset.edit)));
+    container.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click',()=>{ if(confirm('¿Eliminar esta tarea?')) FlowTasks.remove(btn.dataset.delete); }));
+    container.querySelectorAll('[data-ai-estimate]').forEach(btn=>btn.addEventListener('click',()=>FlowAI.estimateTask(btn.dataset.aiEstimate)));
+  }
+
+  function _taskCard(t){
+    const sub = t.subtasks||[];
+    const subDone = sub.filter(s=>s.completed).length;
+    return `
+    <div class="task-card priority-${t.priority} ${t.completed?'task-completed':''}" data-task-id="${t.id}">
+      <div class="task-card-main">
+        <button class="task-check ${t.completed?'checked':''}" data-complete="${t.id}" aria-label="Completar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <div class="task-card-body">
+          <div class="task-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+          ${t.description?`<div class="task-card-desc">${FlowHelpers.truncate(FlowHelpers.escapeHTML(t.description),80)}</div>`:''}
+          <div class="task-card-meta">
+            ${t.dueDate?`<span class="meta-tag ${FlowDate.isPast(t.dueDate)&&!t.completed?'overdue':''}">${FlowDate.formatRelative(t.dueDate)}</span>`:''}
+            ${t.estimatedMin?`<span class="meta-tag">⏱ ${t.estimatedMin}m</span>`:''}
+            ${(t.labels||[]).map(l=>`<span class="label-tag">${FlowHelpers.escapeHTML(l)}</span>`).join('')}
+            ${sub.length?`<span class="meta-tag">☑ ${subDone}/${sub.length}</span>`:''}
+            ${t.comments?.length?`<span class="meta-tag">💬 ${t.comments.length}</span>`:''}
+          </div>
+        </div>
+        <div class="task-card-actions">
+          <button class="icon-btn btn-sm" data-ai-estimate="${t.id}" title="Estimar con IA">⏱</button>
+          <button class="icon-btn btn-sm" data-edit="${t.id}" title="Editar">✏️</button>
+          <button class="icon-btn btn-sm" data-delete="${t.id}" title="Eliminar">🗑</button>
+        </div>
+      </div>
+      ${sub.length?`<div class="subtask-list">${sub.slice(0,3).map(s=>`
+        <div class="subtask-item ${s.completed?'done':''}">
+          <button class="subtask-check" onclick="FlowTasks.toggleSubtask('${t.id}','${s.id}')">
+            ${s.completed?'☑':'☐'}
+          </button>
+          <span>${FlowHelpers.escapeHTML(s.title)}</span>
+        </div>`).join('')}${sub.length>3?`<div class="subtask-more">+${sub.length-3} más</div>`:''}</div>`:''}
+    </div>`;
+  }
+
+  function _renderLabels(){
+    const el=document.getElementById('label-filters'); if(!el) return;
+    const labels=FlowTasks.getAllLabels();
+    if(!labels.length){ el.hidden=true; return; }
+    el.hidden=false;
+    el.innerHTML=labels.map(l=>`<button class="label-filter-btn" data-label="${l}">${l}</button>`).join('');
+    el.querySelectorAll('[data-label]').forEach(btn=>{
+      const active=(FlowState.get('tasks.activeLabels')||[]).includes(btn.dataset.label);
+      btn.classList.toggle('active', active);
+      btn.addEventListener('click',()=>{
+        const current=FlowState.get('tasks.activeLabels')||[];
+        const lbl=btn.dataset.label;
+        FlowState.set('tasks.activeLabels', current.includes(lbl)?current.filter(l=>l!==lbl):[...current,lbl]);
+      });
+    });
+  }
+
+  function _bind(){
+    document.getElementById('new-task-btn')?.addEventListener('click',()=>FlowTasks.openNewTaskModal());
+    document.getElementById('ai-suggest-btn')?.addEventListener('click',()=>FlowAI.suggestPriorities());
+
+    // Filtros
+    document.getElementById('filter-tabs')?.querySelectorAll('.filter-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        FlowState.set('tasks.filter', tab.dataset.filter);
+      });
+    });
+
+    // Búsqueda
+    const searchInput=document.getElementById('task-search');
+    if(searchInput){
+      searchInput.addEventListener('input', FlowHelpers.debounce(e=>{
+        FlowState.set('tasks.searchQuery', e.target.value);
+      }, 250));
+    }
+
+    // Ordenado
+    document.getElementById('sort-select')?.addEventListener('change',e=>FlowState.set('tasks.sortBy', e.target.value));
+    document.getElementById('sort-dir-btn')?.addEventListener('click',()=>{
+      sortDir = sortDir==='asc'?'desc':'asc';
+      FlowState.set('tasks.sortDir', sortDir);
+    });
+
+    // Vista lista/board
+    document.querySelectorAll('.view-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        FlowState.set('tasks.view', btn.dataset.view);
+        _renderTasks();
+      });
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>

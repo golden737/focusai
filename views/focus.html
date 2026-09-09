@@ -1,0 +1,216 @@
+<!-- ── Focus View ────────────────────────────────────────────────────────── -->
+<div class="view focus-view">
+  <header class="view-header">
+    <h1 class="view-title">Modo Enfoque</h1>
+  </header>
+
+  <div class="focus-body">
+    <div class="focus-main">
+      <!-- Estado actual -->
+      <div class="focus-status-card" id="focus-status-card">
+        <div class="focus-status-icon" id="focus-icon">🌟</div>
+        <div class="focus-status-text" id="focus-status-text">Listo para concentrarte</div>
+        <div class="focus-duration" id="focus-duration"></div>
+      </div>
+
+      <!-- Modos -->
+      <div class="focus-modes">
+        <div class="focus-mode-card" data-mode="deep">
+          <div class="focus-mode-icon">🧠</div>
+          <div class="focus-mode-name">Trabajo profundo</div>
+          <div class="focus-mode-desc">Sin interrupciones. Máxima concentración.</div>
+        </div>
+        <div class="focus-mode-card" data-mode="light">
+          <div class="focus-mode-icon">💡</div>
+          <div class="focus-mode-name">Trabajo ligero</div>
+          <div class="focus-mode-desc">Tareas simples y correos.</div>
+        </div>
+        <div class="focus-mode-card" data-mode="custom">
+          <div class="focus-mode-icon">⚙️</div>
+          <div class="focus-mode-name">Personalizado</div>
+          <div class="focus-mode-desc">Elige duración y opciones.</div>
+        </div>
+      </div>
+
+      <!-- Duración -->
+      <div class="focus-duration-row">
+        <label class="form-label">Duración (min, 0 = sin límite)</label>
+        <div class="duration-presets">
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="25">25</button>
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="45">45</button>
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="60">60</button>
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="90">90</button>
+          <input class="form-input dur-input" type="number" id="focus-duration-input" min="0" max="480" value="25" placeholder="min">
+        </div>
+      </div>
+
+      <!-- Botón principal -->
+      <div class="focus-controls">
+        <button class="btn btn-primary btn-xl" id="focus-toggle-btn">🌟 Iniciar sesión</button>
+      </div>
+
+      <!-- Stats de hoy -->
+      <div class="focus-today-stats">
+        <div class="focus-stat"><span id="fs-sessions">0</span><small>Sesiones hoy</small></div>
+        <div class="focus-stat"><span id="fs-minutes">0m</span><small>Minutos hoy</small></div>
+        <div class="focus-stat"><span id="fs-week">0</span><small>Sesiones semana</small></div>
+      </div>
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="focus-side">
+
+      <!-- Música -->
+      <section class="focus-section">
+        <h2 class="section-title">🎵 Música para concentrarse</h2>
+        <div class="music-tracks" id="music-tracks"></div>
+        <button class="btn btn-ghost btn-sm" id="stop-music-btn" hidden>⏹ Detener música</button>
+      </section>
+
+      <!-- Sitios bloqueados -->
+      <section class="focus-section">
+        <h2 class="section-title">🚫 Sitios bloqueados</h2>
+        <p class="text-muted" style="font-size:.8rem">Activos durante el modo enfoque (requiere extensión de navegador)</p>
+        <div class="input-inline">
+          <input class="form-input" id="block-site-input" placeholder="ej: twitter.com">
+          <button class="btn btn-ghost btn-sm" id="add-block-btn">+ Agregar</button>
+        </div>
+        <div id="blocked-sites-list" class="blocked-sites-list"></div>
+      </section>
+
+      <!-- Historial -->
+      <section class="focus-section">
+        <h2 class="section-title">📈 Historial (7 días)</h2>
+        <div class="chart-container" style="height:140px"><canvas id="focus-history-chart"></canvas></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let selectedMode = 'deep';
+  let _ticker = null;
+
+  function init(){
+    _renderMusicTracks();
+    _renderBlockedSites();
+    _renderStats();
+    _renderHistoryChart();
+    _bind();
+    FlowState.subscribe('focus.active', _updateStatus);
+    _updateStatus();
+  }
+
+  function _updateStatus(){
+    const active = FlowState.get('focus.active');
+    const btn    = document.getElementById('focus-toggle-btn');
+    const card   = document.getElementById('focus-status-card');
+    const text   = document.getElementById('focus-status-text');
+    const icon   = document.getElementById('focus-icon');
+    if(active){
+      btn.textContent = '⏹ Terminar sesión';
+      btn.classList.add('btn-danger'); btn.classList.remove('btn-primary');
+      card.classList.add('active');
+      text.textContent = 'Sesión en curso…';
+      icon.textContent = '🔥';
+      _startTicker();
+    } else {
+      btn.textContent = '🌟 Iniciar sesión';
+      btn.classList.remove('btn-danger'); btn.classList.add('btn-primary');
+      card.classList.remove('active');
+      text.textContent = 'Listo para concentrarte';
+      icon.textContent = '🌟';
+      document.getElementById('focus-duration').textContent='';
+      clearInterval(_ticker);
+      _renderStats();
+    }
+  }
+
+  function _startTicker(){
+    clearInterval(_ticker);
+    _ticker = setInterval(()=>{
+      const dur = FlowFocus.getCurrentDuration();
+      const el  = document.getElementById('focus-duration');
+      if(el) el.textContent = `${dur} min`;
+    }, 10000);
+  }
+
+  function _renderMusicTracks(){
+    const el = document.getElementById('music-tracks'); if(!el) return;
+    el.innerHTML = FlowFocus.getTracks().map(t=>`
+      <div class="music-track" data-id="${t.id}">
+        <span class="music-emoji">${t.emoji}</span>
+        <span class="music-name">${t.name}</span>
+        <button class="btn btn-ghost btn-sm" onclick="FlowFocus.playTrack('${t.id}');document.getElementById('stop-music-btn').hidden=false">▶</button>
+      </div>`).join('');
+  }
+
+  function _renderBlockedSites(){
+    const el    = document.getElementById('blocked-sites-list'); if(!el) return;
+    const sites = FlowFocus.getBlockedSites();
+    el.innerHTML = sites.length ? sites.map(s=>`
+      <div class="blocked-site">
+        <span>🚫 ${s}</span>
+        <button class="icon-btn btn-sm" onclick="FlowFocus.removeBlockedSite('${s}');_renderBlockedSites()">✕</button>
+      </div>`).join('') : '<div class="empty-state-sm">Sin sitios bloqueados</div>';
+  }
+
+  function _renderStats(){
+    const s = FlowState.get('focus.stats') || {};
+    _t('fs-sessions', s.todaySessions||0);
+    _t('fs-minutes',  FlowTimer.formatMinutes(s.todayMinutes||0));
+    _t('fs-week',     s.weekSessions||0);
+  }
+
+  async function _renderHistoryChart(){
+    const data = await FlowFocus.getStats(7);
+    const labels  = Object.keys(data).map(d=>FlowDate.format(new Date(d+'T12:00:00'),'ddd D'));
+    const minutes = Object.values(data).map(d=>d.minutes);
+    FlowCharts.bar('focus-history-chart', {
+      labels,
+      datasets:[{ label:'Minutos de enfoque', data:minutes, backgroundColor:'#6366f1', borderRadius:6 }]
+    }, { plugins:{ legend:{display:false} } });
+  }
+
+  function _bind(){
+    document.getElementById('focus-toggle-btn')?.addEventListener('click',()=>{
+      if(FlowState.get('focus.active')){
+        FlowFocus.end();
+      } else {
+        const dur = parseInt(document.getElementById('focus-duration-input')?.value)||0;
+        FlowFocus.start(selectedMode, dur||null);
+      }
+    });
+
+    document.querySelectorAll('.focus-mode-card').forEach(card=>{
+      card.addEventListener('click',()=>{
+        document.querySelectorAll('.focus-mode-card').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedMode = card.dataset.mode;
+      });
+    });
+    document.querySelector('.focus-mode-card[data-mode="deep"]')?.classList.add('selected');
+
+    document.querySelectorAll('.dur-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.getElementById('focus-duration-input').value = btn.dataset.min;
+      });
+    });
+
+    document.getElementById('add-block-btn')?.addEventListener('click',()=>{
+      const inp = document.getElementById('block-site-input');
+      if(inp?.value.trim()){ FlowFocus.addBlockedSite(inp.value.trim()); inp.value=''; _renderBlockedSites(); }
+    });
+
+    document.getElementById('stop-music-btn')?.addEventListener('click',()=>{
+      FlowFocus.stopMusic();
+      document.getElementById('stop-music-btn').hidden=true;
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
