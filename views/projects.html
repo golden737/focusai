@@ -1,0 +1,244 @@
+<!-- ── Projects View ─────────────────────────────────────────────────────── -->
+<div class="view projects-view">
+  <header class="view-header">
+    <h1 class="view-title">Proyectos</h1>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <button class="mode-tab active" data-pview="kanban">Kanban</button>
+        <button class="mode-tab" data-pview="gantt">Gantt</button>
+        <button class="mode-tab" data-pview="list">Lista</button>
+      </div>
+      <button class="btn btn-primary" id="new-project-btn">+ Proyecto</button>
+    </div>
+  </header>
+
+  <!-- Selector de proyecto -->
+  <div class="project-selector">
+    <div id="project-tabs" class="project-tabs"></div>
+    <button class="icon-btn" id="project-settings-btn" title="Ajustes del proyecto">⚙️</button>
+  </div>
+
+  <!-- Contenido del proyecto activo -->
+  <div id="project-content" class="project-content"></div>
+</div>
+
+<script>
+(function(){
+  let activeView = 'kanban';
+
+  function init(){
+    _renderProjectTabs();
+    _renderContent();
+    _bind();
+    FlowState.subscribe('projects.items',  ()=>{ _renderProjectTabs(); _renderContent(); });
+    FlowState.subscribe('projects.activeId', _renderContent);
+    FlowState.subscribe('tasks.items', _renderContent);
+  }
+
+  function _renderProjectTabs(){
+    const el = document.getElementById('project-tabs'); if(!el) return;
+    const projects = FlowProjects.getAll();
+    if(!projects.length){ el.innerHTML='<span class="text-muted">Sin proyectos</span>'; return; }
+    // Auto-seleccionar primero si no hay activo
+    if(!FlowState.get('projects.activeId') && projects.length) FlowProjects.setActive(projects[0].id);
+    const activeId = FlowState.get('projects.activeId');
+    el.innerHTML = projects.map(p=>`
+      <button class="project-tab ${p.id===activeId?'active':''}" onclick="FlowProjects.setActive('${p.id}')" style="${p.id===activeId?`border-bottom-color:${p.color||'#6366f1'}`:''}">
+        ${p.icon||'📁'} ${FlowHelpers.escapeHTML(p.name)}
+        <span class="project-status-dot" style="background:${{active:'#22c55e',on_hold:'#f59e0b',completed:'#6366f1',cancelled:'#ef4444'}[p.status]||'#64748b'}"></span>
+      </button>`).join('');
+  }
+
+  function _renderContent(){
+    const proj = FlowProjects.getActive();
+    const el   = document.getElementById('project-content'); if(!el) return;
+    if(!proj){
+      el.innerHTML='<div class="empty-state"><div class="empty-icon">📁</div><p>Crea tu primer proyecto</p><button class="btn btn-primary" id="empty-proj-btn">+ Nuevo proyecto</button></div>';
+      document.getElementById('empty-proj-btn')?.addEventListener('click', _openNewProjectModal);
+      return;
+    }
+    const stats = FlowProjects.getStats(proj.id);
+    if(activeView==='kanban') _renderKanban(proj, stats);
+    else if(activeView==='gantt') _renderGantt(proj);
+    else _renderList(proj, stats);
+  }
+
+  function _renderKanban(proj, stats){
+    const el = document.getElementById('project-content'); if(!el) return;
+    const tasks = FlowTasks.getForProject(proj.id);
+    el.innerHTML=`
+      <div class="project-stats-bar">
+        <span>📊 ${stats.done}/${stats.total} tareas</span>
+        <span>⚠️ ${stats.overdue} vencidas</span>
+        <span>${stats.daysLeft!==null?(stats.daysLeft>0?`⏳ ${stats.daysLeft}d restantes`:'🔴 Vencido'):'Sin fecha'}</span>
+        <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${stats.progress}%;background:${proj.color||'#6366f1'}"></div></div>
+        <span>${stats.progress}%</span>
+      </div>
+      <div class="kanban-board">
+        ${proj.columns.sort((a,b)=>a.order-b.order).map(col=>{
+          const colTasks = tasks.filter(t=>t.columnId===col.id||(!t.columnId&&col.order===0));
+          return `<div class="kanban-col" data-col="${col.id}">
+            <div class="kanban-col-header" style="border-top-color:${col.color||'#64748b'}">
+              <span class="kanban-col-title">${FlowHelpers.escapeHTML(col.title)}</span>
+              <span class="kanban-col-count">${colTasks.length}</span>
+              <button class="icon-btn btn-sm" onclick="_addTaskToCol('${proj.id}','${col.id}')">+</button>
+            </div>
+            <div class="kanban-col-body" id="col-${col.id}">
+              ${colTasks.map(t=>`
+                <div class="kanban-card priority-${t.priority}" draggable="true" data-task-id="${t.id}"
+                  ondragstart="event.dataTransfer.setData('taskId','${t.id}')"
+                  onclick="FlowTasks.openEditModal('${t.id}')">
+                  <div class="kanban-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+                  ${t.dueDate?`<div class="kanban-card-date ${FlowDate.isPast(t.dueDate)?'overdue':''}">${FlowDate.formatRelative(t.dueDate)}</div>`:''}
+                  <div class="kanban-card-footer">
+                    <span class="priority-dot" style="background:${FlowHelpers.priorityColor(t.priority)}"></span>
+                    ${t.subtasks?.length?`<span class="kanban-sub">☑ ${t.subtasks.filter(s=>s.completed).length}/${t.subtasks.length}</span>`:''}
+                    ${t.estimatedMin?`<span class="kanban-time">⏱${t.estimatedMin}m</span>`:''}
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+        <div class="kanban-add-col">
+          <button class="btn btn-ghost btn-sm" onclick="_addColumn('${proj.id}')">+ Columna</button>
+        </div>
+      </div>`;
+
+    // Drag & drop entre columnas
+    el.querySelectorAll('.kanban-col-body').forEach(col=>{
+      col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('drag-over'); });
+      col.addEventListener('dragleave', ()=>col.classList.remove('drag-over'));
+      col.addEventListener('drop', async e=>{
+        e.preventDefault(); col.classList.remove('drag-over');
+        const taskId = e.dataTransfer.getData('taskId');
+        const colId  = col.id.replace('col-','');
+        await FlowProjects.moveTask(taskId, colId);
+      });
+    });
+  }
+
+  function _renderGantt(proj){
+    const el    = document.getElementById('project-content'); if(!el) return;
+    const tasks = FlowProjects.getGanttData(proj.id);
+    if(!tasks.length){ el.innerHTML='<div class="empty-state-sm">Sin tareas con fecha para mostrar en Gantt</div>'; return; }
+    const minDate = tasks[0].start;
+    const maxDate = tasks[tasks.length-1].end || FlowDate.addDays(tasks[tasks.length-1].start,7);
+    const totalDays = FlowDate.diffDays(maxDate, minDate)+1;
+    const dayW = Math.max(30, Math.floor((window.innerWidth-300)/totalDays));
+    el.innerHTML=`
+      <div class="gantt-wrap" style="overflow-x:auto">
+        <table class="gantt-table">
+          <thead><tr><th class="gantt-name-col">Tarea</th>${FlowDate.range(minDate,maxDate).map(d=>`<th class="gantt-day-col ${d===FlowDate.today()?'today':''}" style="min-width:${dayW}px">${new Date(d+'T12:00:00').getDate()}</th>`).join('')}</tr></thead>
+          <tbody>${tasks.map(t=>{
+            const start= FlowDate.diffDays(t.start, minDate);
+            const dur  = Math.max(1, FlowDate.diffDays(t.end||t.start, t.start)+1);
+            return `<tr>
+              <td class="gantt-name-col">${FlowHelpers.truncate(FlowHelpers.escapeHTML(t.title),25)}</td>
+              ${FlowDate.range(minDate,maxDate).map((d,i)=>{
+                if(i===start) return `<td colspan="${Math.min(dur, totalDays-start)}" class="gantt-bar-cell"><div class="gantt-bar ${t.completed?'done':''}" style="background:${FlowHelpers.priorityColor(t.priority)}">${FlowHelpers.truncate(t.title,15)}</div></td>`;
+                if(i>start && i<start+dur) return '';
+                return '<td></td>';
+              }).join('')}
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function _renderList(proj, stats){
+    const el    = document.getElementById('project-content'); if(!el) return;
+    const tasks = FlowTasks.getForProject(proj.id);
+    el.innerHTML=`
+      <div class="project-list-header">
+        <button class="btn btn-primary btn-sm" onclick="_addTaskToCol('${proj.id}','')">+ Nueva tarea</button>
+      </div>
+      <div class="task-list">
+        ${tasks.map(t=>`
+          <div class="task-card priority-${t.priority} ${t.completed?'task-completed':''}">
+            <button class="task-check ${t.completed?'checked':''}" onclick="FlowTasks.complete('${t.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <div class="task-card-body">
+              <div class="task-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+              <div class="task-card-meta">
+                ${t.dueDate?`<span class="meta-tag">${FlowDate.formatRelative(t.dueDate)}</span>`:''}
+                ${t.estimatedMin?`<span class="meta-tag">⏱ ${t.estimatedMin}m</span>`:''}
+                <span class="priority-dot" style="background:${FlowHelpers.priorityColor(t.priority)}"></span>
+              </div>
+            </div>
+            <button class="icon-btn btn-sm" onclick="FlowTasks.openEditModal('${t.id}')">✏️</button>
+          </div>`).join('') || '<div class="empty-state-sm">Sin tareas en este proyecto</div>'}
+      </div>`;
+  }
+
+  function _addTaskToCol(projectId, columnId){
+    FlowTasks.openNewTaskModal({ projectId, columnId: columnId||undefined });
+  }
+  window._addTaskToCol = _addTaskToCol;
+
+  function _addColumn(projectId){
+    FlowApp.showModal({ title:'Nueva columna', size:'sm', content:`
+      <form id="col-form" class="task-form">
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" name="title" placeholder="Ej: En revisión" required autofocus></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear</button>
+        </div>
+      </form>`
+    });
+    setTimeout(()=>{
+      document.getElementById('col-form')?.addEventListener('submit',async e=>{
+        e.preventDefault();
+        const fd=new FormData(e.target);
+        await FlowProjects.addColumn(projectId, fd.get('title'), fd.get('color'));
+        FlowApp.closeModal();
+      });
+    },50);
+  }
+  window._addColumn = _addColumn;
+
+  function _openNewProjectModal(){
+    FlowApp.showModal({ title:'Nuevo proyecto', size:'md', content:`
+      <form id="proj-form" class="task-form">
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 60px"><label class="form-label">Icono</label><input class="form-input" name="icon" value="📁" maxlength="2"></div>
+          <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" name="name" placeholder="Nombre del proyecto" required autofocus></div>
+        </div>
+        <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input form-textarea" name="description" rows="2"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" type="date" name="startDate" value="${FlowDate.today()}"></div>
+          <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" type="date" name="endDate"></div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear proyecto</button>
+        </div>
+      </form>`
+    });
+    setTimeout(()=>{
+      document.getElementById('proj-form')?.addEventListener('submit',async e=>{
+        e.preventDefault();
+        const fd=new FormData(e.target);
+        await FlowProjects.create({ name:fd.get('name'), description:fd.get('description'), icon:fd.get('icon'), color:fd.get('color'), startDate:fd.get('startDate'), endDate:fd.get('endDate')||null });
+        FlowApp.closeModal();
+      });
+    },50);
+  }
+
+  function _bind(){
+    document.getElementById('new-project-btn')?.addEventListener('click', _openNewProjectModal);
+    document.querySelectorAll('.mode-tab[data-pview]').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.mode-tab[data-pview]').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        activeView = tab.dataset.pview;
+        _renderContent();
+      });
+    });
+  }
+
+  init();
+})();
+</script>
