@@ -100,7 +100,7 @@ window.FlowState = (() => {
     // IA
     ai: {
       apiKey:       '',
-      model:        'claude-sonnet-4-20250514',
+      model: 'qwen2.5-coder:7b',
       chatHistory:  [],          // Array<{role, content, ts}>
       suggestions:  [],          // Sugerencias activas del día
       planGenerated: false,
