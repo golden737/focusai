@@ -86,7 +86,10 @@ window.FlowAI = (() => {
     try {
       const ctrl = new AbortController();
       const tid  = setTimeout(() => ctrl.abort(), 12000);
-      const res  = await fetch(`${cfg.baseUrl}${provider.modelsPath}`, { signal: ctrl.signal });
+      const res = await fetch(`${cfg.baseUrl}${provider.modelsPath}`, {
+        signal: ctrl.signal,
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+      });
       clearTimeout(tid);
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
@@ -153,7 +156,10 @@ window.FlowAI = (() => {
 
       const res = await fetch(url, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body,
         signal:  ctrl.signal,
       });
