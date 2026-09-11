@@ -328,7 +328,12 @@ window.FlowState = (() => {
         settings: get('settings'),
         ai: {
           apiKey: get('ai.apiKey'),
+          provider: get('ai.provider'),
+          baseUrl: get('ai.baseUrl'),
           model:  get('ai.model'),
+          temperature: get('ai.temperature'),
+          maxTokens: get('ai.maxTokens'),
+          timeout: get('ai.timeout'),
         },
         timer: {
           settings: get('timer.settings'),
@@ -359,7 +364,11 @@ window.FlowState = (() => {
         if (saved.user)     update('user', saved.user);
         if (saved.settings) update('settings', saved.settings);
         if (saved.ai) {
-          if (saved.ai.apiKey) set('ai.apiKey', saved.ai.apiKey);
+          // La URL del túnel es una preferencia del administrador. Antes solo
+          // se restauraba apiKey, por eso la URL volvía a localhost al recargar.
+          ['apiKey', 'provider', 'baseUrl', 'model', 'temperature', 'maxTokens', 'timeout'].forEach((key) => {
+            if (saved.ai[key] !== undefined) set(`ai.${key}`, saved.ai[key]);
+          });
         }
         if (saved.timer?.settings) update('timer.settings', saved.timer.settings);
         if (saved.notifications?.settings) update('notifications.settings', saved.notifications.settings);
@@ -398,6 +407,8 @@ window.FlowState = (() => {
   subscribe('user',        persist);
   subscribe('settings',    persist);
   subscribe('ai.apiKey',   persist);
+  subscribe('ai.provider', persist);
+  subscribe('ai.baseUrl',  persist);
   subscribe('ai.model',    persist);
   subscribe('timer.settings', persist);
   subscribe('notifications.settings', persist);
