@@ -57,7 +57,7 @@ window.FlowAI = (() => {
     const saved = FlowState.get('ai') || {};
     return {
       provider:   saved.provider  || 'ollama',
-      baseUrl:    saved.baseUrl   || 'https://modelling-sandy-george-findlaw.trycloudflare.com',
+      baseUrl:    saved.baseUrl   || 'https://edition-ensure-height-premier.trycloudflare.com',
       model: 'qwen2.5-coder:7b',
       maxTokens:  saved.maxTokens || 1024,
       temperature:saved.temperature ?? 0.7,
