@@ -1,0 +1,2755 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FocusAI — Tu sistema de productividad personal con IA integrada" />
+  <meta name="theme-color" content="#0d0d0f" />
+  <title>FocusAI</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icons/icon.svg" />
+
+  <!-- Fuentes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&display=swap" rel="stylesheet" />
+
+  <!-- Librerías externas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/relativeTime.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/isoWeek.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/duration.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- Supabase Config — reemplaza con tus credenciales -->
+ <script>
+    window.SUPABASE_URL     = 'https://akcodgbvfkzucsfiertf.supabase.co';
+    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrY29kZ2J2Zmt6dWNzZmllcnRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTY0MTcsImV4cCI6MjEwNDQ3MjQxN30.pwW_S3WKyPXei0FlrYauh8_vnELQHyBwvyZKHIYJZGM';
+  </script>
+
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <link rel="stylesheet" href="css/themes.css" />
+  <link rel="stylesheet" href="css/welcome.css" />
+</head>
+<body>
+
+  <!-- ── Loader de arranque ── -->
+  <div id="app-loader" aria-live="polite" aria-label="Cargando FocusAI">
+    <div class="loader-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="14" fill="var(--accent)"/>
+        <path d="M14 24 C14 18 18 14 24 14 C30 14 34 18 34 24" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <circle cx="24" cy="30" r="4" fill="white"/>
+        <circle cx="16" cy="30" r="2.5" fill="white" opacity="0.5"/>
+        <circle cx="32" cy="30" r="2.5" fill="white" opacity="0.5"/>
+      </svg>
+      <span class="loader-name">FocusAI</span>
+    </div>
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+  </div>
+
+  <!-- ── Shell principal (oculto hasta cargar) ── -->
+  <div id="app" class="app-shell" hidden>
+
+    <!-- Sidebar de navegación -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Navegación principal">
+      <div class="sidebar-header">
+        <svg class="sidebar-logo" width="32" height="32" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="var(--accent)"/>
+          <path d="M14 24 C14 18 18 14 24 14 C30 14 34 18 34 24" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="30" r="4" fill="white"/>
+          <circle cx="16" cy="30" r="2.5" fill="white" opacity="0.5"/>
+          <circle cx="32" cy="30" r="2.5" fill="white" opacity="0.5"/>
+        </svg>
+        <span class="sidebar-brand">FocusAI</span>
+        <button id="sidebar-toggle" class="icon-btn" aria-label="Colapsar menú" title="Colapsar menú">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#dashboard"      class="nav-item active" data-view="dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="#tasks"          class="nav-item" data-view="tasks">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span>Tareas</span>
+          <span class="nav-badge" id="badge-tasks">0</span>
+        </a>
+        <a href="#calendar"       class="nav-item" data-view="calendar">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Calendario</span>
+        </a>
+        <a href="#timer"          class="nav-item" data-view="timer">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+          <span>Tiempo</span>
+        </a>
+        <a href="#habits"         class="nav-item" data-view="habits">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span>Hábitos</span>
+        </a>
+        <a href="#goals"          class="nav-item" data-view="goals">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <span>Objetivos</span>
+        </a>
+        <a href="#projects"       class="nav-item" data-view="projects">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          <span>Proyectos</span>
+        </a>
+        <a href="#stats"          class="nav-item" data-view="stats">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Estadísticas</span>
+        </a>
+
+        <div class="nav-divider"></div>
+
+        <a href="#focus"          class="nav-item" data-view="focus">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          <span>Enfoque</span>
+        </a>
+        <a href="#personal"       class="nav-item" data-view="personal">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          <span>Personal</span>
+        </a>
+        <a href="#teams" class="nav-item" data-view="teams">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <span>Equipos</span>
+        </a>
+        <a href="#gamification"   class="nav-item" data-view="gamification">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Logros</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <!-- Nivel y XP del usuario -->
+        <div class="user-level">
+          <div class="user-avatar" id="user-avatar">FM</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">Usuario</span>
+            <div class="xp-bar">
+              <div class="xp-fill" id="xp-fill" style="width: 0%"></div>
+            </div>
+            <span class="user-level-text" id="user-level-text">Nivel 1</span>
+          </div>
+        </div>
+        <a href="#settings" class="nav-item" data-view="settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Ajustes</span>
+        </a>
+        <button id="logout-btn" class="nav-item nav-logout" type="button" aria-label="Cerrar sesión">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 00-2-2h-6"/></svg>
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Área de contenido principal -->
+  <main id="main-content" class="main-content" role="main">
+    <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Abrir navegación" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <!-- Las vistas se inyectan aquí por router.js -->
+      <div id="view-container" class="view-container"></div>
+    </main>
+
+    <!-- Botón flotante IA -->
+    <button id="ai-fab" class="ai-fab" aria-label="Abrir asistente IA" title="Asistente FocusAI IA">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a4 4 0 014 4v1a4 4 0 01-4 4 4 4 0 01-4-4V6a4 4 0 014-4z"/>
+        <path d="M8 11v2a4 4 0 004 4 4 4 0 004-4v-2"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+      </svg>
+      <span class="ai-fab-pulse"></span>
+    </button>
+
+    <!-- Panel IA (chat flotante) -->
+    <div id="ai-panel" class="ai-panel" hidden role="dialog" aria-label="Asistente IA FocusAI" aria-modal="false">
+      <div id="ai-panel-inner"></div>
+    </div>
+
+    <!-- Sistema de toasts -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- Modal global -->
+    <div id="modal-overlay" class="modal-overlay" hidden role="dialog" aria-modal="true">
+      <div id="modal-content" class="modal-content"></div>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- Scripts (orden importa) -->
+  <script type="module">
+    // Registrar service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.warn);
+    }
+    // Plugins dayjs
+    dayjs.extend(window.dayjs_plugin_relativeTime);
+    dayjs.extend(window.dayjs_plugin_isoWeek);
+    dayjs.extend(window.dayjs_plugin_duration);
+  </script>
+
+  <script src="data/schema.js"></script>
+  <script src="data/migrations.js"></script>
+  <script src="data/seed.js"></script>
+  <script src="js/utils/date.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/validators.js"></script>
+  <script src="js/utils/charts.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/modules/storage.js"></script>
+  <script src="js/modules/notifications.js"></script>
+  <script src="js/modules/ai.js"></script>
+  <script src="js/modules/tasks.js"></script>
+  <script src="js/modules/calendar.js"></script>
+  <script src="js/modules/timer.js"></script>
+  <script src="js/modules/habits.js"></script>
+  <script src="js/modules/goals.js"></script>
+  <script src="js/modules/projects.js"></script>
+  <script src="js/modules/stats.js"></script>
+  <script src="js/modules/focus.js"></script>
+  <script src="js/modules/personal.js"></script>
+  <script src="js/modules/gamification.js"></script>
+  <script src="js/modules/recurrence.js"></script>
+  <script src="js/modules/supabase.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+
+<div id="embedded-views" hidden>
+  <template id="view-tpl-dashboard">
+<!-- ── Dashboard ──────────────────────────────────────────────────────────── -->
+<div class="view dashboard-view">
+
+  <header class="view-header">
+    <div>
+      <h1 class="view-title" id="dash-greeting">Buenos días</h1>
+      <p class="view-subtitle text-muted" id="dash-date"></p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost icon-btn" id="dash-search-btn" title="Buscar (Ctrl+K)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="btn btn-primary" id="dash-new-task-btn">+ Nueva tarea</button>
+    </div>
+  </header>
+
+  <div class="ai-suggestion-banner" id="ai-suggestion-banner" hidden>
+    <div class="ai-suggestion-icon">✨</div>
+    <p class="ai-suggestion-text" id="ai-suggestion-text"></p>
+    <button class="btn btn-ghost btn-sm" id="ai-plan-day-btn">Planificar día</button>
+    <button class="icon-btn" id="ai-suggestion-close" aria-label="Cerrar">✕</button>
+  </div>
+
+  <section class="metrics-grid" aria-label="Métricas del día">
+    <div class="metric-card" data-nav="tasks">
+      <div class="metric-icon" style="background:rgba(99,102,241,0.12)">✅</div>
+      <div class="metric-body"><span class="metric-value" id="m-tasks-done">0</span><span class="metric-label">Tareas hoy</span></div>
+      <div class="metric-sub" id="m-tasks-total"></div>
+      <canvas class="metric-spark" id="spark-tasks" height="40"></canvas>
+    </div>
+    <div class="metric-card" data-nav="timer">
+      <div class="metric-icon" style="background:rgba(34,197,94,0.12)">⏱</div>
+      <div class="metric-body"><span class="metric-value" id="m-time-today">0h</span><span class="metric-label">Tiempo hoy</span></div>
+      <div class="metric-sub" id="m-time-week"></div>
+      <canvas class="metric-spark" id="spark-time" height="40"></canvas>
+    </div>
+    <div class="metric-card" data-nav="habits">
+      <div class="metric-icon" style="background:rgba(245,158,11,0.12)">⭐</div>
+      <div class="metric-body"><span class="metric-value" id="m-habits-rate">0%</span><span class="metric-label">Hábitos hoy</span></div>
+      <div class="metric-sub" id="m-habits-sub"></div>
+    </div>
+    <div class="metric-card" data-nav="goals">
+      <div class="metric-icon" style="background:rgba(139,92,246,0.12)">🎯</div>
+      <div class="metric-body"><span class="metric-value" id="m-goals-progress">0%</span><span class="metric-label">Objetivos</span></div>
+      <div class="metric-sub" id="m-goals-sub"></div>
+    </div>
+    <div class="metric-card" data-nav="focus">
+      <div class="metric-icon" style="background:rgba(236,72,153,0.12)">🌟</div>
+      <div class="metric-body"><span class="metric-value" id="m-focus-min">0m</span><span class="metric-label">Enfoque hoy</span></div>
+      <div class="metric-sub" id="m-focus-sub"></div>
+    </div>
+    <div class="metric-card" data-nav="gamification">
+      <div class="metric-icon" style="background:rgba(251,191,36,0.12)">🏆</div>
+      <div class="metric-body"><span class="metric-value" id="m-level">Nv 1</span><span class="metric-label">Nivel</span></div>
+      <div class="xp-bar-mini"><div class="xp-fill-mini" id="m-xp-fill"></div></div>
+      <div class="metric-sub" id="m-xp-sub"></div>
+    </div>
+  </section>
+
+  <div class="dash-body">
+    <div class="dash-col-main">
+      <section class="dash-section">
+        <div class="section-header">
+          <h2 class="section-title">Tareas para hoy</h2>
+          <button class="btn btn-ghost btn-sm" onclick="FlowRouter.navigate('tasks')">Ver todas</button>
+        </div>
+        <div id="dash-tasks-list" class="dash-task-list"></div>
+        <button class="btn btn-ghost btn-sm" id="dash-add-task-btn">+ Agregar tarea para hoy</button>
+      </section>
+      <section class="dash-section">
+        <div class="section-header"><h2 class="section-title">Actividad — últimos 7 días</h2></div>
+        <div class="chart-container" style="height:180px"><canvas id="dash-activity-chart"></canvas></div>
+      </section>
+    </div>
+    <div class="dash-col-side">
+      <section class="dash-section">
+        <div class="section-header">
+          <h2 class="section-title">Hábitos de hoy</h2>
+          <button class="btn btn-ghost btn-sm" onclick="FlowRouter.navigate('habits')">Ver todos</button>
+        </div>
+        <div id="dash-habits-list" class="dash-habit-list"></div>
+      </section>
+      <section class="dash-section">
+        <div class="section-header">
+          <h2 class="section-title">Próximos eventos</h2>
+          <button class="btn btn-ghost btn-sm" onclick="FlowRouter.navigate('calendar')">Calendario</button>
+        </div>
+        <div id="dash-events-list" class="dash-events-list"></div>
+      </section>
+      <section class="dash-section" id="dash-overdue-section" hidden>
+        <div class="section-header"><h2 class="section-title" style="color:#ef4444">⚠️ Vencidas</h2></div>
+        <div id="dash-overdue-list" class="dash-task-list"></div>
+      </section>
+      <section class="dash-section">
+        <div class="section-header">
+          <h2 class="section-title">Desafíos semanales</h2>
+          <button class="btn btn-ghost btn-sm" onclick="FlowRouter.navigate('gamification')">Ver logros</button>
+        </div>
+        <div id="dash-challenges-list"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _greeting(); _metrics(); _tasks(); _habits(); _events(); _overdue(); _challenges(); _charts(); _aiSuggestion(); _bind();
+    setInterval(_metrics, 60000);
+    FlowState.subscribe('tasks.items', ()=>{ _tasks(); _metrics(); _overdue(); });
+    FlowState.subscribe('habits.logs', ()=>{ _habits(); _metrics(); });
+    FlowState.subscribe('gamification', _metrics);
+    FlowState.subscribe('ai.suggestions', _aiSuggestion);
+  }
+  function _greeting(){
+    const h=new Date().getHours(), name=FlowState.get('user.name')||'';
+    const g=h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';
+    _t('dash-greeting',`${g}${name?', '+name:''} 👋`);
+    _t('dash-date', FlowDate.format(new Date(),'dddd, DD de MMMM YYYY'));
+  }
+  function _metrics(){
+    const m=FlowStats.getDashboardMetrics();
+    _t('m-tasks-done', m.tasks.completedToday);
+    _t('m-tasks-total',`${m.tasks.todayTotal} programadas · ${m.tasks.overdue} vencidas`);
+    _t('m-time-today', m.time.todayFormatted||'0m');
+    _t('m-time-week',  `Semana: ${m.time.weekFormatted}`);
+    _t('m-habits-rate',`${m.habits.todayRate}%`);
+    _t('m-habits-sub', `${m.habits.todayDone}/${m.habits.todayTotal} completados`);
+    _t('m-goals-progress',`${m.goals.avgProgress}%`);
+    _t('m-goals-sub', `${m.goals.active} activos`);
+    _t('m-focus-min',  FlowTimer.formatMinutes(m.time.todayMin));
+    _t('m-focus-sub',  `Semana: ${FlowTimer.formatMinutes(m.time.weekMin)}`);
+    _t('m-level',      `Nv ${m.gamif.level}`);
+    _t('m-xp-sub',     `${m.gamif.xp} XP`);
+    const xp=document.getElementById('m-xp-fill');
+    if(xp) xp.style.width=Math.min(100,Math.round(m.gamif.xp/(m.gamif.level*100)*100))+'%';
+  }
+  function _tasks(){
+    const el=document.getElementById('dash-tasks-list'); if(!el) return;
+    const today=FlowDate.today();
+    const tasks=(FlowState.get('tasks.items')||[]).filter(t=>t.dueDate===today&&!t.completed&&!t.archived)
+      .sort((a,b)=>({high:0,medium:1,low:2,none:3}[a.priority]||3)-({high:0,medium:1,low:2,none:3}[b.priority]||3)).slice(0,8);
+    el.innerHTML=tasks.length?tasks.map(t=>`
+      <div class="dash-task-item">
+        <button class="task-check" onclick="FlowTasks.complete('${t.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <span class="task-title">${FlowHelpers.escapeHTML(t.title)}</span>
+        <span class="priority-dot" style="background:${FlowHelpers.priorityColor(t.priority)}"></span>
+        ${t.estimatedMin?`<span class="task-time-badge">${t.estimatedMin}m</span>`:''}
+      </div>`).join(''):'<div class="empty-state-sm">✨ Sin tareas para hoy</div>';
+  }
+  function _habits(){
+    const el=document.getElementById('dash-habits-list'); if(!el) return;
+    const habits=FlowHabits.getTodayHabits().slice(0,5);
+    el.innerHTML=habits.length?habits.map(h=>`
+      <div class="dash-habit-item">
+        <button class="habit-check-btn ${h.todayComplete?'done':''}" onclick="FlowHabits.complete('${h.id}')">
+          <span>${h.icon||'⭐'}</span>
+        </button>
+        <div class="habit-info">
+          <span class="habit-name">${FlowHelpers.escapeHTML(h.name)}</span>
+          ${h.streak>1?`<span class="habit-streak">🔥 ${h.streak}</span>`:''}
+        </div>
+      </div>`).join(''):'<div class="empty-state-sm">Sin hábitos para hoy</div>';
+  }
+  function _events(){
+    const el=document.getElementById('dash-events-list'); if(!el) return;
+    const events=FlowCalendar.getEventsForDay(FlowDate.today()).slice(0,4);
+    el.innerHTML=events.length?events.map(e=>`
+      <div class="dash-event-item" style="border-left-color:${e.color||'#6366f1'}">
+        <span class="event-time">${e.allDay?'Todo el día':e.startTime}</span>
+        <span class="event-title">${FlowHelpers.escapeHTML(e.title)}</span>
+      </div>`).join(''):'<div class="empty-state-sm">Sin eventos hoy</div>';
+  }
+  function _overdue(){
+    const sec=document.getElementById('dash-overdue-section');
+    const el=document.getElementById('dash-overdue-list'); if(!sec||!el) return;
+    const ov=FlowTasks.getOverdue().slice(0,5);
+    sec.hidden=!ov.length;
+    el.innerHTML=ov.map(t=>`
+      <div class="dash-task-item overdue">
+        <button class="task-check" onclick="FlowTasks.complete('${t.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <span class="task-title">${FlowHelpers.escapeHTML(t.title)}</span>
+        <span class="overdue-date">${FlowDate.formatRelative(t.dueDate)}</span>
+      </div>`).join('');
+  }
+  function _challenges(){
+    const el=document.getElementById('dash-challenges-list'); if(!el) return;
+    const ch=FlowGamification.getWeeklyChallenges();
+    el.innerHTML=ch.length?ch.map(c=>{
+      const pct=Math.min(100,Math.round((c.progress/c.target)*100));
+      return `<div class="challenge-item ${c.completed?'completed':''}">
+        <div class="challenge-header"><span class="challenge-name">${c.name}</span><span class="challenge-xp">+${c.xp} XP</span></div>
+        <div class="challenge-bar"><div class="challenge-fill" style="width:${pct}%"></div></div>
+        <div class="challenge-progress">${c.progress}/${c.target}</div>
+      </div>`;
+    }).join(''):'<div class="empty-state-sm">Sin desafíos</div>';
+  }
+  function _charts(){
+    FlowCharts.sparkline('spark-tasks', FlowStats.getTasksCompletedByDay(7).datasets[0].data, '#6366f1');
+    FlowCharts.sparkline('spark-time',  FlowStats.getTimeByDay(7).datasets[0].data, '#22c55e');
+    FlowCharts.bar('dash-activity-chart', FlowStats.getTasksCompletedByDay(7), { plugins:{ legend:{ display:false } } });
+  }
+  function _aiSuggestion(){
+    const s=FlowAI.getSuggestions(); const b=document.getElementById('ai-suggestion-banner'); const t=document.getElementById('ai-suggestion-text');
+    if(!b||!t) return;
+    if(s.length){ t.textContent=s[0].text; b.hidden=false; }
+  }
+  function _bind(){
+    document.getElementById('dash-new-task-btn')?.addEventListener('click',()=>FlowTasks.openNewTaskModal({dueDate:FlowDate.today()}));
+    document.getElementById('dash-add-task-btn')?.addEventListener('click',()=>FlowTasks.openNewTaskModal({dueDate:FlowDate.today()}));
+    document.getElementById('dash-search-btn')?.addEventListener('click',()=>FlowSearch.openGlobal());
+    document.getElementById('ai-plan-day-btn')?.addEventListener('click',()=>FlowAI.planDay());
+    document.getElementById('ai-suggestion-close')?.addEventListener('click',()=>{ document.getElementById('ai-suggestion-banner').hidden=true; });
+    document.querySelectorAll('.metric-card[data-nav]').forEach(c=>{ c.style.cursor='pointer'; c.addEventListener('click',()=>FlowRouter.navigate(c.dataset.nav)); });
+  }
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-tasks">
+<!-- ── Tasks View ─────────────────────────────────────────────────────────── -->
+<div class="view tasks-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Tareas</h1></div>
+    <div class="header-actions">
+      <div class="search-inline"><input id="task-search" class="form-input" placeholder="Buscar tareas…" autocomplete="off"></div>
+      <div class="view-toggle">
+        <button class="icon-btn view-btn active" data-view="list" title="Lista">☰</button>
+        <button class="icon-btn view-btn" data-view="board" title="Tablero">⊞</button>
+      </div>
+      <button class="btn btn-primary" id="new-task-btn">+ Nueva tarea</button>
+    </div>
+  </header>
+
+  <div class="tasks-toolbar">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="filter-tab active" data-filter="all">Todas</button>
+      <button class="filter-tab" data-filter="today">Hoy</button>
+      <button class="filter-tab" data-filter="upcoming">Próximas</button>
+      <button class="filter-tab" data-filter="overdue">Vencidas</button>
+      <button class="filter-tab" data-filter="completed">Completadas</button>
+    </div>
+    <div class="sort-controls">
+      <select class="form-input form-select sort-select" id="sort-select">
+        <option value="priority">Por prioridad</option>
+        <option value="dueDate">Por fecha</option>
+        <option value="title">Por nombre</option>
+        <option value="createdAt">Por creación</option>
+      </select>
+      <button class="icon-btn" id="sort-dir-btn" title="Cambiar orden">↕</button>
+    </div>
+  </div>
+
+  <div class="label-filters" id="label-filters"></div>
+
+  <div id="tasks-container" class="tasks-container"></div>
+
+  <div class="tasks-footer">
+    <span class="tasks-count" id="tasks-count"></span>
+    <button class="btn btn-ghost btn-sm" id="ai-suggest-btn">✨ IA: Sugerir prioridades</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  let sortDir = 'asc';
+
+  function init(){
+    _renderLabels();
+    _renderTasks();
+    _bind();
+    FlowState.subscribe('tasks.items', _renderTasks);
+    FlowState.subscribe('tasks.filter', _renderTasks);
+    FlowState.subscribe('tasks.searchQuery', _renderTasks);
+    FlowState.subscribe('tasks.activeLabels', _renderTasks);
+  }
+
+  function _renderTasks(){
+    const container = document.getElementById('tasks-container'); if(!container) return;
+    const view  = FlowState.get('tasks.view') || 'list';
+    const tasks = FlowTasks.getFiltered();
+    _t('tasks-count', `${tasks.length} tarea${tasks.length!==1?'s':''}`);
+
+    if(!tasks.length){
+      container.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>Sin tareas en esta vista</p><button class="btn btn-primary" onclick="FlowTasks.openNewTaskModal()">Crear tarea</button></div>';
+      return;
+    }
+
+    if(view==='list'){
+      container.className='tasks-container list-view';
+      container.innerHTML=`<div class="task-list">${tasks.map(_taskCard).join('')}</div>`;
+    } else {
+      container.className='tasks-container board-view';
+      const priorities=[{id:'high',label:'Alta 🔴'},{id:'medium',label:'Media 🟡'},{id:'low',label:'Baja 🔵'},{id:'none',label:'Sin prioridad'}];
+      container.innerHTML=priorities.map(p=>{
+        const col=tasks.filter(t=>t.priority===p.id);
+        return `<div class="board-col"><div class="board-col-header">${p.label} <span class="board-count">${col.length}</span></div>
+          <div class="board-col-body">${col.map(_taskCard).join('')}</div></div>`;
+      }).join('');
+    }
+
+    // Bind acciones de tarea
+    container.querySelectorAll('[data-complete]').forEach(btn=>btn.addEventListener('click',()=>FlowTasks.complete(btn.dataset.complete)));
+    container.querySelectorAll('[data-edit]').forEach(btn=>btn.addEventListener('click',()=>FlowTasks.openEditModal(btn.dataset.edit)));
+    container.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click',()=>{ if(confirm('¿Eliminar esta tarea?')) FlowTasks.remove(btn.dataset.delete); }));
+    container.querySelectorAll('[data-ai-estimate]').forEach(btn=>btn.addEventListener('click',()=>FlowAI.estimateTask(btn.dataset.aiEstimate)));
+  }
+
+  function _taskCard(t){
+    const sub = t.subtasks||[];
+    const subDone = sub.filter(s=>s.completed).length;
+    return `
+    <div class="task-card priority-${t.priority} ${t.completed?'task-completed':''}" data-task-id="${t.id}">
+      <div class="task-card-main">
+        <button class="task-check ${t.completed?'checked':''}" data-complete="${t.id}" aria-label="Completar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <div class="task-card-body">
+          <div class="task-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+          ${t.description?`<div class="task-card-desc">${FlowHelpers.truncate(FlowHelpers.escapeHTML(t.description),80)}</div>`:''}
+          <div class="task-card-meta">
+            ${t.dueDate?`<span class="meta-tag ${FlowDate.isPast(t.dueDate)&&!t.completed?'overdue':''}">${FlowDate.formatRelative(t.dueDate)}</span>`:''}
+            ${t.estimatedMin?`<span class="meta-tag">⏱ ${t.estimatedMin}m</span>`:''}
+            ${(t.labels||[]).map(l=>`<span class="label-tag">${FlowHelpers.escapeHTML(l)}</span>`).join('')}
+            ${sub.length?`<span class="meta-tag">☑ ${subDone}/${sub.length}</span>`:''}
+            ${t.comments?.length?`<span class="meta-tag">💬 ${t.comments.length}</span>`:''}
+          </div>
+        </div>
+        <div class="task-card-actions">
+          <button class="icon-btn btn-sm" data-ai-estimate="${t.id}" title="Estimar con IA">⏱</button>
+          <button class="icon-btn btn-sm" data-edit="${t.id}" title="Editar">✏️</button>
+          <button class="icon-btn btn-sm" data-delete="${t.id}" title="Eliminar">🗑</button>
+        </div>
+      </div>
+      ${sub.length?`<div class="subtask-list">${sub.slice(0,3).map(s=>`
+        <div class="subtask-item ${s.completed?'done':''}">
+          <button class="subtask-check" onclick="FlowTasks.toggleSubtask('${t.id}','${s.id}')">
+            ${s.completed?'☑':'☐'}
+          </button>
+          <span>${FlowHelpers.escapeHTML(s.title)}</span>
+        </div>`).join('')}${sub.length>3?`<div class="subtask-more">+${sub.length-3} más</div>`:''}</div>`:''}
+    </div>`;
+  }
+
+  function _renderLabels(){
+    const el=document.getElementById('label-filters'); if(!el) return;
+    const labels=FlowTasks.getAllLabels();
+    if(!labels.length){ el.hidden=true; return; }
+    el.hidden=false;
+    el.innerHTML=labels.map(l=>`<button class="label-filter-btn" data-label="${l}">${l}</button>`).join('');
+    el.querySelectorAll('[data-label]').forEach(btn=>{
+      const active=(FlowState.get('tasks.activeLabels')||[]).includes(btn.dataset.label);
+      btn.classList.toggle('active', active);
+      btn.addEventListener('click',()=>{
+        const current=FlowState.get('tasks.activeLabels')||[];
+        const lbl=btn.dataset.label;
+        FlowState.set('tasks.activeLabels', current.includes(lbl)?current.filter(l=>l!==lbl):[...current,lbl]);
+      });
+    });
+  }
+
+  function _bind(){
+    document.getElementById('new-task-btn')?.addEventListener('click',()=>FlowTasks.openNewTaskModal());
+    document.getElementById('ai-suggest-btn')?.addEventListener('click',()=>FlowAI.suggestPriorities());
+
+    // Filtros
+    document.getElementById('filter-tabs')?.querySelectorAll('.filter-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        FlowState.set('tasks.filter', tab.dataset.filter);
+      });
+    });
+
+    // Búsqueda
+    const searchInput=document.getElementById('task-search');
+    if(searchInput){
+      searchInput.addEventListener('input', FlowHelpers.debounce(e=>{
+        FlowState.set('tasks.searchQuery', e.target.value);
+      }, 250));
+    }
+
+    // Ordenado
+    document.getElementById('sort-select')?.addEventListener('change',e=>FlowState.set('tasks.sortBy', e.target.value));
+    document.getElementById('sort-dir-btn')?.addEventListener('click',()=>{
+      sortDir = sortDir==='asc'?'desc':'asc';
+      FlowState.set('tasks.sortDir', sortDir);
+    });
+
+    // Vista lista/board
+    document.querySelectorAll('.view-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        FlowState.set('tasks.view', btn.dataset.view);
+        _renderTasks();
+      });
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-calendar">
+<!-- ── Calendar View ──────────────────────────────────────────────────────── -->
+<div class="view calendar-view">
+  <header class="view-header">
+    <div class="cal-nav">
+      <button class="icon-btn" id="cal-prev">‹</button>
+      <h1 class="view-title" id="cal-title"></h1>
+      <button class="icon-btn" id="cal-next">›</button>
+      <button class="btn btn-ghost btn-sm" id="cal-today">Hoy</button>
+    </div>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <button class="mode-tab active" data-mode="week">Semana</button>
+        <button class="mode-tab" data-mode="day">Día</button>
+        <button class="mode-tab" data-mode="month">Mes</button>
+      </div>
+      <button class="btn btn-primary" id="new-event-btn">+ Evento</button>
+    </div>
+  </header>
+  <div id="cal-container" class="cal-container"></div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _render();
+    _bind();
+    FlowState.subscribe('calendar.currentDate', _render);
+    FlowState.subscribe('calendar.viewMode', _render);
+    FlowState.subscribe('calendar.events', _render);
+  }
+
+  function _render(){
+    const mode = FlowState.get('calendar.viewMode') || 'week';
+    const cur  = new Date(FlowState.get('calendar.currentDate') || new Date());
+    _updateTitle(cur, mode);
+    if(mode==='month') _renderMonth(cur);
+    else if(mode==='day') _renderDay(cur);
+    else _renderWeek(cur);
+  }
+
+  function _updateTitle(cur, mode){
+    const el = document.getElementById('cal-title'); if(!el) return;
+    if(mode==='month') el.textContent = FlowDate.format(cur,'MMMM YYYY');
+    else if(mode==='day') el.textContent = FlowDate.format(cur,'dddd DD de MMMM');
+    else {
+      const mon = FlowDate.startOfWeek(cur);
+      const sun = FlowDate.addDays(mon, 6);
+      el.textContent = `${FlowDate.format(new Date(mon+'T12:00:00'),'DD MMM')} – ${FlowDate.format(new Date(sun+'T12:00:00'),'DD MMM YYYY')}`;
+    }
+  }
+
+  function _renderMonth(cur){
+    const el = document.getElementById('cal-container'); if(!el) return;
+    const grid = FlowDate.monthGrid(cur.getFullYear(), cur.getMonth()+1);
+    el.innerHTML=`
+      <div class="month-grid">
+        <div class="month-header-row">${['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div class="month-day-header">${d}</div>`).join('')}</div>
+        <div class="month-days">${grid.map(cell=>{
+          const events = FlowCalendar.getEventsForDay(cell.date).slice(0,3);
+          return `<div class="month-cell ${cell.currentMonth?'':'other-month'} ${cell.isToday?'today':''}" onclick="_openDay('${cell.date}')">
+            <span class="month-day-num">${new Date(cell.date+'T12:00:00').getDate()}</span>
+            ${events.map(e=>`<div class="month-event" style="background:${e.color||'#6366f1'}">${FlowHelpers.escapeHTML(e.title)}</div>`).join('')}
+          </div>`;
+        }).join('')}</div>
+      </div>`;
+  }
+
+  function _renderWeek(cur){
+    const el = document.getElementById('cal-container'); if(!el) return;
+    const mon  = FlowDate.startOfWeek(cur);
+    const days = FlowDate.getWeekDays(mon);
+    const hours= Array.from({length:24},(_,i)=>i);
+    el.innerHTML=`
+      <div class="week-grid">
+        <div class="week-header">
+          <div class="week-time-col"></div>
+          ${days.map(d=>`<div class="week-day-header ${d.isToday?'today':''}">
+            <span class="week-day-name">${d.label}</span>
+            <span class="week-day-num">${new Date(d.date+'T12:00:00').getDate()}</span>
+          </div>`).join('')}
+        </div>
+        <div class="week-body">
+          <div class="week-times">${hours.map(h=>`<div class="week-time">${String(h).padStart(2,'0')}:00</div>`).join('')}</div>
+          ${days.map(d=>{
+            const events = FlowCalendar.getEventsForDay(d.date);
+            return `<div class="week-col" data-date="${d.date}">
+              ${hours.map(h=>`<div class="week-slot" data-hour="${h}" data-date="${d.date}" onclick="_newEventAt('${d.date}',${h})"></div>`).join('')}
+              ${events.map(e=>{
+                const top  = _timeToY(e.startTime);
+                const height = Math.max(30, _timeToY(e.endTime) - top);
+                return `<div class="week-event" style="top:${top}px;height:${height}px;background:${e.color||'#6366f1'}" onclick="_editEvent('${e.id}')">
+                  <span>${FlowHelpers.escapeHTML(e.title)}</span>
+                  <small>${e.startTime}–${e.endTime}</small>
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  function _renderDay(cur){
+    const el = document.getElementById('cal-container'); if(!el) return;
+    const dateStr = cur.toISOString().split('T')[0];
+    const events  = FlowCalendar.getEventsForDay(dateStr);
+    const hours   = Array.from({length:24},(_,i)=>i);
+    el.innerHTML=`
+      <div class="day-grid">
+        <div class="day-body">
+          <div class="week-times">${hours.map(h=>`<div class="week-time">${String(h).padStart(2,'0')}:00</div>`).join('')}</div>
+          <div class="day-col" style="position:relative;flex:1">
+            ${hours.map(h=>`<div class="week-slot" onclick="_newEventAt('${dateStr}',${h})"></div>`).join('')}
+            ${events.map(e=>{
+              const top    = _timeToY(e.startTime);
+              const height = Math.max(40, _timeToY(e.endTime)-top);
+              return `<div class="week-event" style="top:${top}px;height:${height}px;background:${e.color||'#6366f1'}" onclick="_editEvent('${e.id}')">
+                <span>${FlowHelpers.escapeHTML(e.title)}</span><small>${e.startTime}–${e.endTime}</small>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function _timeToY(time='00:00'){
+    const [h,m]=(time||'00:00').split(':').map(Number);
+    return (h*60+(m||0)) * (60/60); // 1px por minuto
+  }
+
+  function _newEventAt(date, hour){
+    const start = `${String(hour).padStart(2,'0')}:00`;
+    const end   = `${String(hour+1).padStart(2,'0')}:00`;
+    _openEventModal(null, { startDate:date, endDate:date, startTime:start, endTime:end });
+  }
+
+  function _editEvent(id){
+    const ev = FlowState.array.find('calendar.events', e=>e.id===id);
+    if(ev) _openEventModal(id, ev);
+  }
+
+  function _openDay(date){
+    FlowState.set('calendar.currentDate', new Date(date+'T12:00:00').toISOString());
+    FlowCalendar.setView('day');
+  }
+
+  window._newEventAt = _newEventAt;
+  window._editEvent  = _editEvent;
+  window._openDay    = _openDay;
+
+  function _openEventModal(id, data={}){
+    FlowApp.showModal({ title: id?'Editar evento':'Nuevo evento', size:'md', content:`
+      <form id="event-form" class="task-form">
+        <div class="form-group"><label class="form-label">Título *</label><input class="form-input" name="title" value="${FlowHelpers.escapeHTML(data.title||'')}" required autofocus></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Tipo</label>
+            <select class="form-input form-select" name="type">
+              <option value="event" ${data.type==='event'?'selected':''}>Evento</option>
+              <option value="meeting" ${data.type==='meeting'?'selected':''}>Reunión</option>
+              <option value="block" ${data.type==='block'?'selected':''}>Bloque de tiempo</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${data.color||'#6366f1'}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" type="date" name="startDate" value="${data.startDate||''}" required></div>
+          <div class="form-group"><label class="form-label">Hora inicio</label><input class="form-input" type="time" name="startTime" value="${data.startTime||'09:00'}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" type="date" name="endDate" value="${data.endDate||''}"></div>
+          <div class="form-group"><label class="form-label">Hora fin</label><input class="form-input" type="time" name="endTime" value="${data.endTime||'10:00'}"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input form-textarea" name="description" rows="2">${FlowHelpers.escapeHTML(data.description||'')}</textarea></div>
+        <div class="form-group"><label class="form-label">Lugar / URL</label><input class="form-input" name="location" value="${FlowHelpers.escapeHTML(data.location||'')}"></div>
+        <div class="form-actions">
+          ${id?`<button type="button" class="btn btn-danger btn-sm" onclick="FlowCalendar.deleteEvent('${id}');FlowApp.closeModal()">Eliminar</button>`:''}
+          <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">${id?'Guardar':'Crear'}</button>
+        </div>
+      </form>`
+    });
+    setTimeout(()=>{
+      document.getElementById('event-form')?.addEventListener('submit', async e=>{
+        e.preventDefault();
+        const fd=new FormData(e.target);
+        const ev={ title:fd.get('title'), type:fd.get('type'), color:fd.get('color'), startDate:fd.get('startDate'), startTime:fd.get('startTime'), endDate:fd.get('endDate')||fd.get('startDate'), endTime:fd.get('endTime'), description:fd.get('description'), location:fd.get('location') };
+        if(id) await FlowCalendar.updateEvent(id, ev);
+        else   await FlowCalendar.createEvent(ev);
+        FlowApp.closeModal();
+      });
+    },50);
+  }
+
+  function _bind(){
+    document.getElementById('cal-prev')?.addEventListener('click',  ()=>FlowCalendar.navigate(-1));
+    document.getElementById('cal-next')?.addEventListener('click',  ()=>FlowCalendar.navigate(1));
+    document.getElementById('cal-today')?.addEventListener('click', ()=>FlowCalendar.goToToday());
+    document.getElementById('new-event-btn')?.addEventListener('click', ()=>_openEventModal(null, { startDate: FlowDate.today() }));
+    document.querySelectorAll('.mode-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        FlowCalendar.setView(tab.dataset.mode);
+      });
+    });
+  }
+
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-timer">
+<!-- ── Timer View ─────────────────────────────────────────────────────────── -->
+<div class="view timer-view">
+  <header class="view-header">
+    <h1 class="view-title">Seguimiento del tiempo</h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" id="log-manual-btn">+ Registro manual</button>
+    </div>
+  </header>
+
+  <div class="timer-body">
+    <!-- Panel principal del timer -->
+    <div class="timer-panel">
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="stopwatch">Cronómetro</button>
+        <button class="mode-tab" data-mode="pomodoro">Pomodoro</button>
+        <button class="mode-tab" data-mode="countdown">Cuenta atrás</button>
+      </div>
+
+      <div class="timer-display">
+        <div class="timer-phase-label" id="timer-phase-label"></div>
+        <div class="timer-clock" id="timer-clock">00:00</div>
+        <div class="timer-task-label" id="timer-task-label"></div>
+      </div>
+
+      <div class="pomodoro-dots" id="pomodoro-dots" hidden>
+        <span class="pom-dot active" id="pd-1"></span>
+        <span class="pom-dot" id="pd-2"></span>
+        <span class="pom-dot" id="pd-3"></span>
+        <span class="pom-dot" id="pd-4"></span>
+      </div>
+
+      <div class="timer-controls">
+        <button class="btn btn-primary btn-lg" id="timer-start-btn">▶ Iniciar</button>
+        <button class="btn btn-ghost btn-lg" id="timer-pause-btn" hidden>⏸ Pausar</button>
+        <button class="btn btn-ghost btn-lg" id="timer-resume-btn" hidden>▶ Reanudar</button>
+        <button class="btn btn-ghost" id="timer-stop-btn" hidden>⏹ Detener</button>
+        <button class="btn btn-ghost btn-sm" id="timer-skip-btn" hidden>⏭ Saltar fase</button>
+      </div>
+
+      <div class="timer-task-select">
+        <label class="form-label">Vincular a tarea (opcional)</label>
+        <select class="form-input form-select" id="timer-task-select">
+          <option value="">— Sin tarea —</option>
+        </select>
+      </div>
+
+      <!-- Configuración Pomodoro (colapsable) -->
+      <details class="pom-settings" id="pom-settings">
+        <summary>⚙️ Configuración Pomodoro</summary>
+        <div class="pom-settings-grid">
+          <div class="form-group">
+            <label class="form-label">Trabajo (min)</label>
+            <input class="form-input" type="number" id="pom-work" min="1" max="120">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descanso corto (min)</label>
+            <input class="form-input" type="number" id="pom-short" min="1" max="30">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descanso largo (min)</label>
+            <input class="form-input" type="number" id="pom-long" min="1" max="60">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sesiones hasta descanso largo</label>
+            <input class="form-input" type="number" id="pom-sessions" min="1" max="10">
+          </div>
+          <label class="checkbox-label"><input type="checkbox" id="pom-auto-break"> Auto-iniciar descansos</label>
+          <label class="checkbox-label"><input type="checkbox" id="pom-auto-work">  Auto-iniciar trabajo</label>
+          <label class="checkbox-label"><input type="checkbox" id="pom-sound">      Sonido al completar</label>
+        </div>
+        <button class="btn btn-primary btn-sm" id="save-pom-settings">Guardar</button>
+      </details>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="timer-stats-panel">
+      <div class="stat-row">
+        <div class="stat-box"><span class="stat-value" id="stat-today">0m</span><span class="stat-label">Hoy</span></div>
+        <div class="stat-box"><span class="stat-value" id="stat-week">0m</span><span class="stat-label">Esta semana</span></div>
+        <div class="stat-box"><span class="stat-value" id="stat-pom-count">0</span><span class="stat-label">Pomodoros hoy</span></div>
+      </div>
+      <div class="chart-container" style="height:150px">
+        <canvas id="timer-week-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial -->
+  <section class="timer-history">
+    <div class="section-header">
+      <h2 class="section-title">Historial de hoy</h2>
+    </div>
+    <div id="timer-history-list" class="timer-history-list"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  let _ticker = null;
+
+  function init(){
+    _loadPomSettings();
+    _populateTaskSelect();
+    _renderClock();
+    _renderStats();
+    _renderHistory();
+    _bind();
+    FlowState.subscribe('timer.elapsed', _renderClock);
+    FlowState.subscribe('timer.status',  _renderControls);
+    FlowState.subscribe('timer.logs',    ()=>{ _renderHistory(); _renderStats(); });
+  }
+
+  function _renderClock(){
+    const mode    = FlowState.get('timer.mode');
+    const status  = FlowState.get('timer.status');
+    const elapsed = FlowState.get('timer.elapsed') || 0;
+    const clockEl = document.getElementById('timer-clock');
+    const phaseEl = document.getElementById('timer-phase-label');
+
+    if(mode==='pomodoro'){
+      const rem = FlowTimer.getRemainingSeconds();
+      if(clockEl) clockEl.textContent = FlowTimer.format(rem);
+      const phase = FlowState.get('timer.pomodoroPhase');
+      if(phaseEl) phaseEl.textContent = {work:'🍅 Trabajo',  'short-break':'☕ Descanso corto', 'long-break':'🛌 Descanso largo'}[phase]||'';
+      _updatePomDots();
+    } else {
+      if(clockEl) clockEl.textContent = FlowTimer.format(elapsed);
+      if(phaseEl) phaseEl.textContent = '';
+    }
+
+    // Título de la pestaña
+    if(status==='running' && clockEl) document.title = `${clockEl.textContent} — FocusAI`;
+    else document.title = 'Timer — FocusAI';
+  }
+
+  function _updatePomDots(){
+    const count = FlowState.get('timer.pomodoroCount') || 0;
+    for(let i=1;i<=4;i++){
+      const dot = document.getElementById(`pd-${i}`);
+      if(dot) dot.classList.toggle('active', i <= (count % 4 || 4));
+    }
+  }
+
+  function _renderControls(){
+    const status = FlowState.get('timer.status');
+    const mode   = FlowState.get('timer.mode');
+    _show('timer-start-btn',  status==='idle');
+    _show('timer-pause-btn',  status==='running');
+    _show('timer-resume-btn', status==='paused');
+    _show('timer-stop-btn',   status!=='idle');
+    _show('timer-skip-btn',   status!=='idle' && mode==='pomodoro');
+    _show('pomodoro-dots',    mode==='pomodoro');
+  }
+
+  function _renderStats(){
+    _t('stat-today',     FlowTimer.formatMinutes(FlowTimer.getTodayMinutes()));
+    _t('stat-week',      FlowTimer.formatMinutes(FlowTimer.getWeekMinutes()));
+    const today    = FlowDate.today();
+    const pomCount = (FlowState.get('timer.logs')||[]).filter(l=>l.date===today && l.mode==='pomodoro' && l.phase==='work').length;
+    _t('stat-pom-count', pomCount);
+    FlowCharts.bar('timer-week-chart', FlowStats.getTimeByDay(7), { plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}},y:{beginAtZero:true}} });
+  }
+
+  function _renderHistory(){
+    const el = document.getElementById('timer-history-list'); if(!el) return;
+    const today = FlowDate.today();
+    const logs  = FlowTimer.getLogsForDate(today).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+    if(!logs.length){ el.innerHTML='<div class="empty-state-sm">Sin registros hoy</div>'; return; }
+    const tasks = FlowState.get('tasks.items')||[];
+    el.innerHTML = logs.map(l=>{
+      const task = l.taskId ? tasks.find(t=>t.id===l.taskId) : null;
+      return `<div class="history-item">
+        <span class="history-mode">${{stopwatch:'⏱',pomodoro:'🍅',manual:'✏️'}[l.mode]||'⏱'}</span>
+        <span class="history-task">${task?FlowHelpers.escapeHTML(task.title):'Sin tarea'}</span>
+        <span class="history-duration">${FlowTimer.formatMinutes(l.durationMin)}</span>
+        <span class="history-time">${l.createdAt?new Date(l.createdAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}</span>
+        <button class="icon-btn btn-sm" onclick="FlowTimer.deleteLog('${l.id}')" title="Eliminar">🗑</button>
+      </div>`;
+    }).join('');
+  }
+
+  function _populateTaskSelect(){
+    const sel = document.getElementById('timer-task-select'); if(!sel) return;
+    const tasks = (FlowState.get('tasks.items')||[]).filter(t=>!t.completed&&!t.archived);
+    sel.innerHTML='<option value="">— Sin tarea —</option>' + tasks.map(t=>`<option value="${t.id}">${FlowHelpers.escapeHTML(t.title)}</option>`).join('');
+  }
+
+  function _loadPomSettings(){
+    const s = FlowState.get('timer.settings')||{};
+    _val('pom-work',     (s.workDuration||1500)/60);
+    _val('pom-short',    (s.shortBreakDuration||300)/60);
+    _val('pom-long',     (s.longBreakDuration||900)/60);
+    _val('pom-sessions', s.sessionsUntilLong||4);
+    const ab=document.getElementById('pom-auto-break'); if(ab) ab.checked=s.autoStartBreaks||false;
+    const aw=document.getElementById('pom-auto-work');  if(aw) aw.checked=s.autoStartWork||false;
+    const sn=document.getElementById('pom-sound');      if(sn) sn.checked=s.soundEnabled!==false;
+  }
+
+  function _bind(){
+    document.getElementById('timer-start-btn')?.addEventListener('click',()=>{
+      const mode  = FlowState.get('timer.mode')||'stopwatch';
+      const taskId= document.getElementById('timer-task-select')?.value||null;
+      if(mode==='pomodoro') FlowTimer.startPomodoro(taskId);
+      else FlowTimer.startStopwatch(taskId);
+    });
+    document.getElementById('timer-pause-btn')?.addEventListener('click',  ()=>FlowTimer.pauseTimer());
+    document.getElementById('timer-resume-btn')?.addEventListener('click', ()=>FlowTimer.resumeTimer());
+    document.getElementById('timer-stop-btn')?.addEventListener('click',   ()=>FlowTimer.stopTimer());
+    document.getElementById('timer-skip-btn')?.addEventListener('click',   ()=>FlowTimer.skipPhase());
+
+    document.querySelectorAll('.mode-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        if(FlowState.get('timer.status')!=='idle'){ FlowApp.toast('Detén el timer antes de cambiar modo','warning'); return; }
+        document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        FlowState.set('timer.mode', tab.dataset.mode);
+        _renderControls();
+        _renderClock();
+      });
+    });
+
+    document.getElementById('save-pom-settings')?.addEventListener('click',()=>{
+      FlowState.update('timer.settings',{
+        workDuration:        parseInt(_gval('pom-work'))*60,
+        shortBreakDuration:  parseInt(_gval('pom-short'))*60,
+        longBreakDuration:   parseInt(_gval('pom-long'))*60,
+        sessionsUntilLong:   parseInt(_gval('pom-sessions')),
+        autoStartBreaks:     document.getElementById('pom-auto-break')?.checked||false,
+        autoStartWork:       document.getElementById('pom-auto-work')?.checked||false,
+        soundEnabled:        document.getElementById('pom-sound')?.checked!==false,
+      });
+      FlowApp.toast('Configuración guardada','success');
+    });
+
+    document.getElementById('log-manual-btn')?.addEventListener('click',()=>{
+      const today=FlowDate.today();
+      FlowApp.showModal({ title:'Registro manual', size:'md', content:`
+        <form id="manual-log-form" class="task-form">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" name="date" value="${today}" required></div>
+            <div class="form-group"><label class="form-label">Inicio</label><input class="form-input" type="time" name="startTime" value="09:00" required></div>
+            <div class="form-group"><label class="form-label">Fin</label><input class="form-input" type="time" name="endTime" value="10:00" required></div>
+          </div>
+          <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" name="description" placeholder="¿En qué trabajaste?"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </div>
+        </form>`
+      });
+      setTimeout(()=>{
+        document.getElementById('manual-log-form')?.addEventListener('submit', async e=>{
+          e.preventDefault();
+          const fd=new FormData(e.target);
+          await FlowTimer.logManual({ date:fd.get('date'), startTime:fd.get('startTime'), endTime:fd.get('endTime'), description:fd.get('description') });
+          FlowApp.closeModal();
+        });
+      },50);
+    });
+  }
+
+  function _show(id, visible){ const el=document.getElementById(id); if(el) el.hidden=!visible; }
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  function _val(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+  function _gval(id){ return document.getElementById(id)?.value||''; }
+
+  init();
+  _renderControls();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-habits">
+<!-- ── Habits View ─────────────────────────────────────────────────────────── -->
+<div class="view habits-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Hábitos</h1><p class="view-subtitle text-muted" id="habits-date"></p></div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="new-habit-btn">+ Nuevo hábito</button>
+    </div>
+  </header>
+
+  <!-- Stats del día -->
+  <div class="habits-day-stats">
+    <div class="day-stat"><span class="day-stat-value" id="h-done">0</span><span class="day-stat-label">Completados</span></div>
+    <div class="day-stat"><span class="day-stat-value" id="h-total">0</span><span class="day-stat-label">Total hoy</span></div>
+    <div class="day-stat"><span class="day-stat-value" id="h-rate">0%</span><span class="day-stat-label">Cumplimiento</span></div>
+    <div class="day-stat"><span class="day-stat-value" id="h-streak">0</span><span class="day-stat-label">Mejor racha</span></div>
+    <div class="habits-day-bar"><div class="habits-day-fill" id="h-day-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Lista de hábitos de hoy -->
+  <section class="habits-section">
+    <h2 class="section-title">Hoy</h2>
+    <div id="habits-today-list" class="habits-grid"></div>
+  </section>
+
+  <!-- Grilla semanal -->
+  <section class="habits-section">
+    <h2 class="section-title">Esta semana</h2>
+    <div id="habits-week-grid" class="habits-week-grid"></div>
+  </section>
+
+  <!-- Estadísticas -->
+  <section class="habits-section">
+    <h2 class="section-title">Cumplimiento — últimas 4 semanas</h2>
+    <div class="chart-container" style="height:160px"><canvas id="habits-compliance-chart"></canvas></div>
+  </section>
+
+  <!-- Todos los hábitos -->
+  <section class="habits-section">
+    <div class="section-header">
+      <h2 class="section-title">Todos los hábitos</h2>
+      <label class="checkbox-label"><input type="checkbox" id="show-archived"> Mostrar archivados</label>
+    </div>
+    <div id="habits-all-list" class="habits-all-list"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _t('habits-date', FlowDate.format(new Date(),'dddd, DD de MMMM'));
+    _render();
+    _bind();
+    FlowState.subscribe('habits.items', _render);
+    FlowState.subscribe('habits.logs',  _render);
+  }
+
+  function _render(){
+    _renderStats();
+    _renderToday();
+    _renderWeekGrid();
+    _renderAll();
+    FlowCharts.bar('habits-compliance-chart', FlowStats.getHabitComplianceByWeek(), { plugins:{legend:{display:false}}, scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}}} });
+  }
+
+  function _renderStats(){
+    const s=FlowHabits.getStats();
+    _t('h-done',   s.todayDone);
+    _t('h-total',  s.todayTotal);
+    _t('h-rate',   s.todayRate+'%');
+    _t('h-streak', s.bestStreak);
+    const fill=document.getElementById('h-day-fill');
+    if(fill) fill.style.width=s.todayRate+'%';
+  }
+
+  function _renderToday(){
+    const el=document.getElementById('habits-today-list'); if(!el) return;
+    const habits=FlowHabits.getTodayHabits();
+    if(!habits.length){ el.innerHTML='<div class="empty-state-sm">Sin hábitos programados para hoy. <button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'new-habit-btn\').click()">Crear uno</button></div>'; return; }
+    el.innerHTML=habits.map(h=>`
+      <div class="habit-card ${h.todayComplete?'habit-done':''}">
+        <div class="habit-card-icon" style="background:${h.color||'#6366f1'}22;color:${h.color||'#6366f1'}">${h.icon||'⭐'}</div>
+        <div class="habit-card-body">
+          <div class="habit-card-name">${FlowHelpers.escapeHTML(h.name)}</div>
+          ${h.streak>1?`<div class="habit-streak-badge">🔥 ${h.streak} días</div>`:''}
+          <div class="habit-progress-row">
+            ${Array.from({length:h.targetCount},(_,i)=>`<div class="habit-pip ${i<h.todayCount?'filled':''}" style="background:${i<h.todayCount?(h.color||'#6366f1'):''}"></div>`).join('')}
+          </div>
+        </div>
+        <div class="habit-card-actions">
+          ${!h.todayComplete?`<button class="btn btn-primary btn-sm" onclick="FlowHabits.complete('${h.id}')">✓ Completar</button>`
+            :`<button class="btn btn-ghost btn-sm" onclick="FlowHabits.uncomplete('${h.id}')">↩ Deshacer</button>`}
+          <button class="icon-btn" onclick="_editHabit('${h.id}')" title="Editar">✏️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function _renderWeekGrid(){
+    const el=document.getElementById('habits-week-grid'); if(!el) return;
+    const habits=(FlowState.get('habits.items')||[]).filter(h=>!h.archived);
+    if(!habits.length){ el.innerHTML=''; return; }
+    const days=['L','M','X','J','V','S','D'];
+    el.innerHTML=`
+      <div class="week-grid-header">
+        <div class="week-grid-name"></div>
+        ${FlowDate.getWeekDays().map(d=>`<div class="week-grid-day ${d.isToday?'today':''}">${FlowDate.format(new Date(d.date+'T12:00:00'),'ddd')}<br><small>${FlowDate.format(new Date(d.date+'T12:00:00'),'D')}</small></div>`).join('')}
+      </div>
+      ${habits.map(h=>{
+        const week=FlowHabits.getWeekGrid(h.id);
+        return `<div class="week-grid-row">
+          <div class="week-grid-name">${h.icon||'⭐'} ${FlowHelpers.escapeHTML(h.name)}</div>
+          ${week.map(d=>`<div class="week-grid-cell ${d.complete===true?'done':d.complete===false?'missed':''} ${d.date===FlowDate.today()?'today':''}"
+            title="${d.date}">${d.complete===true?'✓':d.complete===false?'·':''}</div>`).join('')}
+        </div>`;
+      }).join('')}`;
+  }
+
+  function _renderAll(){
+    const el=document.getElementById('habits-all-list'); if(!el) return;
+    const showArch=document.getElementById('show-archived')?.checked||false;
+    const habits=(FlowState.get('habits.items')||[]).filter(h=>showArch||!h.archived);
+    el.innerHTML=habits.map(h=>`
+      <div class="habit-row">
+        <span class="habit-row-icon">${h.icon||'⭐'}</span>
+        <div class="habit-row-info">
+          <span class="habit-row-name">${FlowHelpers.escapeHTML(h.name)}</span>
+          <span class="habit-row-meta">${_freqLabel(h.frequency)} · Racha: ${h.streak} · Total: ${h.totalCompleted}</span>
+        </div>
+        <span class="habit-rate">${FlowHabits.getCompletionRate(h.id)}%</span>
+        <div class="habit-row-actions">
+          <button class="icon-btn btn-sm" onclick="_editHabit('${h.id}')">✏️</button>
+          <button class="icon-btn btn-sm" onclick="FlowHabits.archive('${h.id}')">📦</button>
+          <button class="icon-btn btn-sm" onclick="if(confirm('¿Eliminar?'))FlowHabits.remove('${h.id}')">🗑</button>
+        </div>
+      </div>`).join('') || '<div class="empty-state-sm">Sin hábitos</div>';
+  }
+
+  function _freqLabel(f){
+    if(f==='daily') return 'Diario';
+    if(f==='weekdays') return 'Días laborables';
+    if(f==='weekends') return 'Fines de semana';
+    if(Array.isArray(f)) return f.map(d=>['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d]).join(', ');
+    return f;
+  }
+
+  function _editHabit(id){
+    const h=FlowState.array.find('habits.items',x=>x.id===id); if(!h) return;
+    FlowApp.showModal({ title:'Editar hábito', size:'md', content:`
+      <form id="habit-form" class="task-form">
+        <input type="hidden" name="id" value="${id}">
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 60px"><label class="form-label">Icono</label><input class="form-input" name="icon" value="${h.icon||'⭐'}" maxlength="2"></div>
+          <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" name="name" value="${FlowHelpers.escapeHTML(h.name)}" required></div>
+        </div>
+        <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" name="description" value="${FlowHelpers.escapeHTML(h.description||'')}"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Frecuencia</label>
+            <select class="form-input form-select" name="frequency">
+              <option value="daily" ${h.frequency==='daily'?'selected':''}>Diario</option>
+              <option value="weekdays" ${h.frequency==='weekdays'?'selected':''}>Días laborables</option>
+              <option value="weekends" ${h.frequency==='weekends'?'selected':''}>Fines de semana</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Recordatorio</label><input class="form-input" type="time" name="reminderTime" value="${h.reminderTime||''}"></div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${h.color||'#6366f1'}"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>`
+    });
+    setTimeout(()=>{
+      document.getElementById('habit-form')?.addEventListener('submit',async e=>{
+        e.preventDefault();
+        const fd=new FormData(e.target);
+        await FlowHabits.update(id,{ name:fd.get('name'), description:fd.get('description'), icon:fd.get('icon'), frequency:fd.get('frequency'), reminderTime:fd.get('reminderTime')||null, color:fd.get('color') });
+        FlowApp.closeModal();
+      });
+    },50);
+  }
+  window._editHabit=_editHabit;
+
+  function _bind(){
+    document.getElementById('new-habit-btn')?.addEventListener('click',()=>{
+      FlowApp.showModal({ title:'Nuevo hábito', size:'md', content:`
+        <form id="habit-form" class="task-form">
+          <div class="form-row">
+            <div class="form-group" style="flex:0 0 60px"><label class="form-label">Icono</label><input class="form-input" name="icon" value="⭐" maxlength="2"></div>
+            <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" name="name" placeholder="Ej: Meditación" required autofocus></div>
+          </div>
+          <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" name="description" placeholder="Opcional"></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Frecuencia</label>
+              <select class="form-input form-select" name="frequency">
+                <option value="daily">Diario</option>
+                <option value="weekdays">Días laborables</option>
+                <option value="weekends">Fines de semana</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Recordatorio</label><input class="form-input" type="time" name="reminderTime"></div>
+            <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Crear hábito</button>
+          </div>
+        </form>`
+      });
+      setTimeout(()=>{
+        document.getElementById('habit-form')?.addEventListener('submit',async e=>{
+          e.preventDefault();
+          const fd=new FormData(e.target);
+          await FlowHabits.create({ name:fd.get('name'), description:fd.get('description'), icon:fd.get('icon'), frequency:fd.get('frequency'), reminderTime:fd.get('reminderTime')||null, color:fd.get('color') });
+          FlowApp.closeModal();
+        });
+      },50);
+    });
+    document.getElementById('show-archived')?.addEventListener('change', _renderAll);
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-goals">
+<!-- ── Goals View ─────────────────────────────────────────────────────────── -->
+<div class="view goals-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Objetivos</h1></div>
+    <div class="header-actions">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">Todos</button>
+        <button class="filter-tab" data-filter="short">Corto plazo</button>
+        <button class="filter-tab" data-filter="long">Largo plazo</button>
+        <button class="filter-tab" data-filter="active">Activos</button>
+        <button class="filter-tab" data-filter="completed">Completados</button>
+      </div>
+      <button class="btn btn-primary" id="new-goal-btn">+ Nuevo objetivo</button>
+    </div>
+  </header>
+
+  <div class="goals-stats-row">
+    <div class="goal-stat"><span id="gs-total">0</span><small>Total</small></div>
+    <div class="goal-stat"><span id="gs-active">0</span><small>Activos</small></div>
+    <div class="goal-stat"><span id="gs-done">0</span><small>Completados</small></div>
+    <div class="goal-stat"><span id="gs-avg">0%</span><small>Progreso medio</small></div>
+  </div>
+
+  <div id="goals-list" class="goals-list"></div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _render();
+    _bind();
+    FlowState.subscribe('goals.items', _render);
+    FlowState.subscribe('goals.filter', _render);
+  }
+
+  function _render(){
+    _renderStats();
+    _renderGoals();
+  }
+
+  function _renderStats(){
+    const s=FlowGoals.getStats();
+    _t('gs-total', s.total); _t('gs-active', s.active); _t('gs-done', s.completed); _t('gs-avg', s.avgProgress+'%');
+  }
+
+  function _renderGoals(){
+    const el=document.getElementById('goals-list'); if(!el) return;
+    const goals=FlowGoals.getFiltered();
+    if(!goals.length){
+      el.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><p>Sin objetivos. ¡Crea tu primer objetivo!</p><button class="btn btn-primary" id="empty-new-goal">Crear objetivo</button></div>';
+      document.getElementById('empty-new-goal')?.addEventListener('click', _openNewModal);
+      return;
+    }
+    el.innerHTML=goals.map(g=>{
+      const tasks    = FlowTasks.getForGoal(g.id);
+      const doneTasks= tasks.filter(t=>t.completed).length;
+      const daysLeft = FlowGoals.getDaysRemaining(g.id);
+      const milestones=g.milestones||[];
+      const msDone   = milestones.filter(m=>m.completed).length;
+      return `
+      <div class="goal-card ${g.completed?'goal-done':''}" style="border-left-color:${g.color||'#6366f1'}">
+        <div class="goal-card-header">
+          <div class="goal-icon-title">
+            <span class="goal-icon" style="background:${g.color||'#6366f1'}22">${g.icon||'🎯'}</span>
+            <div>
+              <div class="goal-title">${FlowHelpers.escapeHTML(g.title)}</div>
+              <div class="goal-meta">
+                <span class="goal-type-badge">${g.type==='short'?'Corto plazo':'Largo plazo'}</span>
+                ${g.targetDate?`<span class="goal-date ${daysLeft!==null&&daysLeft<0?'overdue':''}">${daysLeft!==null?(daysLeft<0?`Vencido hace ${-daysLeft}d`:`${daysLeft}d restantes`):'Sin fecha'}</span>`:''}
+              </div>
+            </div>
+          </div>
+          <div class="goal-actions">
+            ${!g.completed?`<button class="btn btn-ghost btn-sm" onclick="FlowAI.isConfigured()?FlowGoals.breakdownWithAI('${g.id}'):FlowApp.toast('Configura la IA primero','warning')">✨ IA</button>`:''}
+            <button class="icon-btn" onclick="_editGoal('${g.id}')">✏️</button>
+            <button class="icon-btn" onclick="if(confirm('¿Eliminar?'))FlowGoals.remove('${g.id}')">🗑</button>
+          </div>
+        </div>
+        ${g.description?`<p class="goal-desc">${FlowHelpers.escapeHTML(g.description)}</p>`:''}
+
+        <div class="goal-progress-row">
+          <div class="goal-progress-bar-wrap">
+            <div class="goal-progress-bar" style="width:${g.progress||0}%;background:${g.color||'#6366f1'}"></div>
+          </div>
+          <span class="goal-progress-pct">${g.progress||0}%</span>
+          <input type="range" class="goal-range" min="0" max="100" value="${g.progress||0}"
+            oninput="this.nextElementSibling.textContent=this.value+'%'"
+            onchange="FlowGoals.setProgress('${g.id}',this.value)">
+        </div>
+
+        ${milestones.length?`
+          <div class="goal-milestones">
+            ${milestones.map(m=>`
+              <div class="milestone-item ${m.completed?'done':''}">
+                <button class="milestone-check" onclick="FlowGoals.toggleMilestone('${g.id}','${m.id}')">${m.completed?'☑':'☐'}</button>
+                <span>${FlowHelpers.escapeHTML(m.title)}</span>
+              </div>`).join('')}
+          </div>`:''}
+
+        <div class="goal-footer">
+          ${tasks.length?`<span class="goal-tasks-count">☑ ${doneTasks}/${tasks.length} tareas</span>`:''}
+          ${milestones.length?`<span class="goal-ms-count">🏁 ${msDone}/${milestones.length} hitos</span>`:''}
+          ${!g.completed?`<button class="btn btn-success btn-sm" onclick="FlowGoals.complete('${g.id}')">✓ Completar</button>`:'<span class="badge badge-success">✓ Completado</span>'}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function _editGoal(id){
+    const g=FlowState.array.find('goals.items',x=>x.id===id); if(!g) return;
+    FlowApp.showModal({ title:'Editar objetivo', size:'lg', content:_goalForm(g) });
+    setTimeout(()=>_bindGoalForm(id), 50);
+  }
+  window._editGoal=_editGoal;
+
+  function _openNewModal(){
+    FlowApp.showModal({ title:'Nuevo objetivo', size:'lg', content:_goalForm() });
+    setTimeout(()=>_bindGoalForm(null), 50);
+  }
+
+  function _goalForm(g={}){
+    return `<form id="goal-form" class="task-form">
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 60px"><label class="form-label">Icono</label><input class="form-input" name="icon" value="${g.icon||'🎯'}" maxlength="2"></div>
+        <div class="form-group"><label class="form-label">Título *</label><input class="form-input" name="title" value="${FlowHelpers.escapeHTML(g.title||'')}" required autofocus placeholder="¿Qué quieres lograr?"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input form-textarea" name="description" rows="2" placeholder="Detalla tu objetivo…">${FlowHelpers.escapeHTML(g.description||'')}</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-input form-select" name="type">
+            <option value="short" ${g.type==='short'||!g.type?'selected':''}>Corto plazo</option>
+            <option value="long"  ${g.type==='long'?'selected':''}>Largo plazo</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" type="date" name="targetDate" value="${g.targetDate||''}"></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${g.color||'#6366f1'}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Medible (¿cómo sabrás que lo lograste?)</label><input class="form-input" name="measurable" value="${FlowHelpers.escapeHTML(g.measurable||'')}" placeholder="Ej: 10.000 pasos diarios durante 30 días"></div>
+      <div class="form-group"><label class="form-label">Nuevo hito</label>
+        <div class="input-inline"><input class="form-input" id="ms-input" placeholder="Ej: Completar semana 1"><button type="button" class="btn btn-ghost" id="add-ms-btn">+ Agregar</button></div>
+      </div>
+      <div id="ms-list" class="ms-preview-list">${(g.milestones||[]).map(m=>`<div class="ms-preview">${m.completed?'☑':'☐'} ${FlowHelpers.escapeHTML(m.title)}</div>`).join('')}</div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">${g.id?'Guardar':'Crear objetivo'}</button>
+      </div>
+    </form>`;
+  }
+
+  function _bindGoalForm(id){
+    const form=document.getElementById('goal-form'); if(!form) return;
+    const pendingMilestones=[];
+    document.getElementById('add-ms-btn')?.addEventListener('click',()=>{
+      const inp=document.getElementById('ms-input');
+      if(!inp?.value.trim()) return;
+      pendingMilestones.push(inp.value.trim());
+      const list=document.getElementById('ms-list');
+      if(list){ const d=document.createElement('div'); d.className='ms-preview'; d.textContent='☐ '+inp.value.trim(); list.appendChild(d); }
+      inp.value='';
+    });
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const fd=new FormData(form);
+      const data={ title:fd.get('title'), description:fd.get('description'), type:fd.get('type'), targetDate:fd.get('targetDate')||null, color:fd.get('color'), icon:fd.get('icon'), measurable:fd.get('measurable') };
+      if(id){
+        await FlowGoals.update(id,data);
+        for(const ms of pendingMilestones) await FlowGoals.addMilestone(id,ms);
+      } else {
+        const goal=await FlowGoals.create(data);
+        for(const ms of pendingMilestones) await FlowGoals.addMilestone(goal.id,ms);
+      }
+      FlowApp.closeModal();
+    });
+  }
+
+  function _bind(){
+    document.getElementById('new-goal-btn')?.addEventListener('click', _openNewModal);
+    document.querySelectorAll('.filter-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        FlowState.set('goals.filter', tab.dataset.filter);
+      });
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-projects">
+<!-- ── Projects View ─────────────────────────────────────────────────────── -->
+<div class="view projects-view">
+  <header class="view-header">
+    <h1 class="view-title">Proyectos</h1>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <button class="mode-tab active" data-pview="kanban">Kanban</button>
+        <button class="mode-tab" data-pview="gantt">Gantt</button>
+        <button class="mode-tab" data-pview="list">Lista</button>
+      </div>
+      <button class="btn btn-primary" id="new-project-btn">+ Proyecto</button>
+    </div>
+  </header>
+
+  <!-- Selector de proyecto -->
+  <div class="project-selector">
+    <div id="project-tabs" class="project-tabs"></div>
+    <button class="icon-btn" id="project-settings-btn" title="Ajustes del proyecto">⚙️</button>
+  </div>
+
+  <!-- Contenido del proyecto activo -->
+  <div id="project-content" class="project-content"></div>
+</div>
+
+<script>
+(function(){
+  let activeView = 'kanban';
+
+  function init(){
+    _renderProjectTabs();
+    _renderContent();
+    _bind();
+    FlowState.subscribe('projects.items',  ()=>{ _renderProjectTabs(); _renderContent(); });
+    FlowState.subscribe('projects.activeId', _renderContent);
+    FlowState.subscribe('tasks.items', _renderContent);
+  }
+
+  function _renderProjectTabs(){
+    const el = document.getElementById('project-tabs'); if(!el) return;
+    const projects = FlowProjects.getAll();
+    if(!projects.length){ el.innerHTML='<span class="text-muted">Sin proyectos</span>'; return; }
+    // Auto-seleccionar primero si no hay activo
+    if(!FlowState.get('projects.activeId') && projects.length) FlowProjects.setActive(projects[0].id);
+    const activeId = FlowState.get('projects.activeId');
+    el.innerHTML = projects.map(p=>`
+      <button class="project-tab ${p.id===activeId?'active':''}" onclick="FlowProjects.setActive('${p.id}')" style="${p.id===activeId?`border-bottom-color:${p.color||'#6366f1'}`:''}">
+        ${p.icon||'📁'} ${FlowHelpers.escapeHTML(p.name)}
+        <span class="project-status-dot" style="background:${{active:'#22c55e',on_hold:'#f59e0b',completed:'#6366f1',cancelled:'#ef4444'}[p.status]||'#64748b'}"></span>
+      </button>`).join('');
+  }
+
+  function _renderContent(){
+    const proj = FlowProjects.getActive();
+    const el   = document.getElementById('project-content'); if(!el) return;
+    if(!proj){
+      el.innerHTML='<div class="empty-state"><div class="empty-icon">📁</div><p>Crea tu primer proyecto</p><button class="btn btn-primary" id="empty-proj-btn">+ Nuevo proyecto</button></div>';
+      document.getElementById('empty-proj-btn')?.addEventListener('click', _openNewProjectModal);
+      return;
+    }
+    const stats = FlowProjects.getStats(proj.id);
+    if(activeView==='kanban') _renderKanban(proj, stats);
+    else if(activeView==='gantt') _renderGantt(proj);
+    else _renderList(proj, stats);
+  }
+
+  function _renderKanban(proj, stats){
+    const el = document.getElementById('project-content'); if(!el) return;
+    const tasks = FlowTasks.getForProject(proj.id);
+    el.innerHTML=`
+      <div class="project-stats-bar">
+        <span>📊 ${stats.done}/${stats.total} tareas</span>
+        <span>⚠️ ${stats.overdue} vencidas</span>
+        <span>${stats.daysLeft!==null?(stats.daysLeft>0?`⏳ ${stats.daysLeft}d restantes`:'🔴 Vencido'):'Sin fecha'}</span>
+        <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${stats.progress}%;background:${proj.color||'#6366f1'}"></div></div>
+        <span>${stats.progress}%</span>
+      </div>
+      <div class="kanban-board">
+        ${proj.columns.sort((a,b)=>a.order-b.order).map(col=>{
+          const colTasks = tasks.filter(t=>t.columnId===col.id||(!t.columnId&&col.order===0));
+          return `<div class="kanban-col" data-col="${col.id}">
+            <div class="kanban-col-header" style="border-top-color:${col.color||'#64748b'}">
+              <span class="kanban-col-title">${FlowHelpers.escapeHTML(col.title)}</span>
+              <span class="kanban-col-count">${colTasks.length}</span>
+              <button class="icon-btn btn-sm" onclick="_addTaskToCol('${proj.id}','${col.id}')">+</button>
+            </div>
+            <div class="kanban-col-body" id="col-${col.id}">
+              ${colTasks.map(t=>`
+                <div class="kanban-card priority-${t.priority}" draggable="true" data-task-id="${t.id}"
+                  ondragstart="event.dataTransfer.setData('taskId','${t.id}')"
+                  onclick="FlowTasks.openEditModal('${t.id}')">
+                  <div class="kanban-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+                  ${t.dueDate?`<div class="kanban-card-date ${FlowDate.isPast(t.dueDate)?'overdue':''}">${FlowDate.formatRelative(t.dueDate)}</div>`:''}
+                  <div class="kanban-card-footer">
+                    <span class="priority-dot" style="background:${FlowHelpers.priorityColor(t.priority)}"></span>
+                    ${t.subtasks?.length?`<span class="kanban-sub">☑ ${t.subtasks.filter(s=>s.completed).length}/${t.subtasks.length}</span>`:''}
+                    ${t.estimatedMin?`<span class="kanban-time">⏱${t.estimatedMin}m</span>`:''}
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+        <div class="kanban-add-col">
+          <button class="btn btn-ghost btn-sm" onclick="_addColumn('${proj.id}')">+ Columna</button>
+        </div>
+      </div>`;
+
+    // Drag & drop entre columnas
+    el.querySelectorAll('.kanban-col-body').forEach(col=>{
+      col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('drag-over'); });
+      col.addEventListener('dragleave', ()=>col.classList.remove('drag-over'));
+      col.addEventListener('drop', async e=>{
+        e.preventDefault(); col.classList.remove('drag-over');
+        const taskId = e.dataTransfer.getData('taskId');
+        const colId  = col.id.replace('col-','');
+        await FlowProjects.moveTask(taskId, colId);
+      });
+    });
+  }
+
+  function _renderGantt(proj){
+    const el    = document.getElementById('project-content'); if(!el) return;
+    const tasks = FlowProjects.getGanttData(proj.id);
+    if(!tasks.length){ el.innerHTML='<div class="empty-state-sm">Sin tareas con fecha para mostrar en Gantt</div>'; return; }
+    const minDate = tasks[0].start;
+    const maxDate = tasks[tasks.length-1].end || FlowDate.addDays(tasks[tasks.length-1].start,7);
+    const totalDays = FlowDate.diffDays(maxDate, minDate)+1;
+    const dayW = Math.max(30, Math.floor((window.innerWidth-300)/totalDays));
+    el.innerHTML=`
+      <div class="gantt-wrap" style="overflow-x:auto">
+        <table class="gantt-table">
+          <thead><tr><th class="gantt-name-col">Tarea</th>${FlowDate.range(minDate,maxDate).map(d=>`<th class="gantt-day-col ${d===FlowDate.today()?'today':''}" style="min-width:${dayW}px">${new Date(d+'T12:00:00').getDate()}</th>`).join('')}</tr></thead>
+          <tbody>${tasks.map(t=>{
+            const start= FlowDate.diffDays(t.start, minDate);
+            const dur  = Math.max(1, FlowDate.diffDays(t.end||t.start, t.start)+1);
+            return `<tr>
+              <td class="gantt-name-col">${FlowHelpers.truncate(FlowHelpers.escapeHTML(t.title),25)}</td>
+              ${FlowDate.range(minDate,maxDate).map((d,i)=>{
+                if(i===start) return `<td colspan="${Math.min(dur, totalDays-start)}" class="gantt-bar-cell"><div class="gantt-bar ${t.completed?'done':''}" style="background:${FlowHelpers.priorityColor(t.priority)}">${FlowHelpers.truncate(t.title,15)}</div></td>`;
+                if(i>start && i<start+dur) return '';
+                return '<td></td>';
+              }).join('')}
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function _renderList(proj, stats){
+    const el    = document.getElementById('project-content'); if(!el) return;
+    const tasks = FlowTasks.getForProject(proj.id);
+    el.innerHTML=`
+      <div class="project-list-header">
+        <button class="btn btn-primary btn-sm" onclick="_addTaskToCol('${proj.id}','')">+ Nueva tarea</button>
+      </div>
+      <div class="task-list">
+        ${tasks.map(t=>`
+          <div class="task-card priority-${t.priority} ${t.completed?'task-completed':''}">
+            <button class="task-check ${t.completed?'checked':''}" onclick="FlowTasks.complete('${t.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <div class="task-card-body">
+              <div class="task-card-title">${FlowHelpers.escapeHTML(t.title)}</div>
+              <div class="task-card-meta">
+                ${t.dueDate?`<span class="meta-tag">${FlowDate.formatRelative(t.dueDate)}</span>`:''}
+                ${t.estimatedMin?`<span class="meta-tag">⏱ ${t.estimatedMin}m</span>`:''}
+                <span class="priority-dot" style="background:${FlowHelpers.priorityColor(t.priority)}"></span>
+              </div>
+            </div>
+            <button class="icon-btn btn-sm" onclick="FlowTasks.openEditModal('${t.id}')">✏️</button>
+          </div>`).join('') || '<div class="empty-state-sm">Sin tareas en este proyecto</div>'}
+      </div>`;
+  }
+
+  function _addTaskToCol(projectId, columnId){
+    FlowTasks.openNewTaskModal({ projectId, columnId: columnId||undefined });
+  }
+  window._addTaskToCol = _addTaskToCol;
+
+  function _addColumn(projectId){
+    FlowApp.showModal({ title:'Nueva columna', size:'sm', content:`
+      <form id="col-form" class="task-form">
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" name="title" placeholder="Ej: En revisión" required autofocus></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear</button>
+        </div>
+      </form>`
+    });
+    setTimeout(()=>{
+      document.getElementById('col-form')?.addEventListener('submit',async e=>{
+        e.preventDefault();
+        const fd=new FormData(e.target);
+        await FlowProjects.addColumn(projectId, fd.get('title'), fd.get('color'));
+        FlowApp.closeModal();
+      });
+    },50);
+  }
+  window._addColumn = _addColumn;
+
+  function _openNewProjectModal(){
+    FlowApp.showModal({ title:'Nuevo proyecto', size:'md', content:`
+      <form id="proj-form" class="task-form">
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 60px"><label class="form-label">Icono</label><input class="form-input" name="icon" value="📁" maxlength="2"></div>
+          <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" name="name" placeholder="Nombre del proyecto" required autofocus></div>
+        </div>
+        <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input form-textarea" name="description" rows="2"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" type="date" name="startDate" value="${FlowDate.today()}"></div>
+          <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" type="date" name="endDate"></div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear proyecto</button>
+        </div>
+      </form>`
+    });
+    setTimeout(()=>{
+      document.getElementById('proj-form')?.addEventListener('submit',async e=>{
+        e.preventDefault();
+        const fd=new FormData(e.target);
+        await FlowProjects.create({ name:fd.get('name'), description:fd.get('description'), icon:fd.get('icon'), color:fd.get('color'), startDate:fd.get('startDate'), endDate:fd.get('endDate')||null });
+        FlowApp.closeModal();
+      });
+    },50);
+  }
+
+  function _bind(){
+    document.getElementById('new-project-btn')?.addEventListener('click', _openNewProjectModal);
+    document.querySelectorAll('.mode-tab[data-pview]').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.mode-tab[data-pview]').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        activeView = tab.dataset.pview;
+        _renderContent();
+      });
+    });
+  }
+
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-stats">
+<!-- ── Stats View ────────────────────────────────────────────────────────── -->
+<div class="view stats-view">
+  <header class="view-header">
+    <h1 class="view-title">Estadísticas</h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" id="generate-report-btn">✨ Generar reporte IA</button>
+      <button class="btn btn-ghost btn-sm" id="export-stats-btn">⬇ Exportar</button>
+    </div>
+  </header>
+
+  <!-- KPIs -->
+  <div class="stats-kpi-row">
+    <div class="kpi-card"><span class="kpi-value" id="kpi-tasks-done">0</span><span class="kpi-label">Tareas completadas hoy</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-time-today">0m</span><span class="kpi-label">Tiempo hoy</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-time-week">0h</span><span class="kpi-label">Tiempo esta semana</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-habits">0%</span><span class="kpi-label">Hábitos hoy</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-streak">0</span><span class="kpi-label">Racha productividad</span></div>
+    <div class="kpi-card"><span class="kpi-value" id="kpi-overdue">0</span><span class="kpi-label">Tareas vencidas</span></div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="stats-grid">
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Tareas completadas — últimos 7 días</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-tasks-day"></canvas></div>
+    </div>
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Tiempo trabajado — últimos 7 días (horas)</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-time-day"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Tareas por prioridad</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-priority"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Tiempo por proyecto</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-projects"></canvas></div>
+    </div>
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Cumplimiento de hábitos — últimas 4 semanas</h3>
+      <div class="chart-container" style="height:180px"><canvas id="chart-habits"></canvas></div>
+    </div>
+    <div class="stats-card stats-card-wide">
+      <h3 class="stats-card-title">Comparativa semanal — Tiempo trabajado</h3>
+      <div class="chart-container" style="height:180px"><canvas id="chart-week-compare"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Productividad por hora del día</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-by-hour"></canvas></div>
+    </div>
+    <div class="stats-card">
+      <h3 class="stats-card-title">Estado de ánimo — últimas 2 semanas</h3>
+      <div class="chart-container" style="height:200px"><canvas id="chart-mood"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Reporte IA -->
+  <div id="ai-report-section" class="ai-report-section" hidden>
+    <div class="section-header"><h2 class="section-title">📊 Reporte de productividad</h2></div>
+    <div id="ai-report-content" class="ai-report-content"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _renderKPIs();
+    _renderCharts();
+    _bind();
+  }
+
+  function _renderKPIs(){
+    const m = FlowStats.getDashboardMetrics();
+    _t('kpi-tasks-done', m.tasks.completedToday);
+    _t('kpi-time-today', m.time.todayFormatted);
+    _t('kpi-time-week',  m.time.weekFormatted);
+    _t('kpi-habits',     m.habits.todayRate+'%');
+    _t('kpi-streak',     m.productivity.streak+' días');
+    _t('kpi-overdue',    m.tasks.overdue);
+  }
+
+  function _renderCharts(){
+    FlowCharts.bar('chart-tasks-day',    FlowStats.getTasksCompletedByDay(7));
+    FlowCharts.bar('chart-time-day',     FlowStats.getTimeByDay(7));
+    FlowCharts.doughnut('chart-priority',FlowStats.getTasksByPriority());
+    FlowCharts.doughnut('chart-projects',FlowStats.getTimeByProject());
+    FlowCharts.bar('chart-habits',       FlowStats.getHabitComplianceByWeek());
+    const cmp = FlowStats.getWeekComparison();
+    FlowCharts.bar('chart-week-compare', { labels: cmp.labels, datasets: cmp.timeChart.datasets });
+    FlowCharts.bar('chart-by-hour',      FlowStats.getProductivityByHour(), { plugins:{ legend:{display:false} }, scales:{ x:{ ticks:{ maxTicksLimit:8 } } } });
+    FlowCharts.line('chart-mood',        FlowPersonal.getMoodChartData(14));
+  }
+
+  function _bind(){
+    document.getElementById('generate-report-btn')?.addEventListener('click', async ()=>{
+      const btn = document.getElementById('generate-report-btn');
+      btn.textContent = '⏳ Generando…'; btn.disabled=true;
+      const report = await FlowStats.generateReport('week');
+      const sec  = document.getElementById('ai-report-section');
+      const cont = document.getElementById('ai-report-content');
+      if(sec && cont){
+        cont.innerHTML = report.replace(/\n/g,'<br>');
+        sec.hidden = false;
+        sec.scrollIntoView({ behavior:'smooth' });
+      }
+      btn.textContent='✨ Generar reporte IA'; btn.disabled=false;
+    });
+
+    document.getElementById('export-stats-btn')?.addEventListener('click', ()=>{
+      const data = {
+        exportedAt: new Date().toISOString(),
+        metrics:    FlowStats.getDashboardMetrics(),
+        tasksByDay: FlowStats.getTasksCompletedByDay(30),
+        timeByDay:  FlowStats.getTimeByDay(30),
+      };
+      FlowHelpers.downloadJSON(data, `focusai-stats-${FlowDate.today()}.json`);
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-focus">
+<!-- ── Focus View ────────────────────────────────────────────────────────── -->
+<div class="view focus-view">
+  <header class="view-header">
+    <h1 class="view-title">Modo Enfoque</h1>
+  </header>
+
+  <div class="focus-body">
+    <div class="focus-main">
+      <!-- Estado actual -->
+      <div class="focus-status-card" id="focus-status-card">
+        <div class="focus-status-icon" id="focus-icon">🌟</div>
+        <div class="focus-status-text" id="focus-status-text">Listo para concentrarte</div>
+        <div class="focus-duration" id="focus-duration"></div>
+      </div>
+
+      <!-- Modos -->
+      <div class="focus-modes">
+        <div class="focus-mode-card" data-mode="deep">
+          <div class="focus-mode-icon">🧠</div>
+          <div class="focus-mode-name">Trabajo profundo</div>
+          <div class="focus-mode-desc">Sin interrupciones. Máxima concentración.</div>
+        </div>
+        <div class="focus-mode-card" data-mode="light">
+          <div class="focus-mode-icon">💡</div>
+          <div class="focus-mode-name">Trabajo ligero</div>
+          <div class="focus-mode-desc">Tareas simples y correos.</div>
+        </div>
+        <div class="focus-mode-card" data-mode="custom">
+          <div class="focus-mode-icon">⚙️</div>
+          <div class="focus-mode-name">Personalizado</div>
+          <div class="focus-mode-desc">Elige duración y opciones.</div>
+        </div>
+      </div>
+
+      <!-- Duración -->
+      <div class="focus-duration-row">
+        <label class="form-label">Duración (min, 0 = sin límite)</label>
+        <div class="duration-presets">
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="25">25</button>
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="45">45</button>
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="60">60</button>
+          <button class="btn btn-ghost btn-sm dur-btn" data-min="90">90</button>
+          <input class="form-input dur-input" type="number" id="focus-duration-input" min="0" max="480" value="25" placeholder="min">
+        </div>
+      </div>
+
+      <!-- Botón principal -->
+      <div class="focus-controls">
+        <button class="btn btn-primary btn-xl" id="focus-toggle-btn">🌟 Iniciar sesión</button>
+      </div>
+
+      <!-- Stats de hoy -->
+      <div class="focus-today-stats">
+        <div class="focus-stat"><span id="fs-sessions">0</span><small>Sesiones hoy</small></div>
+        <div class="focus-stat"><span id="fs-minutes">0m</span><small>Minutos hoy</small></div>
+        <div class="focus-stat"><span id="fs-week">0</span><small>Sesiones semana</small></div>
+      </div>
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="focus-side">
+
+      <!-- Música -->
+      <section class="focus-section">
+        <h2 class="section-title">🎵 Música para concentrarse</h2>
+        <div class="music-tracks" id="music-tracks"></div>
+        <button class="btn btn-ghost btn-sm" id="stop-music-btn" hidden>⏹ Detener música</button>
+      </section>
+
+      <!-- Sitios bloqueados -->
+      <section class="focus-section">
+        <h2 class="section-title">🚫 Sitios bloqueados</h2>
+        <p class="text-muted" style="font-size:.8rem">Activos durante el modo enfoque (requiere extensión de navegador)</p>
+        <div class="input-inline">
+          <input class="form-input" id="block-site-input" placeholder="ej: twitter.com">
+          <button class="btn btn-ghost btn-sm" id="add-block-btn">+ Agregar</button>
+        </div>
+        <div id="blocked-sites-list" class="blocked-sites-list"></div>
+      </section>
+
+      <!-- Historial -->
+      <section class="focus-section">
+        <h2 class="section-title">📈 Historial (7 días)</h2>
+        <div class="chart-container" style="height:140px"><canvas id="focus-history-chart"></canvas></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let selectedMode = 'deep';
+  let _ticker = null;
+
+  function init(){
+    _renderMusicTracks();
+    _renderBlockedSites();
+    _renderStats();
+    _renderHistoryChart();
+    _bind();
+    FlowState.subscribe('focus.active', _updateStatus);
+    _updateStatus();
+  }
+
+  function _updateStatus(){
+    const active = FlowState.get('focus.active');
+    const btn    = document.getElementById('focus-toggle-btn');
+    const card   = document.getElementById('focus-status-card');
+    const text   = document.getElementById('focus-status-text');
+    const icon   = document.getElementById('focus-icon');
+    if(active){
+      btn.textContent = '⏹ Terminar sesión';
+      btn.classList.add('btn-danger'); btn.classList.remove('btn-primary');
+      card.classList.add('active');
+      text.textContent = 'Sesión en curso…';
+      icon.textContent = '🔥';
+      _startTicker();
+    } else {
+      btn.textContent = '🌟 Iniciar sesión';
+      btn.classList.remove('btn-danger'); btn.classList.add('btn-primary');
+      card.classList.remove('active');
+      text.textContent = 'Listo para concentrarte';
+      icon.textContent = '🌟';
+      document.getElementById('focus-duration').textContent='';
+      clearInterval(_ticker);
+      _renderStats();
+    }
+  }
+
+  function _startTicker(){
+    clearInterval(_ticker);
+    _ticker = setInterval(()=>{
+      const dur = FlowFocus.getCurrentDuration();
+      const el  = document.getElementById('focus-duration');
+      if(el) el.textContent = `${dur} min`;
+    }, 10000);
+  }
+
+  function _renderMusicTracks(){
+    const el = document.getElementById('music-tracks'); if(!el) return;
+    el.innerHTML = FlowFocus.getTracks().map(t=>`
+      <div class="music-track" data-id="${t.id}">
+        <span class="music-emoji">${t.emoji}</span>
+        <span class="music-name">${t.name}</span>
+        <button class="btn btn-ghost btn-sm" onclick="FlowFocus.playTrack('${t.id}');document.getElementById('stop-music-btn').hidden=false">▶</button>
+      </div>`).join('');
+  }
+
+  function _renderBlockedSites(){
+    const el    = document.getElementById('blocked-sites-list'); if(!el) return;
+    const sites = FlowFocus.getBlockedSites();
+    el.innerHTML = sites.length ? sites.map(s=>`
+      <div class="blocked-site">
+        <span>🚫 ${s}</span>
+        <button class="icon-btn btn-sm" onclick="FlowFocus.removeBlockedSite('${s}');_renderBlockedSites()">✕</button>
+      </div>`).join('') : '<div class="empty-state-sm">Sin sitios bloqueados</div>';
+  }
+
+  function _renderStats(){
+    const s = FlowState.get('focus.stats') || {};
+    _t('fs-sessions', s.todaySessions||0);
+    _t('fs-minutes',  FlowTimer.formatMinutes(s.todayMinutes||0));
+    _t('fs-week',     s.weekSessions||0);
+  }
+
+  async function _renderHistoryChart(){
+    const data = await FlowFocus.getStats(7);
+    const labels  = Object.keys(data).map(d=>FlowDate.format(new Date(d+'T12:00:00'),'ddd D'));
+    const minutes = Object.values(data).map(d=>d.minutes);
+    FlowCharts.bar('focus-history-chart', {
+      labels,
+      datasets:[{ label:'Minutos de enfoque', data:minutes, backgroundColor:'#6366f1', borderRadius:6 }]
+    }, { plugins:{ legend:{display:false} } });
+  }
+
+  function _bind(){
+    document.getElementById('focus-toggle-btn')?.addEventListener('click',()=>{
+      if(FlowState.get('focus.active')){
+        FlowFocus.end();
+      } else {
+        const dur = parseInt(document.getElementById('focus-duration-input')?.value)||0;
+        FlowFocus.start(selectedMode, dur||null);
+      }
+    });
+
+    document.querySelectorAll('.focus-mode-card').forEach(card=>{
+      card.addEventListener('click',()=>{
+        document.querySelectorAll('.focus-mode-card').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedMode = card.dataset.mode;
+      });
+    });
+    document.querySelector('.focus-mode-card[data-mode="deep"]')?.classList.add('selected');
+
+    document.querySelectorAll('.dur-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.getElementById('focus-duration-input').value = btn.dataset.min;
+      });
+    });
+
+    document.getElementById('add-block-btn')?.addEventListener('click',()=>{
+      const inp = document.getElementById('block-site-input');
+      if(inp?.value.trim()){ FlowFocus.addBlockedSite(inp.value.trim()); inp.value=''; _renderBlockedSites(); }
+    });
+
+    document.getElementById('stop-music-btn')?.addEventListener('click',()=>{
+      FlowFocus.stopMusic();
+      document.getElementById('stop-music-btn').hidden=true;
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-personal">
+<!-- ── Personal View ─────────────────────────────────────────────────────── -->
+<div class="view personal-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Personal</h1><p class="view-subtitle text-muted" id="personal-date"></p></div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" id="reflection-btn">💭 Reflexión guiada</button>
+      <button class="btn btn-primary" id="save-entry-btn">💾 Guardar</button>
+    </div>
+  </header>
+
+  <div class="personal-body">
+    <div class="personal-main">
+
+      <!-- Estado de ánimo -->
+      <section class="personal-section">
+        <h2 class="section-title">¿Cómo te sientes hoy?</h2>
+        <div class="mood-selector" id="mood-selector">
+          <button class="mood-btn" data-mood="5">😄<span>Excelente</span></button>
+          <button class="mood-btn" data-mood="4">🙂<span>Bien</span></button>
+          <button class="mood-btn" data-mood="3">😐<span>Regular</span></button>
+          <button class="mood-btn" data-mood="2">😕<span>Bajo</span></button>
+          <button class="mood-btn" data-mood="1">😔<span>Mal</span></button>
+        </div>
+      </section>
+
+      <!-- Emociones -->
+      <section class="personal-section">
+        <h2 class="section-title">Emociones</h2>
+        <div class="emotions-grid" id="emotions-grid">
+          ${FlowPersonal ? FlowPersonal.EMOTIONS.map(e=>`<button class="emotion-btn" data-emotion="${e}">${e}</button>`).join('') : ''}
+        </div>
+      </section>
+
+      <!-- Diario -->
+      <section class="personal-section">
+        <h2 class="section-title">📔 Diario del día</h2>
+        <div id="reflection-prompts" class="reflection-prompts" hidden></div>
+        <textarea class="form-input journal-textarea" id="journal-content" rows="10" placeholder="¿Cómo fue tu día? ¿Qué aprendiste? ¿Qué te preocupa?"></textarea>
+        <div class="journal-wordcount"><span id="word-count">0</span> palabras</div>
+      </section>
+
+      <!-- Reflexión -->
+      <section class="personal-section">
+        <h2 class="section-title">🌟 Reflexión</h2>
+        <div class="form-group">
+          <label class="form-label">Logros del día</label>
+          <textarea class="form-input form-textarea" id="highlights" rows="2" placeholder="¿Qué lograste hoy?"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Qué mejorarías?</label>
+          <textarea class="form-input form-textarea" id="improvements" rows="2" placeholder="¿Qué harías diferente?"></textarea>
+        </div>
+      </section>
+
+      <!-- Gratitud -->
+      <section class="personal-section">
+        <h2 class="section-title">🙏 Gratitud</h2>
+        <div id="gratitude-list" class="gratitude-list"></div>
+        <div class="input-inline">
+          <input class="form-input" id="gratitude-input" placeholder="Estoy agradecido/a por…">
+          <button class="btn btn-ghost btn-sm" id="add-gratitude-btn">+ Agregar</button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="personal-side">
+
+      <!-- Stats -->
+      <section class="personal-section">
+        <h2 class="section-title">📊 Resumen</h2>
+        <div class="personal-stats">
+          <div class="p-stat"><span id="ps-entries">0</span><small>Entradas totales</small></div>
+          <div class="p-stat"><span id="ps-streak">0</span><small>Racha diario</small></div>
+          <div class="p-stat"><span id="ps-mood">—</span><small>Ánimo promedio</small></div>
+          <div class="p-stat"><span id="ps-words">0</span><small>Palabras totales</small></div>
+        </div>
+      </section>
+
+      <!-- Gráfico de ánimo -->
+      <section class="personal-section">
+        <h2 class="section-title">Estado de ánimo — 14 días</h2>
+        <div class="chart-container" style="height:160px"><canvas id="mood-chart"></canvas></div>
+      </section>
+
+      <!-- Entradas recientes -->
+      <section class="personal-section">
+        <h2 class="section-title">Entradas recientes</h2>
+        <div id="recent-entries" class="recent-entries"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let selectedMood = null;
+  let selectedEmotions = [];
+  let gratitudeItems = [];
+
+  function init(){
+    _t('personal-date', FlowDate.format(new Date(),'dddd, DD de MMMM YYYY'));
+    _loadTodayEntry();
+    _renderStats();
+    _renderRecentEntries();
+    FlowCharts.line('mood-chart', FlowPersonal.getMoodChartData(14));
+    _bind();
+  }
+
+  function _loadTodayEntry(){
+    const entry = FlowPersonal.getTodayEntry();
+    const mood  = FlowPersonal.getTodayMood();
+
+    if(mood) _selectMood(mood.mood, false);
+    if(mood?.emotions) mood.emotions.forEach(e=>_toggleEmotion(e, false));
+
+    if(entry){
+      const ta=document.getElementById('journal-content'); if(ta) ta.value=entry.content||'';
+      const hi=document.getElementById('highlights');      if(hi) hi.value=entry.highlights||'';
+      const im=document.getElementById('improvements');    if(im) im.value=entry.improvements||'';
+      gratitudeItems = entry.gratitude||[];
+      _renderGratitude();
+      _updateWordCount();
+    }
+
+    // Renderizar emociones
+    const grid=document.getElementById('emotions-grid');
+    if(grid && FlowPersonal.EMOTIONS){
+      grid.innerHTML=FlowPersonal.EMOTIONS.map(e=>`<button class="emotion-btn ${selectedEmotions.includes(e)?'active':''}" data-emotion="${e}">${e}</button>`).join('');
+      grid.querySelectorAll('.emotion-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>_toggleEmotion(btn.dataset.emotion, true));
+      });
+    }
+  }
+
+  function _selectMood(id, updateDOM=true){
+    selectedMood = id;
+    if(updateDOM){
+      document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('active', Number(b.dataset.mood)===id));
+    }
+  }
+
+  function _toggleEmotion(name, updateDOM=true){
+    if(selectedEmotions.includes(name)) selectedEmotions=selectedEmotions.filter(e=>e!==name);
+    else selectedEmotions.push(name);
+    if(updateDOM){
+      document.querySelectorAll('.emotion-btn').forEach(b=>b.classList.toggle('active', selectedEmotions.includes(b.dataset.emotion)));
+    }
+  }
+
+  function _renderGratitude(){
+    const el=document.getElementById('gratitude-list'); if(!el) return;
+    el.innerHTML=gratitudeItems.map((g,i)=>`
+      <div class="gratitude-item">
+        <span>🙏 ${FlowHelpers.escapeHTML(g)}</span>
+        <button class="icon-btn btn-sm" onclick="_removeGratitude(${i})">✕</button>
+      </div>`).join('') || '<div class="empty-state-sm">Sin elementos de gratitud aún</div>';
+  }
+  window._removeGratitude=(i)=>{ gratitudeItems.splice(i,1); _renderGratitude(); };
+
+  function _updateWordCount(){
+    const ta=document.getElementById('journal-content');
+    const el=document.getElementById('word-count');
+    if(ta&&el) el.textContent=FlowHelpers.countWords(ta.value);
+  }
+
+  function _renderStats(){
+    const s=FlowPersonal.getStats();
+    _t('ps-entries', s.totalEntries);
+    _t('ps-streak',  s.streak+' días');
+    _t('ps-mood',    s.avgMoodEmoji+' '+s.avgMoodLabel);
+    _t('ps-words',   FlowHelpers.formatNumber(s.totalWords));
+  }
+
+  function _renderRecentEntries(){
+    const el=document.getElementById('recent-entries'); if(!el) return;
+    const entries=FlowPersonal.getRecentEntries(7);
+    el.innerHTML=entries.map(e=>{
+      const mood=FlowPersonal.MOODS.find(m=>m.id===e.mood);
+      return `<div class="recent-entry" onclick="_viewEntry('${e.id}')">
+        <span class="entry-date">${FlowDate.format(new Date(e.date+'T12:00:00'),'DD MMM')}</span>
+        ${mood?`<span class="entry-mood">${mood.emoji}</span>`:''}
+        <span class="entry-preview">${FlowHelpers.truncate(e.content,40)}</span>
+      </div>`;
+    }).join('') || '<div class="empty-state-sm">Sin entradas recientes</div>';
+  }
+  window._viewEntry=(id)=>{ FlowApp.toast('Próximamente: vista de entradas anteriores','info'); };
+
+  function _bind(){
+    document.querySelectorAll('.mood-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>_selectMood(Number(btn.dataset.mood)));
+    });
+
+    document.getElementById('journal-content')?.addEventListener('input', _updateWordCount);
+
+    document.getElementById('add-gratitude-btn')?.addEventListener('click',()=>{
+      const inp=document.getElementById('gratitude-input');
+      if(inp?.value.trim()){ gratitudeItems.push(inp.value.trim()); inp.value=''; _renderGratitude(); }
+    });
+    document.getElementById('gratitude-input')?.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('add-gratitude-btn')?.click(); } });
+
+    document.getElementById('save-entry-btn')?.addEventListener('click', async ()=>{
+      const content    = document.getElementById('journal-content')?.value||'';
+      const highlights = document.getElementById('highlights')?.value||'';
+      const improvements=document.getElementById('improvements')?.value||'';
+      await FlowPersonal.saveEntry({ content, mood:selectedMood, emotions:selectedEmotions, gratitude:gratitudeItems, highlights, improvements });
+      if(selectedMood) await FlowPersonal.logMood(selectedMood, selectedEmotions);
+      _renderStats();
+      _renderRecentEntries();
+      FlowCharts.line('mood-chart', FlowPersonal.getMoodChartData(14));
+    });
+
+    document.getElementById('reflection-btn')?.addEventListener('click', async ()=>{
+      const btn=document.getElementById('reflection-btn');
+      btn.textContent='⏳ Generando…'; btn.disabled=true;
+      const prompts = await FlowPersonal.aiReflectionPrompt();
+      const el=document.getElementById('reflection-prompts');
+      if(el){ el.innerHTML=prompts.replace(/\n/g,'<br>'); el.hidden=false; }
+      btn.textContent='💭 Reflexión guiada'; btn.disabled=false;
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-gamification">
+<!-- ── Gamification View ──────────────────────────────────────────────────── -->
+<div class="view gamification-view">
+  <header class="view-header">
+    <h1 class="view-title">Logros y Gamificación</h1>
+  </header>
+
+  <!-- Perfil de nivel -->
+  <div class="level-card">
+    <div class="level-avatar" id="gam-avatar">FM</div>
+    <div class="level-info">
+      <div class="level-name" id="gam-name">Usuario</div>
+      <div class="level-title" id="gam-level-title">Nivel 1 — Principiante</div>
+      <div class="level-xp-bar">
+        <div class="level-xp-fill" id="gam-xp-fill" style="width:0%"></div>
+      </div>
+      <div class="level-xp-text" id="gam-xp-text">0 / 100 XP</div>
+    </div>
+    <div class="level-stats">
+      <div class="lstat"><span id="gam-badges-count">0</span><small>Insignias</small></div>
+      <div class="lstat"><span id="gam-week-pts">0</span><small>Puntos semana</small></div>
+      <div class="lstat"><span id="gam-streak">0</span><small>Racha</small></div>
+    </div>
+  </div>
+
+  <!-- Desafíos semanales -->
+  <section class="gam-section">
+    <h2 class="section-title">🏅 Desafíos de esta semana</h2>
+    <div id="gam-challenges" class="gam-challenges"></div>
+  </section>
+
+  <!-- Insignias -->
+  <section class="gam-section">
+    <div class="section-header">
+      <h2 class="section-title">🏆 Insignias</h2>
+      <span class="badge-progress" id="gam-badge-progress"></span>
+    </div>
+    <div id="gam-badges" class="gam-badges-grid"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _render();
+    FlowState.subscribe('gamification', _render);
+  }
+
+  function _render(){
+    _renderProfile();
+    _renderChallenges();
+    _renderBadges();
+  }
+
+  function _renderProfile(){
+    const s    = FlowGamification.getStats();
+    const name = FlowState.get('user.name')||'Usuario';
+    const levelTitles = ['','Principiante','Aprendiz','Practicante','Experto','Maestro','Leyenda'];
+    const title = levelTitles[Math.min(s.level, levelTitles.length-1)] || 'Leyenda';
+
+    _t('gam-avatar',       (name).substring(0,2).toUpperCase());
+    _t('gam-name',         name);
+    _t('gam-level-title',  `Nivel ${s.level} — ${title}`);
+    _t('gam-xp-text',      `${s.xp} / ${s.needed} XP`);
+    _t('gam-badges-count', s.badgesUnlocked);
+    _t('gam-week-pts',     s.weekPoints);
+    _t('gam-badge-progress',`${s.badgesUnlocked}/${s.badgesTotal}`);
+
+    const fill = document.getElementById('gam-xp-fill');
+    if(fill) fill.style.width = s.pct+'%';
+
+    const streak = FlowState.get('gamification.streak')||0;
+    _t('gam-streak', streak);
+  }
+
+  function _renderChallenges(){
+    const el = document.getElementById('gam-challenges'); if(!el) return;
+    const ch = FlowGamification.getWeeklyChallenges();
+    if(!ch.length){ el.innerHTML='<div class="empty-state-sm">Los desafíos se generan automáticamente cada semana</div>'; return; }
+    el.innerHTML = ch.map(c=>{
+      const pct = Math.min(100, Math.round((c.progress/c.target)*100));
+      return `<div class="challenge-card ${c.completed?'completed':''}">
+        <div class="challenge-card-header">
+          <span class="challenge-card-name">${c.completed?'✅ ':''} ${c.name}</span>
+          <span class="challenge-xp-badge">+${c.xp} XP</span>
+        </div>
+        <p class="challenge-card-desc">${c.desc}</p>
+        <div class="challenge-bar-wrap">
+          <div class="challenge-bar"><div class="challenge-fill" style="width:${pct}%"></div></div>
+          <span class="challenge-pct">${pct}%</span>
+        </div>
+        <div class="challenge-progress-text">${c.progress} / ${c.target}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function _renderBadges(){
+    const el     = document.getElementById('gam-badges'); if(!el) return;
+    const badges = FlowGamification.getBadges();
+    el.innerHTML = badges.map(b=>`
+      <div class="badge-card ${b.unlocked?'unlocked':'locked'}" title="${b.desc}">
+        <div class="badge-emoji">${b.emoji}</div>
+        <div class="badge-name">${b.name}</div>
+        <div class="badge-desc">${b.desc}</div>
+        ${b.unlocked?`<div class="badge-date">${FlowDate.format(new Date(b.unlockedAt),'DD MMM')}</div>`:'<div class="badge-locked">🔒 Bloqueado</div>'}
+        ${b.xp>0?`<div class="badge-xp">+${b.xp} XP</div>`:''}
+      </div>`).join('');
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>
+
+  </template>
+  <template id="view-tpl-settings">
+<!-- ── Settings View ─────────────────────────────────────────────────────── -->
+<div class="view settings-view">
+  <header class="view-header">
+    <h1 class="view-title">Ajustes</h1>
+    <button class="btn btn-primary" id="save-settings-btn">Guardar cambios</button>
+  </header>
+
+  <div class="settings-body">
+
+    <!-- Perfil -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">👤 Perfil</h2>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="s-name" placeholder="Tu nombre"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="s-email" placeholder="tu@email.com"></div>
+    </section>
+
+    <!-- IA Local -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🤖 IA Local</h2>
+      <p class="settings-desc">FocusAI usa IA 100% local y gratuita. No necesita internet ni API key de pago.</p>
+
+      <div class="form-group">
+        <label class="form-label">Proveedor</label>
+        <select class="form-input form-select" id="s-ai-provider">
+          <option value="ollama">Ollama (recomendado) — localhost:11434</option>
+          <option value="lmstudio">LM Studio — localhost:1234</option>
+          <option value="jan">Jan — localhost:1337</option>
+          <option value="localai">LocalAI — localhost:8080</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">URL del servidor</label><input class="form-input" id="s-ai-url" placeholder="http://localhost:11434"></div>
+      <div class="form-group"><label class="form-label">Modelo</label>
+        <div class="input-inline">
+          <input class="form-input" id="s-ai-model" placeholder="ej: llama3.2">
+          <button class="btn btn-ghost btn-sm" id="detect-models-btn">🔍 Detectar</button>
+        </div>
+        <div id="model-list" class="model-list" hidden></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Temperatura (0-1)</label><input class="form-input" type="number" id="s-ai-temp" min="0" max="1" step="0.1" value="0.7"></div>
+        <div class="form-group"><label class="form-label">Max tokens</label><input class="form-input" type="number" id="s-ai-tokens" min="100" max="4096" value="1024"></div>
+      </div>
+      <div class="settings-ai-status">
+        <button class="btn btn-ghost btn-sm" id="test-ai-btn">🔌 Probar conexión</button>
+        <span id="ai-status-badge" class="status-badge"></span>
+      </div>
+      <div class="ai-install-guide">
+        <details>
+          <summary>📖 Cómo instalar Ollama</summary>
+          <ol>
+            <li>Descarga Ollama desde <strong>ollama.com</strong></li>
+            <li>Instala y ejecuta Ollama</li>
+            <li>En la terminal: <code>ollama pull llama3.2</code></li>
+            <li>Vuelve aquí y haz clic en "Detectar"</li>
+          </ol>
+          <p>Modelos recomendados: <code>llama3.2</code>, <code>mistral</code>, <code>gemma2</code>, <code>phi3</code>, <code>qwen2.5</code></p>
+        </details>
+      </div>
+    </section>
+
+    <!-- Apariencia -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🎨 Apariencia</h2>
+      <div class="form-group"><label class="form-label">Tema</label>
+        <div class="theme-selector">
+          <button class="theme-btn" data-theme="dark">🌙 Oscuro</button>
+          <button class="theme-btn" data-theme="light">☀️ Claro</button>
+          <button class="theme-btn" data-theme="system">💻 Sistema</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fecha y hora -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🕐 Fecha y hora</h2>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Formato de hora</label>
+          <select class="form-input form-select" id="s-time-format">
+            <option value="24h">24 horas</option>
+            <option value="12h">12 horas (AM/PM)</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Semana empieza el</label>
+          <select class="form-input form-select" id="s-week-start">
+            <option value="1">Lunes</option>
+            <option value="0">Domingo</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notificaciones -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🔔 Notificaciones</h2>
+      <div id="notif-permission-banner" class="notif-banner" hidden>
+        <p>Las notificaciones están desactivadas.</p>
+        <button class="btn btn-primary btn-sm" id="request-notif-btn">Activar notificaciones</button>
+      </div>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-tasks" checked> Recordatorios de tareas</label>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-habits" checked> Recordatorios de hábitos</label>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-focus" checked> Alertas de enfoque</label>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-report" checked> Reporte semanal</label>
+    </section>
+
+    <!-- Datos -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">💾 Datos</h2>
+      <div class="settings-data-actions">
+        <button class="btn btn-ghost" id="export-data-btn">⬇ Exportar todos los datos</button>
+        <label class="btn btn-ghost" style="cursor:pointer">⬆ Importar datos<input type="file" id="import-file" accept=".json" hidden></label>
+        <button class="btn btn-ghost" id="export-csv-btn">📊 Exportar tareas CSV</button>
+      </div>
+      <div class="storage-info" id="storage-info"></div>
+    </section>
+
+    <!-- Zona de peligro -->
+    <section class="settings-section danger-zone">
+      <h2 class="settings-section-title">⚠️ Zona de peligro</h2>
+      <button class="btn btn-danger" id="clear-data-btn">🗑 Eliminar todos los datos</button>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _loadSettings();
+    _checkNotifPermission();
+    _loadStorageInfo();
+    _bind();
+  }
+
+  function _loadSettings(){
+    const user = FlowState.get('user')||{};
+    const sets = FlowState.get('settings')||{};
+    const ai   = FlowState.get('ai')||{};
+    const notif= FlowState.get('notifications.settings')||{};
+
+    _val('s-name',        user.name||'');
+    _val('s-email',       user.email||'');
+    _val('s-ai-provider', ai.provider||'ollama');
+    _val('s-ai-url',      ai.baseUrl||'http://localhost:11434');
+    _val('s-ai-model',    ai.model||'llama3.2');
+    _val('s-ai-temp',     ai.temperature??0.7);
+    _val('s-ai-tokens',   ai.maxTokens||1024);
+    _val('s-time-format', sets.timeFormat||'24h');
+    _val('s-week-start',  sets.weekStartsOn??1);
+
+    const theme = FlowState.get('user.theme')||'dark';
+    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active', b.dataset.theme===theme));
+
+    const cb=(id,val)=>{ const el=document.getElementById(id); if(el) el.checked=val!==false; };
+    cb('s-notif-tasks',  notif.taskReminders);
+    cb('s-notif-habits', notif.habitReminders);
+    cb('s-notif-focus',  notif.focusAlerts);
+    cb('s-notif-report', notif.weeklyReport);
+  }
+
+  async function _checkNotifPermission(){
+    const perm = FlowState.get('notifications.permission');
+    const banner = document.getElementById('notif-permission-banner');
+    if(banner) banner.hidden = perm==='granted';
+  }
+
+  async function _loadStorageInfo(){
+    const info = await FlowStorage.estimateSize();
+    const el   = document.getElementById('storage-info');
+    if(el && info) el.textContent = `Almacenamiento usado: ${info.usageMB} MB de ${info.quotaMB} MB disponibles`;
+  }
+
+  function _bind(){
+    document.getElementById('save-settings-btn')?.addEventListener('click', _save);
+
+    // Tema
+    document.querySelectorAll('.theme-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        FlowApp.setTheme(btn.dataset.theme);
+      });
+    });
+
+    // Proveedor IA → actualizar URL
+    document.getElementById('s-ai-provider')?.addEventListener('change', e=>{
+      const urls={ollama:'http://localhost:11434',lmstudio:'http://localhost:1234',jan:'http://localhost:1337',localai:'http://localhost:8080'};
+      _val('s-ai-url', urls[e.target.value]||'');
+    });
+
+    // Detectar modelos
+    document.getElementById('detect-models-btn')?.addEventListener('click', async ()=>{
+      const btn=document.getElementById('detect-models-btn');
+      btn.textContent='⏳ Buscando…'; btn.disabled=true;
+      // Guardar URL/provider antes de detectar
+      FlowAI.saveConfig({ provider:_gval('s-ai-provider'), baseUrl:_gval('s-ai-url') });
+      const models = await FlowAI.listModels();
+      const listEl = document.getElementById('model-list');
+      if(listEl){
+        listEl.hidden=false;
+        listEl.innerHTML = models.length
+          ? models.map(m=>`<button class="model-option" onclick="document.getElementById('s-ai-model').value='${m}';document.querySelectorAll('.model-option').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${m}</button>`).join('')
+          : '<span class="text-muted">No se encontraron modelos. ¿Está Ollama ejecutándose?</span>';
+      }
+      btn.textContent='🔍 Detectar'; btn.disabled=false;
+    });
+
+    // Test conexión
+    document.getElementById('test-ai-btn')?.addEventListener('click', async ()=>{
+      const badge=document.getElementById('ai-status-badge');
+      if(badge){ badge.textContent='Probando…'; badge.className='status-badge'; }
+      FlowAI.saveConfig({ provider:_gval('s-ai-provider'), baseUrl:_gval('s-ai-url'), model:_gval('s-ai-model') });
+      const result = await FlowAI.testConnection();
+      if(badge){
+        badge.textContent = result.ok ? `✅ Conectado · ${result.models?.length||0} modelos` : `❌ ${result.error}`;
+        badge.className   = 'status-badge '+(result.ok?'ok':'error');
+      }
+    });
+
+    // Notificaciones
+    document.getElementById('request-notif-btn')?.addEventListener('click', async ()=>{
+      await FlowNotifications.requestPermission();
+      _checkNotifPermission();
+    });
+
+    // Exportar
+    document.getElementById('export-data-btn')?.addEventListener('click', ()=>FlowAuth.exportData());
+    document.getElementById('export-csv-btn')?.addEventListener('click', async ()=>{
+      const csv=await FlowStorage.exportCSV('tasks');
+      FlowHelpers.downloadCSV(csv, `focusai-tasks-${FlowDate.today()}.csv`);
+    });
+
+    // Importar
+    document.getElementById('import-file')?.addEventListener('change', async e=>{
+      const file=e.target.files?.[0]; if(!file) return;
+      if(confirm('¿Importar datos? Esto reemplazará todos tus datos actuales.')) await FlowAuth.importData(file);
+    });
+
+    // Eliminar datos
+    document.getElementById('clear-data-btn')?.addEventListener('click', ()=>FlowAuth.clearAllData());
+  }
+
+  async function _save(){
+    FlowAuth.updateProfile({ name:_gval('s-name'), email:_gval('s-email') });
+    FlowAI.saveConfig({ provider:_gval('s-ai-provider'), baseUrl:_gval('s-ai-url'), model:_gval('s-ai-model'), temperature:parseFloat(_gval('s-ai-temp')), maxTokens:parseInt(_gval('s-ai-tokens')) });
+    FlowState.update('settings',{ timeFormat:_gval('s-time-format'), weekStartsOn:parseInt(_gval('s-week-start')) });
+    FlowState.update('notifications.settings',{
+      taskReminders:  document.getElementById('s-notif-tasks')?.checked,
+      habitReminders: document.getElementById('s-notif-habits')?.checked,
+      focusAlerts:    document.getElementById('s-notif-focus')?.checked,
+      weeklyReport:   document.getElementById('s-notif-report')?.checked,
+    });
+    FlowState.persist();
+    FlowApp.toast('Ajustes guardados ✓', 'success');
+  }
+
+  function _val(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+  function _gval(id){ return document.getElementById(id)?.value||''; }
+  init();
+})();
+</script>
+
+  </template>
+</div>
+
+</body>
+</html>
