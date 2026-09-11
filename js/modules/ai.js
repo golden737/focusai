@@ -58,7 +58,7 @@ window.FlowAI = (() => {
     const provider = saved.provider || 'ollama';
     return {
       provider,
-      baseUrl:    _normalizeBaseUrl(saved.baseUrl || (PROVIDERS[provider] || PROVIDERS.ollama).baseUrl),
+      baseUrl: saved.baseUrl || 'https://sim-vegetation-quarter-milan.trycloudflare.com',
       model:      saved.model || '',
       maxTokens:  saved.maxTokens || 1024,
       temperature:saved.temperature ?? 0.7,
