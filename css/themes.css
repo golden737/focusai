@@ -1,0 +1,58 @@
+/* ── Themes ─────────────────────────────────────────────────────────────── */
+
+/* ── Tema oscuro (default) ── */
+[data-theme="dark"] {
+  --bg-base:          #0d0d0f;
+  --bg-surface:       #131316;
+  --bg-elevated:      #1a1a1f;
+  --bg-overlay:       #222228;
+  --bg-hover:         rgba(255,255,255,0.04);
+
+  --text-primary:     #f1f5f9;
+  --text-secondary:   #94a3b8;
+  --text-muted:       #64748b;
+  --text-disabled:    #334155;
+
+  --border:           rgba(255,255,255,0.08);
+  --border-secondary: rgba(255,255,255,0.05);
+  --border-focus:     var(--accent);
+
+  --scrollbar-thumb:  rgba(255,255,255,0.1);
+  --scrollbar-track:  transparent;
+}
+
+/* ── Tema claro ── */
+[data-theme="light"] {
+  --bg-base:          #f8fafc;
+  --bg-surface:       #ffffff;
+  --bg-elevated:      #f1f5f9;
+  --bg-overlay:       #e2e8f0;
+  --bg-hover:         rgba(0,0,0,0.04);
+
+  --text-primary:     #0f172a;
+  --text-secondary:   #475569;
+  --text-muted:       #94a3b8;
+  --text-disabled:    #cbd5e1;
+
+  --border:           rgba(0,0,0,0.08);
+  --border-secondary: rgba(0,0,0,0.05);
+  --border-focus:     var(--accent);
+
+  --scrollbar-thumb:  rgba(0,0,0,0.15);
+  --scrollbar-track:  transparent;
+
+  --shadow-sm:        0 1px 3px rgba(0,0,0,0.08);
+  --shadow:           0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:        0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* ── Scrollbar personalizado ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── Modo enfoque ── */
+.focus-mode .sidebar { opacity: 0.3; transition: opacity var(--transition); }
+.focus-mode .sidebar:hover { opacity: 1; }
+.focus-mode .ai-fab { display: none; }
