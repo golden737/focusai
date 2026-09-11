@@ -357,7 +357,6 @@ window.FlowState = (() => {
         if (saved.settings) update('settings', saved.settings);
         if (saved.ai) {
           if (saved.ai.apiKey) set('ai.apiKey', saved.ai.apiKey);
-          if (saved.ai.model)  set('ai.model',  saved.ai.model);
         }
         if (saved.timer?.settings) update('timer.settings', saved.timer.settings);
         if (saved.notifications?.settings) update('notifications.settings', saved.notifications.settings);
