@@ -1,0 +1,278 @@
+<!-- ── Settings View ─────────────────────────────────────────────────────── -->
+<div class="view settings-view">
+  <header class="view-header">
+    <h1 class="view-title">Ajustes</h1>
+    <button class="btn btn-primary" id="save-settings-btn">Guardar cambios</button>
+  </header>
+
+  <div class="settings-body">
+
+    <!-- Perfil -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">👤 Perfil</h2>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="s-name" placeholder="Tu nombre"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="s-email" placeholder="tu@email.com"></div>
+    </section>
+
+  
+
+    <!-- IA local / Cloudflare Tunnel -->
+    <section class="settings-section" id="admin-ai-settings">
+      <h2 class="settings-section-title">🤖 Conexión con IA</h2>
+      <p class="settings-desc">Usa Ollama en tu PC o una URL temporal de Cloudflare Tunnel. La URL <code>trycloudflare.com</code> cambia al reiniciar el túnel. Para compartirla con todos, actualiza <code>FOCUSAI_AI_URL</code> en <code>index.html</code>.</p>
+      <div class="form-group"><label class="form-label">Proveedor</label><select class="form-input form-select" id="s-ai-provider"><option value="ollama">Ollama</option><option value="lmstudio">LM Studio</option><option value="jan">Jan</option><option value="localai">LocalAI</option></select></div>
+      <div class="form-group"><label class="form-label">URL del servidor</label><input class="form-input" id="s-ai-url" placeholder="https://xxxxx.trycloudflare.com"></div>
+      <div class="form-group"><label class="form-label">Modelo instalado</label><div class="input-inline"><input class="form-input" id="s-ai-model" placeholder="Ej.: qwen2.5-coder:7b"><button class="btn btn-ghost btn-sm" id="detect-models-btn" type="button">Detectar</button></div><div id="model-list" class="model-list" hidden></div></div>
+      <div class="settings-ai-status"><button class="btn btn-ghost btn-sm" id="test-ai-btn" type="button">Probar conexión</button><span id="ai-status-badge" class="status-badge"></span></div>
+    </section>
+
+    <!-- Apariencia -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🎨 Apariencia</h2>
+      <div class="form-group"><label class="form-label">Tema</label>
+        <div class="theme-selector">
+          <button class="theme-btn" data-theme="dark">🌙 Oscuro</button>
+          <button class="theme-btn" data-theme="light">☀️ Claro</button>
+          <button class="theme-btn" data-theme="system">💻 Sistema</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Color de acento -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🎨 Color de tu perfil</h2>
+      <p class="settings-desc">Personaliza toda tu interfaz privada. La página pública y el inicio de sesión conservan el estilo FocusAI.</p>
+      <div class="color-picker-row" id="color-picker">
+        <div class="color-option active" data-color="#6366f1" style="background:#6366f1" title="Índigo"></div>
+        <div class="color-option" data-color="#8b5cf6" style="background:#8b5cf6" title="Violeta"></div>
+        <div class="color-option" data-color="#ec4899" style="background:#ec4899" title="Rosa"></div>
+        <div class="color-option" data-color="#ef4444" style="background:#ef4444" title="Rojo"></div>
+        <div class="color-option" data-color="#f97316" style="background:#f97316" title="Naranja"></div>
+        <div class="color-option" data-color="#eab308" style="background:#eab308" title="Amarillo"></div>
+        <div class="color-option" data-color="#22c55e" style="background:#22c55e" title="Verde"></div>
+        <div class="color-option" data-color="#14b8a6" style="background:#14b8a6" title="Teal"></div>
+        <div class="color-option" data-color="#3b82f6" style="background:#3b82f6" title="Azul"></div>
+        <div class="color-option" data-color="#64748b" style="background:#64748b" title="Gris"></div>
+      </div>
+    </section>
+
+    <!-- Fecha y hora -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🕐 Fecha y hora</h2>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Formato de hora</label>
+          <select class="form-input form-select" id="s-time-format">
+            <option value="24h">24 horas</option>
+            <option value="12h">12 horas (AM/PM)</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Semana empieza el</label>
+          <select class="form-input form-select" id="s-week-start">
+            <option value="1">Lunes</option>
+            <option value="0">Domingo</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notificaciones -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">🔔 Notificaciones</h2>
+      <div id="notif-permission-banner" class="notif-banner" hidden>
+        <p>Las notificaciones están desactivadas.</p>
+        <button class="btn btn-primary btn-sm" id="request-notif-btn">Activar notificaciones</button>
+      </div>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-tasks" checked> Recordatorios de tareas</label>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-habits" checked> Recordatorios de hábitos</label>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-focus" checked> Alertas de enfoque</label>
+      <label class="toggle-label"><input type="checkbox" id="s-notif-report" checked> Reporte semanal</label>
+    </section>
+
+    <!-- Datos -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">💾 Datos</h2>
+      <div class="settings-data-actions">
+        <button class="btn btn-ghost" id="export-data-btn">⬇ Exportar todos los datos</button>
+        <label class="btn btn-ghost" style="cursor:pointer">⬆ Importar datos<input type="file" id="import-file" accept=".json" hidden></label>
+        <button class="btn btn-ghost" id="export-csv-btn">📊 Exportar tareas CSV</button>
+      </div>
+      <div class="storage-info" id="storage-info"></div>
+    </section>
+
+    <!-- Zona de peligro -->
+    <section class="settings-section danger-zone">
+      <h2 class="settings-section-title">⚠️ Zona de peligro</h2>
+      <button class="btn btn-danger" id="clear-data-btn">🗑 Eliminar todos los datos</button>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  function init(){
+    _loadSettings();
+    _checkNotifPermission();
+    _loadStorageInfo();
+    _bind();
+  }
+
+  function _loadSettings(){
+    const user = FlowState.get('user')||{};
+    const sets = FlowState.get('settings')||{};
+    const ai   = FlowState.get('ai')||{};
+    const notif= FlowState.get('notifications.settings')||{};
+    const aiSettings = document.getElementById('admin-ai-settings');
+    if (aiSettings) aiSettings.hidden = user.role !== 'admin';
+
+    _val('s-name',        user.name||'');
+    _val('s-email',       user.email||'');
+    _val('s-ai-provider', ai.provider||'ollama');
+    _val('s-ai-url',      ai.baseUrl||'http://localhost:11434');
+    _val('s-ai-model',    ai.model||'llama3.2');
+    _val('s-ai-temp',     ai.temperature??0.7);
+    _val('s-ai-tokens',   ai.maxTokens||1024);
+    _val('s-time-format', sets.timeFormat||'24h');
+    _val('s-week-start',  sets.weekStartsOn??1);
+
+    const theme = FlowState.get('user.theme')||'dark';
+    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active', b.dataset.theme===theme));
+
+    const cb=(id,val)=>{ const el=document.getElementById(id); if(el) el.checked=val!==false; };
+    cb('s-notif-tasks',  notif.taskReminders);
+    cb('s-notif-habits', notif.habitReminders);
+    cb('s-notif-focus',  notif.focusAlerts);
+    cb('s-notif-report', notif.weeklyReport);
+  }
+
+  async function _checkNotifPermission(){
+    const perm = FlowState.get('notifications.permission');
+    const banner = document.getElementById('notif-permission-banner');
+    if(banner) banner.hidden = perm==='granted';
+  }
+
+  async function _loadStorageInfo(){
+    const info = await FlowStorage.estimateSize();
+    const el   = document.getElementById('storage-info');
+    if(el && info) el.textContent = `Almacenamiento usado: ${info.usageMB} MB de ${info.quotaMB} MB disponibles`;
+  }
+
+  function _bind(){
+    document.getElementById('save-settings-btn')?.addEventListener('click', _save);
+
+    // Color picker
+    document.querySelectorAll('.color-option').forEach(opt => {
+      opt.addEventListener('click', async () => {
+        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        const color = opt.dataset.color;
+        FlowState.set('user.accentColor', color);
+        FlowApp.applyAccent(color);
+        FlowState.persist();
+        try {
+          if (FlowSupabase.isConfigured()) await FlowSupabase.updateProfile({ accentColor: color });
+          FlowApp.toast('Color de perfil actualizado', 'success');
+        } catch (err) {
+          FlowApp.toast('No se pudo guardar el color en tu perfil: ' + err.message, 'error');
+        }
+      });
+    });
+
+    // Restaurar color guardado
+    const savedColor = FlowState.get('user.accentColor');
+    if (savedColor) {
+      document.querySelectorAll('.color-option').forEach(o => {
+        o.classList.toggle('active', o.dataset.color === savedColor);
+      });
+    }
+
+    // Tema
+    document.querySelectorAll('.theme-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        FlowApp.setTheme(btn.dataset.theme);
+      });
+    });
+
+    // Detectar modelos
+    document.getElementById('detect-models-btn')?.addEventListener('click', async ()=>{
+      const btn=document.getElementById('detect-models-btn');
+      btn.textContent='⏳ Buscando…'; btn.disabled=true;
+      // Guardar URL/provider antes de detectar
+      FlowAI.saveConfig({ provider:_gval('s-ai-provider'), baseUrl:_gval('s-ai-url') });
+      const models = await FlowAI.listModels();
+      const listEl = document.getElementById('model-list');
+      if(listEl){
+        listEl.hidden=false;
+        listEl.innerHTML = models.length
+          ? models.map(m=>`<button class="model-option" onclick="document.getElementById('s-ai-model').value='${m}';document.querySelectorAll('.model-option').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${m}</button>`).join('')
+          : '<span class="text-muted">No se encontraron modelos. ¿Está Ollama ejecutándose?</span>';
+      }
+      btn.textContent='🔍 Detectar'; btn.disabled=false;
+    });
+
+    document.getElementById('s-ai-provider')?.addEventListener('change', e=>{
+      const urls={ollama:'http://localhost:11434',lmstudio:'http://localhost:1234',jan:'http://localhost:1337',localai:'http://localhost:8080'};
+      const url=document.getElementById('s-ai-url');
+      if(url && Object.values(urls).includes(url.value)) url.value=urls[e.target.value];
+    });
+
+    // Test conexión
+    document.getElementById('test-ai-btn')?.addEventListener('click', async ()=>{
+      const badge=document.getElementById('ai-status-badge');
+      if(badge){ badge.textContent='Probando…'; badge.className='status-badge'; }
+      FlowAI.saveConfig({ provider:_gval('s-ai-provider'), baseUrl:_gval('s-ai-url'), model:_gval('s-ai-model') });
+      const result = await FlowAI.testConnection();
+      if(badge){
+        badge.textContent = result.ok ? `✅ Conectado · ${result.models?.length||0} modelos` : `❌ ${result.error}`;
+        badge.className   = 'status-badge '+(result.ok?'ok':'error');
+      }
+    });
+
+    // Notificaciones
+    document.getElementById('request-notif-btn')?.addEventListener('click', async ()=>{
+      await FlowNotifications.requestPermission();
+      _checkNotifPermission();
+    });
+
+    // Exportar
+    document.getElementById('export-data-btn')?.addEventListener('click', ()=>FlowAuth.exportData());
+    document.getElementById('export-csv-btn')?.addEventListener('click', async ()=>{
+      const csv=await FlowStorage.exportCSV('tasks');
+      FlowHelpers.downloadCSV(csv, `focusai-tasks-${FlowDate.today()}.csv`);
+    });
+
+    // Importar
+    document.getElementById('import-file')?.addEventListener('change', async e=>{
+      const file=e.target.files?.[0]; if(!file) return;
+      if(confirm('¿Importar datos? Esto reemplazará todos tus datos actuales.')) await FlowAuth.importData(file);
+    });
+
+    // Eliminar datos
+    document.getElementById('clear-data-btn')?.addEventListener('click', ()=>FlowAuth.clearAllData());
+  }
+
+  async function _save(){
+    try {
+      await FlowAuth.updateProfile({ name:_gval('s-name'), email:_gval('s-email'), accentColor:FlowState.get('user.accentColor') || '#6366f1' });
+    if (FlowState.get('user.role') === 'admin') {
+      FlowAI.saveConfig({ provider:_gval('s-ai-provider'), baseUrl:_gval('s-ai-url'), model:_gval('s-ai-model') });
+    }
+    FlowState.update('settings',{ timeFormat:_gval('s-time-format'), weekStartsOn:parseInt(_gval('s-week-start')) });
+    FlowState.update('notifications.settings',{
+      taskReminders:  document.getElementById('s-notif-tasks')?.checked,
+      habitReminders: document.getElementById('s-notif-habits')?.checked,
+      focusAlerts:    document.getElementById('s-notif-focus')?.checked,
+      weeklyReport:   document.getElementById('s-notif-report')?.checked,
+    });
+    FlowState.persist();
+      FlowApp.toast('Ajustes guardados ✓', 'success');
+    } catch (err) { FlowApp.toast(err.message || 'No se pudo guardar el perfil', 'error'); }
+  }
+
+  function _val(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+  function _gval(id){ return document.getElementById(id)?.value||''; }
+  init();
+})();
+</script>

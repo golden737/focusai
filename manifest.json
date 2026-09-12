@@ -1,0 +1,15 @@
+{
+  "name": "FocusAI — Productividad Inteligente",
+  "short_name": "FocusAI",
+  "description": "Tu plataforma de productividad personal con inteligencia artificial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0f",
+  "theme_color": "#0d0d0f",
+  "orientation": "any",
+  "lang": "es",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
