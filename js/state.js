@@ -104,6 +104,7 @@ window.FlowState = (() => {
       provider:     'ollama',
       baseUrl:      'http://localhost:11434',
       model:        'qwen2.5-coder:7b',
+      timeout:      180000,
       chatHistory:  [],          // Array<{role, content, ts}>
       suggestions:  [],          // Sugerencias activas del día
       planGenerated: false,

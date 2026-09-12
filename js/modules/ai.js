@@ -65,7 +65,9 @@ window.FlowAI = (() => {
       model:      isAdmin ? (saved.model || sharedModel) : (sharedModel || saved.model || ''),
       maxTokens:  saved.maxTokens || 1024,
       temperature:saved.temperature ?? 0.7,
-      timeout:    saved.timeout   || 60000,
+      // En la primera consulta Ollama puede cargar el modelo desde disco.
+      // Tres minutos evita falsos errores con modelos de 7B ejecutados por CPU.
+      timeout:    saved.timeout   || 180000,
     };
   }
 
@@ -99,7 +101,7 @@ window.FlowAI = (() => {
     const provider = _getProvider();
     try {
       const ctrl = new AbortController();
-      const tid  = setTimeout(() => ctrl.abort(), 12000);
+      const tid  = setTimeout(() => ctrl.abort(), 30000);
       const res  = await fetch(`${cfg.baseUrl}${provider.modelsPath}`, {
         signal: ctrl.signal,
         headers: _requestHeaders(cfg.baseUrl),
@@ -587,7 +589,7 @@ SHOW_TOAST       → { message, type }`;
   }
 
   function _friendlyConnectionError(error, baseUrl) {
-    if (error?.name === 'AbortError') return 'Tiempo de espera agotado. Revisa que Ollama y el túnel de Cloudflare sigan activos.';
+    if (error?.name === 'AbortError') return 'Tiempo de espera agotado. Ollama puede tardar al cargar el modelo; espera unos segundos y verifica que Ollama, el puente CORS y ngrok sigan activos.';
     if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError') || error instanceof TypeError) {
       return `No se pudo acceder a ${baseUrl}. Verifica que Ollama y ngrok estén activos. Si el túnel abre pero falla en el navegador, configura CORS en Ollama para permitir el dominio de esta web.`;
     }
