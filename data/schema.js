@@ -1,6 +1,6 @@
 // ── FocusAI Schema ───────────────────────────────────────────────────────────
-// Definición de todos los object stores de IndexedDB.
-// Usado por storage.js al inicializar (onupgradeneeded).
+// Esquema legado de stores del cliente; no se inicializa en la versión Neon.
+// Los datos persistentes se guardan en PostgreSQL a través de js/modules/storage.js.
 
 window.FlowSchema = {
 

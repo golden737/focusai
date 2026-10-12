@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="FocusAI — Tu sistema de productividad personal con IA integrada" />
+  <meta name="description" content="FocusAI — Ecosistema inteligente de trabajo, talento y productividad" />
   <meta name="theme-color" content="#0d0d0f" />
   <title>FocusAI</title>
 
@@ -23,12 +23,9 @@
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/relativeTime.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/isoWeek.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/duration.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <!-- Supabase Config — reemplaza con tus credenciales -->
  <script>
-    window.SUPABASE_URL     = 'https://akcodgbvfkzucsfiertf.supabase.co';
-    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrY29kZ2J2Zmt6dWNzZmllcnRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTY0MTcsImV4cCI6MjEwNDQ3MjQxN30.pwW_S3WKyPXei0FlrYauh8_vnELQHyBwvyZKHIYJZGM';
     // IA compartida: pega aquí la URL actual de Cloudflare Tunnel.
     // Ejemplo: 'https://xxxxx.trycloudflare.com' (sin /api/chat al final).
     window.FOCUSAI_AI_URL   = '';
@@ -45,6 +42,7 @@
   <link rel="stylesheet" href="css/animations.css" />
   <link rel="stylesheet" href="css/themes.css" />
   <link rel="stylesheet" href="css/welcome.css" />
+  <link rel="stylesheet" href="css/enterprise.css" />
 </head>
 <body>
 
@@ -82,59 +80,32 @@
         </button>
       </div>
 
-      <nav class="sidebar-nav">
-        <a href="#dashboard"      class="nav-item active" data-view="dashboard">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          <span>Dashboard</span>
-        </a>
-        <a href="#tasks"          class="nav-item" data-view="tasks">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          <span>Tareas</span>
-          <span class="nav-badge" id="badge-tasks">0</span>
-        </a>
-        <a href="#calendar"       class="nav-item" data-view="calendar">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span>Calendario</span>
-        </a>
-        <a href="#timer"          class="nav-item" data-view="timer">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-          <span>Tiempo</span>
-        </a>
-        <a href="#habits"         class="nav-item" data-view="habits">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          <span>Hábitos</span>
-        </a>
-        <a href="#goals"          class="nav-item" data-view="goals">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          <span>Objetivos</span>
-        </a>
-        <a href="#projects"       class="nav-item" data-view="projects">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-          <span>Proyectos</span>
-        </a>
-        <a href="#stats"          class="nav-item" data-view="stats">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Estadísticas</span>
-        </a>
-
-        <div class="nav-divider"></div>
-
-        <a href="#focus"          class="nav-item" data-view="focus">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-          <span>Enfoque</span>
-        </a>
-        <a href="#personal"       class="nav-item" data-view="personal">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-          <span>Personal</span>
-        </a>
-        <a href="#teams" class="nav-item" data-view="teams">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          <span>Equipos</span>
-        </a>
-        <a href="#gamification"   class="nav-item" data-view="gamification">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span>Logros</span>
-        </a>
+      <nav class="sidebar-nav" aria-label="Módulos de FocusAI">
+        <div class="nav-section-label">ESPACIO DE TRABAJO</div>
+        <a href="#dashboard" class="nav-item" data-view="dashboard"><span class="nav-emoji">◫</span><span>Inicio</span></a>
+        <a href="#tasks" class="nav-item" data-view="tasks"><span class="nav-emoji">✓</span><span>Tareas</span><span class="nav-badge" id="badge-tasks" hidden>0</span></a>
+        <a href="#calendar" class="nav-item" data-view="calendar"><span class="nav-emoji">▦</span><span>Calendario</span></a>
+        <a href="#projects" class="nav-item" data-view="projects"><span class="nav-emoji">▰</span><span>Proyectos</span></a>
+        <a href="#teams" class="nav-item" data-view="teams"><span class="nav-emoji">♧</span><span>Equipos</span></a>
+        <div class="nav-section-label">COMUNICACIÓN</div>
+        <a href="#meetings" class="nav-item" data-view="meetings"><span class="nav-emoji">◉</span><span>Reuniones y llamadas</span><span class="nav-tag">Nuevo</span></a>
+        <div class="nav-section-label">PERSONAS Y TALENTO</div>
+        <a href="#employees" class="nav-item" data-view="employees"><span class="nav-emoji">♙</span><span>Directorio de empleados</span></a>
+        <a href="#surveys" class="nav-item" data-view="surveys"><span class="nav-emoji">☷</span><span>Encuestas de RR. HH.</span></a>
+        <a href="#my-surveys" class="nav-item" data-view="my-surveys"><span class="nav-emoji">✓</span><span>Mis encuestas</span></a>
+        <a href="#join-organization" class="nav-item" data-view="join-organization"><span class="nav-emoji">＋</span><span>Unirse a organización</span></a>
+        <a href="#skills" class="nav-item" data-view="skills"><span class="nav-emoji">◇</span><span>Competencias</span></a>
+        <div class="nav-section-label">PRODUCTIVIDAD PERSONAL</div>
+        <a href="#timer" class="nav-item" data-view="timer"><span class="nav-emoji">◷</span><span>Tiempo y temporizador</span></a>
+        <a href="#habits" class="nav-item" data-view="habits"><span class="nav-emoji">✳</span><span>Hábitos</span></a>
+        <a href="#goals" class="nav-item" data-view="goals"><span class="nav-emoji">◎</span><span>Objetivos</span></a>
+        <a href="#focus" class="nav-item" data-view="focus"><span class="nav-emoji">✧</span><span>Enfoque</span></a>
+        <a href="#personal" class="nav-item" data-view="personal"><span class="nav-emoji">♡</span><span>Bienestar personal</span></a>
+        <a href="#stats" class="nav-item" data-view="stats"><span class="nav-emoji">▥</span><span>Estadísticas</span></a>
+        <a href="#gamification" class="nav-item" data-view="gamification"><span class="nav-emoji">☆</span><span>Logros</span></a>
+        <div class="nav-section-label">ADMINISTRACIÓN</div>
+        <a href="#admin" class="nav-item" data-view="admin"><span class="nav-emoji">⚙</span><span>Usuarios y permisos</span></a>
+        <a href="#settings" class="nav-item" data-view="settings"><span class="nav-emoji">⌘</span><span>Ajustes</span></a>
       </nav>
 
       <div class="sidebar-footer">
@@ -231,6 +202,7 @@
   <script src="js/modules/recurrence.js"></script>
   <script src="js/modules/supabase.js"></script>
   <script src="js/router.js"></script>
+  <script src="js/enterprise.js"></script>
   <script src="js/app.js"></script>
 
 <div id="embedded-views" hidden>
@@ -2659,7 +2631,7 @@
   async function _loadStorageInfo(){
     const info = await FlowStorage.estimateSize();
     const el   = document.getElementById('storage-info');
-    if(el && info) el.textContent = `Almacenamiento usado: ${info.usageMB} MB de ${info.quotaMB} MB disponibles`;
+    if(el) el.textContent = 'Los datos se guardan en el servidor FocusAI (Neon).';
   }
 
   function _bind(){

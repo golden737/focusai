@@ -1,6 +1,6 @@
 // ── FocusAI Service Worker ──────────────────────────────────────────────────
 // Versión: actualizar al desplegar nuevos assets para forzar recarga del caché
-const CACHE_VERSION   = 'focusai-v4';
+const CACHE_VERSION   = 'focusai-v7-neon-org';
 const STATIC_CACHE    = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE   = `${CACHE_VERSION}-dynamic`;
 const API_CACHE       = `${CACHE_VERSION}-api`;
@@ -17,7 +17,9 @@ const STATIC_ASSETS = [
   '/css/animations.css',
   '/css/themes.css',
   '/css/welcome.css',
+  '/css/enterprise.css',
   '/js/app.js',
+  '/js/enterprise.js',
   '/js/state.js',
   '/js/router.js',
   '/js/utils/date.js',
@@ -57,6 +59,13 @@ const STATIC_ASSETS = [
   '/views/settings.html',
   '/views/login.html',
   '/views/teams.html',
+  '/views/meetings.html',
+  '/views/surveys.html',
+  '/views/employees.html',
+  '/views/skills.html',
+  '/views/admin.html',
+  '/views/my-surveys.html',
+  '/views/join-organization.html',
   '/components/sidebar.html',
   '/components/ai-chat.html',
   '/components/task-card.html',
@@ -99,6 +108,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Nunca cachear API ni respuestas de datos personales; siempre ir al servidor.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
 
   // Ignorar: extensiones de chrome, devtools, requests POST/PUT/DELETE
   if (

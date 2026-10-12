@@ -51,17 +51,17 @@ window.FlowApp = (() => {
       _showLoader('Iniciando FocusAI…');
 
       // 1. Restaurar preferencias del usuario (tema, sidebar, apiKey…)
-      FlowState.restore();
+      await FlowState.restore();
 
       // 2. Aplicar tema y color antes de renderizar
       _applyTheme(FlowState.get('user.theme') || 'dark');
       _applyAccent(FlowState.get('user.id') ? FlowState.get('user.accentColor') : null);
 
-      // 3. Inicializar base de datos (IndexedDB)
+      // 3. Verificar conexión con Neon
       _showLoader('Cargando datos…');
       await FlowStorage.init();
 
-      // 4. Cargar datos desde IndexedDB al estado global
+      // 4. Cargar datos desde Neon al estado global
       _showLoader('Sincronizando…');
       await _loadAllData();
 
@@ -131,7 +131,7 @@ window.FlowApp = (() => {
       if (timeLogs.status    === 'fulfilled') FlowState.set('timer.logs',         timeLogs.value    || []);
       if (entries.status     === 'fulfilled') FlowState.set('personal.entries',   entries.value     || []);
       if (moodLogs.status    === 'fulfilled') FlowState.set('personal.moodLogs',  moodLogs.value    || []);
-      if (gamification.value)                FlowState.update('gamification',     gamification.value);
+      if (gamification.value?.value)          FlowState.update('gamification',     gamification.value.value);
     });
   }
 
@@ -449,7 +449,7 @@ window.FlowApp = (() => {
   // ── Auth ─────────────────────────────────────────────────────────────────
 
   function _initAuth() {
-    // Escuchar cambios de autenticación de Supabase
+    // Escuchar cambios de autenticación del backend FocusAI
     if (FlowSupabase.isConfigured()) {
       FlowSupabase.getUser().then(_hydrateAuthenticatedUser);
       FlowSupabase.onAuthChange(async (event, user) => {
@@ -470,9 +470,14 @@ window.FlowApp = (() => {
     catch (err) { console.warn('[Auth] No se pudo cargar el perfil:', err.message); }
     const name = profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario';
     const accentColor = profile?.accent_color || '#6366f1';
-    FlowState.update('user', { id: user.id, email: user.email, name, accentColor, role: profile?.role || 'user' });
+    FlowState.update('user', { id: user.id, email: user.email, name, accentColor, role: profile?.role || user.role || 'employee' });
     _applyAccent(accentColor);
     FlowState.persist();
+    // La primera carga puede ocurrir antes de resolver la cookie de sesión.
+    // Al confirmar la sesión, volver a traer los datos desde Neon.
+    await _loadAllData();
+    await Promise.allSettled([FlowGamification.init(), FlowRecurrence.expandUpcoming()]);
+    window.dispatchEvent(new Event('focusai:authenticated'));
   }
 
   async function logout() {
@@ -484,7 +489,7 @@ window.FlowApp = (() => {
     FlowState.set('user.email', null);
     FlowState.set('user.accentColor', null);
     _applyAccent(null);
-    localStorage.clear();
+    // Los datos persistentes están en Neon; la sesión se invalida en el backend.
     FlowRouter.navigate('login');
   }
 

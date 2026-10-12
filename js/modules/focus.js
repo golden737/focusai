@@ -49,7 +49,7 @@ window.FlowFocus = (() => {
       weekSessions:  stats.weekSessions  + 1,
     });
 
-    // Guardar log en IndexedDB
+    // Guardar registro en Neon a través del backend
     if (durationMin >= 1) {
       await FlowStorage.save('focus_logs', {
         id:          FlowStorage.generateId('foc_'),

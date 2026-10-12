@@ -231,8 +231,10 @@ window.FlowAuth = (() => {
   }
 
   async function clearAllData() {
-    if (!confirm('¿Seguro? Esta acción eliminará TODOS tus datos de FocusAI.')) return;
-    FlowState.reset();
+    if (!confirm('¿Seguro? Esta acción eliminará TODOS tus datos de FocusAI guardados en Neon.')) return;
+    for (const store of ['tasks','events','habits','habit_logs','goals','projects','time_logs','journal','mood_logs','focus_logs','meta']) await FlowStorage.clear(store);
+    try { await fetch('/api/enterprise/state', {method:'DELETE',credentials:'same-origin'}); } catch (_) {}
+    window.location.reload();
   }
 
   return { init, updateProfile, getProfile, exportData, importData, clearAllData };

@@ -1,15 +1,23 @@
 {
-  "name": "FocusAI — Productividad Inteligente",
+  "name": "FocusAI — Ecosistema empresarial inteligente",
   "short_name": "FocusAI",
-  "description": "Tu plataforma de productividad personal con inteligencia artificial",
+  "description": "Productividad, colaboración y desarrollo del talento en un solo espacio",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d0d0f",
-  "theme_color": "#0d0d0f",
+  "background_color": "#f4f7fb",
+  "theme_color": "#111d32",
   "orientation": "any",
   "lang": "es",
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
-    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

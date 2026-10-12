@@ -1,6 +1,6 @@
 // ── FocusAI Migrations ───────────────────────────────────────────────────────
-// Actualizaciones de versión de la base de datos IndexedDB.
-// Se ejecuta en onupgradeneeded cuando DB_VERSION aumenta.
+// Migraciones del esquema legado del cliente, conservadas por compatibilidad.
+// La versión Neon no abre IndexedDB ni ejecuta estas migraciones.
 
 window.FlowMigrations = {
 

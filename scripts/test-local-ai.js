@@ -1,0 +1,3 @@
+const base=(process.env.OLLAMA_URL||'http://127.0.0.1:11434').replace(/\/$/,'');
+const model=process.env.OLLAMA_MODEL||'llama3.2:3b';
+(async()=>{try{const r=await fetch(base+'/api/tags',{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error('Ollama respondió HTTP '+r.status);const d=await r.json();const names=(d.models||[]).map(m=>m.name);console.log('Ollama accesible. Modelos:',names.join(', ')||'(ninguno)');if(!names.some(n=>n===model||n.startsWith(model+':'))) {console.error('Falta el modelo '+model+'. Ejecuta: ollama pull '+model);process.exitCode=1;}}catch(e){console.error('No se pudo conectar con Ollama:',e.message);console.error('Inicia Ollama e intenta npm run test:ai.');process.exitCode=1;}})();

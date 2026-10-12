@@ -78,7 +78,7 @@
         </form>
         <div class="auth-divider"><span>o continúa sin cuenta</span></div>
         <button class="btn btn-ghost btn-full" id="demo-btn">
-          🚀 Probar sin registrarse
+          🚀 Crear una cuenta para empezar
         </button>
       </div>
 
@@ -147,30 +147,10 @@
     });
   });
 
-  // Demo mode (sin cuenta)
-  document.getElementById('demo-btn')?.addEventListener('click', async () => {
-    const btn = document.getElementById('demo-btn');
-    btn.disabled = true;
-    btn.textContent = 'Preparando tu espacio…';
-    FlowState.set('user.id',    'demo_' + Date.now());
-    FlowState.set('user.name',  'Usuario Demo');
-    FlowState.set('user.email', 'demo@focusai.app');
-    FlowState.set('user.isDemo', true);
-    try {
-      // Una demo vacía no enseña el valor del producto. Los ejemplos solo se
-      // cargan cuando todavía no existen tareas, por lo que no se duplican.
-      if (!FlowState.get('tasks.items').length && window.FlowSeed) {
-        await FlowSeed.load();
-      }
-      FlowState.persist();
-      FlowRouter.navigate('dashboard');
-    } catch (err) {
-      FlowApp.toast('No se pudieron preparar los ejemplos. Puedes crear tus propios datos.', 'warning');
-      FlowRouter.navigate('dashboard');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '🚀 Probar sin registrarse';
-    }
+  // La demo sin cuenta se desactiva: la app requiere autenticación para que no haya datos ficticios ni guardados solo en memoria.
+  document.getElementById('demo-btn')?.addEventListener('click', () => {
+    FlowApp.toast('Para guardar tus datos en Neon, crea una cuenta o inicia sesión.', 'info');
+    document.querySelector('.auth-tab[data-tab="register"]')?.click();
   });
 
   // Login
@@ -183,23 +163,12 @@
     btn.disabled    = true;
     error.hidden    = true;
     try {
-      if (FlowSupabase.isConfigured()) {
-        const data = await FlowSupabase.signIn(fd.get('email'), fd.get('password'));
-        FlowState.update('user', {
-          id:    data.user.id,
-          email: data.user.email,
-          name:  data.user.user_metadata?.name || fd.get('email').split('@')[0],
-        });
-      } else {
-        // Modo local sin Supabase
-        FlowState.update('user', {
-          id:    'local_' + Date.now(),
-          email: fd.get('email'),
-          name:  fd.get('email').split('@')[0],
-        });
-      }
+      const data = await FlowSupabase.signIn(fd.get('email'), fd.get('password'));
+      FlowState.update('user', { id:data.user.id, email:data.user.email, name:data.user.user_metadata?.name || data.user.name || fd.get('email').split('@')[0], role:data.user.role || 'employee' });
       FlowState.persist();
+      window.dispatchEvent(new Event('focusai:authenticated'));
       FlowRouter.navigate('dashboard');
+      window.location.reload();
     } catch(err) {
       error.textContent = err.message || 'Error al iniciar sesión';
       error.hidden = false;
@@ -226,21 +195,9 @@
     btn.disabled    = true;
 
     try {
-      if (FlowSupabase.isConfigured()) {
-        await FlowSupabase.signUp(fd.get('email'), fd.get('password'), fd.get('name'));
-        FlowApp.toast('¡Cuenta creada! Revisa tu correo para confirmar.', 'success', { duration: 6000 });
-        // Switch to login tab
-        document.querySelector('.auth-tab[data-tab="login"]').click();
-      } else {
-        // Modo local
-        FlowState.update('user', {
-          id:    'local_' + Date.now(),
-          email: fd.get('email'),
-          name:  fd.get('name'),
-        });
-        FlowState.persist();
-        FlowRouter.navigate('dashboard');
-      }
+      await FlowSupabase.signUp(fd.get('email'), fd.get('password'), fd.get('name'));
+      FlowApp.toast('¡Cuenta creada! Ya puedes iniciar sesión.', 'success', { duration: 6000 });
+      document.querySelector('.auth-tab[data-tab="login"]').click();
     } catch(err) {
       error.textContent = err.message || 'Error al crear la cuenta';
       error.hidden = false;

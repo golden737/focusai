@@ -318,82 +318,42 @@ window.FlowState = (() => {
   }
 
   /**
-   * Persistir estado crítico en localStorage (user prefs, settings, api key).
-   * Los datos de tareas/hábitos/etc. viven en IndexedDB (storage.js).
+   * El estado de interfaz permanece en memoria; la persistencia de datos usa Neon.
+   * Los registros se guardan en el backend, nunca en almacenamiento local.
    */
-  function persist() {
+  // El estado en memoria solo es temporal. Los datos duraderos se guardan en Neon.
+  // Preferencias persistentes en Neon; nunca se escriben en el almacenamiento del navegador.
+  async function persist() {
+    const payload = {
+      settings: get('settings') || {},
+      ai: { provider:get('ai.provider'), baseUrl:get('ai.baseUrl'), model:get('ai.model'), temperature:get('ai.temperature'), maxTokens:get('ai.maxTokens'), timeout:get('ai.timeout') },
+      timer: { settings:get('timer.settings') || {} },
+      notifications: { settings:get('notifications.settings') || {} },
+      ui: { sidebarCollapsed:get('ui.sidebarCollapsed'), currentView:get('ui.currentView') }
+    };
     try {
-      const persisted = {
-        user:     get('user'),
-        settings: get('settings'),
-        ai: {
-          apiKey: get('ai.apiKey'),
-          provider: get('ai.provider'),
-          baseUrl: get('ai.baseUrl'),
-          model:  get('ai.model'),
-          temperature: get('ai.temperature'),
-          maxTokens: get('ai.maxTokens'),
-          timeout: get('ai.timeout'),
-        },
-        timer: {
-          settings: get('timer.settings'),
-        },
-        notifications: {
-          settings: get('notifications.settings'),
-        },
-        ui: {
-          sidebarCollapsed: get('ui.sidebarCollapsed'),
-          currentView:      get('ui.currentView'),
-        },
-      };
-      localStorage.setItem('focusai_state', JSON.stringify(persisted));
-    } catch (e) {
-      console.warn('FlowState: no se pudo persistir en localStorage:', e);
-    }
+      const response = await fetch('/api/preferences', {method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      return response.ok;
+    } catch (_) { return false; }
   }
-
-  /**
-   * Restaurar estado persistido desde localStorage.
-   */
-  function restore() {
+  async function restore() {
     try {
-      const raw = localStorage.getItem('focusai_state');
-      if (!raw) return false;
-      const saved = JSON.parse(raw);
+      const response = await fetch('/api/preferences', {credentials:'same-origin',cache:'no-store'});
+      if (!response.ok) return false;
+      const saved = await response.json();
       batch(() => {
-        if (saved.user)     update('user', saved.user);
         if (saved.settings) update('settings', saved.settings);
-        if (saved.ai) {
-          // La URL del túnel es una preferencia del administrador. Antes solo
-          // se restauraba apiKey, por eso la URL volvía a localhost al recargar.
-          ['apiKey', 'provider', 'baseUrl', 'model', 'temperature', 'maxTokens', 'timeout'].forEach((key) => {
-            if (saved.ai[key] !== undefined) set(`ai.${key}`, saved.ai[key]);
-          });
-        }
+        if (saved.ai) ['provider','baseUrl','model','temperature','maxTokens','timeout'].forEach(key => { if(saved.ai[key] !== undefined) set(`ai.${key}`, saved.ai[key]); });
         if (saved.timer?.settings) update('timer.settings', saved.timer.settings);
         if (saved.notifications?.settings) update('notifications.settings', saved.notifications.settings);
-        if (saved.ui) {
-          if (saved.ui.sidebarCollapsed !== undefined) set('ui.sidebarCollapsed', saved.ui.sidebarCollapsed);
-        }
+        if (saved.ui && saved.ui.sidebarCollapsed !== undefined) set('ui.sidebarCollapsed', saved.ui.sidebarCollapsed);
       });
       return true;
-    } catch (e) {
-      console.warn('FlowState: error al restaurar localStorage:', e);
-      return false;
-    }
+    } catch (_) { return false; }
   }
-
-  /**
-   * Reset completo del estado (útil para logout o tests).
-   */
   function reset(path) {
-    if (path) {
-      // Reset de un sub-árbol específico — recarga desde el estado inicial
-      console.warn(`FlowState.reset('${path}') — reimplementar con estado inicial si se necesita`);
-    } else {
-      localStorage.removeItem('focusai_state');
-      window.location.reload();
-    }
+    if (path) return;
+    window.location.reload();
   }
 
   /**
@@ -403,7 +363,7 @@ window.FlowState = (() => {
     return JSON.parse(JSON.stringify(_state));
   }
 
-  // Auto-persist cada vez que cambia user, settings o ai.apiKey
+  // Guardar preferencias del usuario en Neon cuando cambian.
   subscribe('user',        persist);
   subscribe('settings',    persist);
   subscribe('ai.apiKey',   persist);
