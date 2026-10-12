@@ -167,7 +167,8 @@
       FlowState.update('user', { id:data.user.id, email:data.user.email, name:data.user.user_metadata?.name || data.user.name || fd.get('email').split('@')[0], role:data.user.role || 'employee' });
       FlowState.persist();
       window.dispatchEvent(new Event('focusai:authenticated'));
-      await FlowRouter.navigate('dashboard');
+      FlowRouter.navigate('dashboard');
+      window.location.reload();
     } catch(err) {
       error.textContent = err.message || 'Error al iniciar sesión';
       error.hidden = false;

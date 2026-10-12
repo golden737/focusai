@@ -156,14 +156,14 @@ app.post('/api/auth/signup', async (req,res,next)=>{
     try { await client.query('BEGIN');
       // Si RR. HH. creó previamente un perfil con este correo, se vincula la cuenta al perfil y organización existentes.
       const invited=await client.query(`SELECT p.id,p.organization_id,p.role FROM profiles p WHERE lower(p.email)=lower($1) AND p.organization_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM auth_users a WHERE a.id=p.id) ORDER BY p.created_at LIMIT 1 FOR UPDATE`,[email]);
-      let u, role='employee';
+      let u, role='admin';
       if(invited.rows[0]){
         const linked=await client.query('INSERT INTO auth_users(id,email,password_hash,name) VALUES($1,$2,$3,$4) RETURNING id,email,name',[invited.rows[0].id,email,hash,name]);u=linked.rows[0];role=invited.rows[0].role==='hr'?'hr':invited.rows[0].role==='admin'?'admin':'employee';
         await client.query('UPDATE profiles SET name=$2,email=$3,role=$4,updated_at=now() WHERE id=$1',[u.id,name,email,role]);
       } else {
         const created=await client.query('INSERT INTO auth_users(email,password_hash,name) VALUES($1,$2,$3) RETURNING id,email,name',[email,hash,name]);u=created.rows[0];
         const orgResult=await client.query('INSERT INTO organizations(name,slug,invite_code) VALUES($1,$2,$3) RETURNING id',[`${name} - Organización`, `${email.split('@')[0].toLowerCase().replace(/[^a-z0-9-]/g,'-').slice(0,35)}-${u.id.slice(0,8)}`,require('crypto').randomBytes(5).toString('hex').toUpperCase()]);
-        await client.query(`INSERT INTO profiles(id,name,email,role,organization_id,created_at,updated_at) VALUES($1,$2,$3,'employee',$4,now(),now()) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,organization_id=COALESCE(profiles.organization_id,EXCLUDED.organization_id)`,[u.id,u.name,u.email,orgResult.rows[0].id]);
+        await client.query(`INSERT INTO profiles(id,name,email,role,organization_id,created_at,updated_at) VALUES($1,$2,$3,'admin',$4,now(),now()) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,organization_id=COALESCE(profiles.organization_id,EXCLUDED.organization_id)`,[u.id,u.name,u.email,orgResult.rows[0].id]);
       }
       await client.query('COMMIT'); res.status(201).json({user:{id:u.id,email:u.email,name:u.name,user_metadata:{name:u.name},role}});
     } catch(e){await client.query('ROLLBACK'); if(e.code==='23505')return res.status(409).json({error:'Ya existe una cuenta con ese correo.'}); throw e;} finally{client.release();}
@@ -173,7 +173,7 @@ app.post('/api/auth/login',async(req,res,next)=>{
   const email=String(req.body.email||'').trim().toLowerCase(), password=String(req.body.password||'');
   try {const {rows}=await pool.query('SELECT id,email,name,password_hash FROM auth_users WHERE email=$1',[email]); const u=rows[0]; if(!u||!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:'Correo o contraseña incorrectos.'});
     const prof=await pool.query('SELECT organization_id FROM profiles WHERE id=$1',[u.id]);
-    if(prof.rows[0] && !prof.rows[0].organization_id){const org=await pool.query('INSERT INTO organizations(name,invite_code) VALUES($1,$2) RETURNING id',[`${u.name} - Organización`,require('crypto').randomBytes(5).toString('hex').toUpperCase()]);await pool.query("UPDATE profiles SET organization_id=$2, role=CASE WHEN role='user' THEN 'employee' ELSE role END, updated_at=now() WHERE id=$1",[u.id,org.rows[0].id]);}
+    if(prof.rows[0] && !prof.rows[0].organization_id){const org=await pool.query('INSERT INTO organizations(name,invite_code) VALUES($1,$2) RETURNING id',[`${u.name} - Organización`,require('crypto').randomBytes(5).toString('hex').toUpperCase()]);await pool.query("UPDATE profiles SET organization_id=$2, role=CASE WHEN role='user' THEN 'admin' ELSE 'admin' END, updated_at=now() WHERE id=$1",[u.id,org.rows[0].id]);}
     await new Promise((resolve,reject)=>req.session.regenerate(e=>e?reject(e):resolve())); req.session.userId=u.id;
     req.session.save(async err=>{if(err)return next(err);const {rows:p}=await pool.query('SELECT role,accent_color FROM profiles WHERE id=$1',[u.id]);res.json({user:{id:u.id,email:u.email,name:u.name,user_metadata:{name:u.name},role:p[0]?.role||'employee'}});});
   }catch(e){next(e);}
