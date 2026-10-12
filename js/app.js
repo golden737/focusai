@@ -83,7 +83,7 @@ window.FlowApp = (() => {
       _updateTaskBadge();
 
       // 7.5 Inicializar auth
-      _initAuth();
+      await _initAuth();
 
       // 8. Arrancar el router (navega a la vista inicial)
       FlowRouter.init();
@@ -448,19 +448,29 @@ window.FlowApp = (() => {
 
   // ── Auth ─────────────────────────────────────────────────────────────────
 
-  function _initAuth() {
-    // Escuchar cambios de autenticación del backend FocusAI
-    if (FlowSupabase.isConfigured()) {
-      FlowSupabase.getUser().then(_hydrateAuthenticatedUser);
-      FlowSupabase.onAuthChange(async (event, user) => {
-        if (event === 'SIGNED_OUT' || !user) {
-          FlowState.set('user.id', null);
-          FlowRouter.navigate('login');
-        } else if (user) {
-          await _hydrateAuthenticatedUser(user);
-        }
-      });
+  async function _initAuth() {
+    // Restaurar la sesión ANTES de arrancar el router. Si el router inicia
+    // primero, puede ver user.id vacío y redirigir a login aunque la cookie
+    // del backend sea válida.
+    if (!FlowSupabase.isConfigured()) return;
+
+    try {
+      const user = await FlowSupabase.getUser();
+      if (user) await _hydrateAuthenticatedUser(user);
+    } catch (err) {
+      console.warn('[Auth] No se pudo restaurar la sesión:', err.message);
     }
+
+    FlowSupabase.onAuthChange(async (event, user) => {
+      if (event === 'SIGNED_OUT') {
+        FlowState.set('user.id', null);
+        FlowState.set('user.email', null);
+        FlowState.set('user.name', null);
+        FlowRouter.navigate('login', {}, { replace: true });
+      } else if (user) {
+        await _hydrateAuthenticatedUser(user);
+      }
+    });
   }
 
   async function _hydrateAuthenticatedUser(user) {
