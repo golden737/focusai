@@ -197,13 +197,14 @@ window.FlowApp = (() => {
 
   function _applyAccent(color) {
     const root = document.documentElement;
-    const chosen = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? String(color) : DEFAULT_ACCENT;
-    const rgb = chosen.match(/[0-9a-f]{2}/ig).map(v => parseInt(v, 16));
+    const chosen = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? String(color).toLowerCase() : DEFAULT_ACCENT;
+    const rgb = chosen.slice(1).match(/.{2}/g).map(v => parseInt(v, 16));
     const mix = (a, b, t) => Math.round(a + (b - a) * t);
     const toHex = (v) => v.toString(16).padStart(2, '0');
     const hover = '#' + rgb.map(c => toHex(mix(c, 255, .13))).join('');
     const soft = `rgba(${rgb.join(',')},.16)`;
     const glow = `rgba(${rgb.join(',')},.28)`;
+    root.dataset.accent = chosen;
     root.style.setProperty('--accent', chosen);
     root.style.setProperty('--accent-hover', hover);
     root.style.setProperty('--accent-soft', soft);
@@ -212,10 +213,15 @@ window.FlowApp = (() => {
     root.style.setProperty('--border-focus', chosen);
     root.style.setProperty('--shadow-accent', `0 8px 26px ${glow}`);
     root.style.setProperty('--eco-blue', chosen);
-    root.style.setProperty('--eco-blue-rgb', rgb.join(','));
-    root.style.setProperty('--eco-blue-soft', soft);
-    root.style.setProperty('--eco-blue-hover', hover);
     root.style.setProperty('--focusai-accent-gradient', `linear-gradient(135deg, ${hover}, ${chosen})`);
+    root.style.setProperty('--focusai-accent-solid', chosen);
+    // SVG logos and elements with their own inline styles should still follow the profile accent.
+    document.querySelectorAll('.sidebar-logo rect, #sidebar .sidebar-logo rect').forEach(el => el.setAttribute('fill', chosen));
+    document.querySelectorAll('.color-option').forEach(el => {
+      const active = String(el.dataset.color || '').toLowerCase() === chosen;
+      el.classList.toggle('active', active);
+      el.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
   }
 
   function _updateXPBar(g) {
