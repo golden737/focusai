@@ -129,3 +129,184 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea {
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important; }
 }
+
+
+/* -------------------------------------------------------------------------
+   FOCUSAI UNIFIED DARK SYSTEM v2
+   One palette across legacy productivity modules and newer enterprise modules.
+   ------------------------------------------------------------------------- */
+:root {
+  --accent: #7775ff;
+  --accent-hover: #8987ff;
+  --accent-soft: rgba(119,117,255,.16);
+  --eco-ink: #eef2ff;
+  --eco-muted: #a3afc5;
+  --eco-line: rgba(164,180,208,.14);
+  --eco-surface: #121a29;
+  --eco-canvas: #0a0d14;
+  --eco-blue: #7775ff;
+}
+html[data-theme="dark"], html[data-theme="dark"] body, [data-theme="dark"] {
+  --bg-base: #0a0d14;
+  --bg-surface: #101827;
+  --bg-elevated: #171f30;
+  --bg-overlay: #202b40;
+  --bg-hover: rgba(255,255,255,.055);
+  --text-primary: #f3f6ff;
+  --text-secondary: #c0cbe0;
+  --text-muted: #9aa9c2;
+  --text-disabled: #6f7d95;
+  --border: rgba(164,180,208,.16);
+  --border-secondary: rgba(164,180,208,.09);
+  --border-focus: #8a88ff;
+  --accent: #7775ff;
+  --accent-hover: #8987ff;
+  --accent-soft: rgba(119,117,255,.16);
+}
+html, body, .app-shell, .main-content, .app-main, .view-container {
+  background-color: #0a0d14 !important;
+  color: #f3f6ff;
+}
+.main-content, .app-main { min-width:0; }
+.view-container { color:#f3f6ff !important; }
+.view-container h1, .view-container h2, .view-container h3,
+.view-container .view-title, .view-container .section-title,
+.view-container .card-title, .view-container label,
+.view-container .project-selector, .view-container .project-tab {
+  color:#edf2ff !important;
+}
+.view-container p, .view-container .view-subtitle,
+.view-container .text-muted, .view-container .empty-state p,
+.view-container .project-stats-bar, .view-container .helper-text {
+  color:#aab8d0 !important;
+}
+/* Neutralize the light palette accidentally applied by enterprise.css. */
+.view-container .eco-page { color:#edf2ff !important; }
+.view-container .eco-heading h1 { color:#f3f6ff !important; }
+.view-container .eco-heading p { color:#aab8d0 !important; }
+.view-container .eyebrow { color:#9a99ff !important; }
+.view-container .eco-card,
+.view-container .eco-stat,
+.view-container .eco-panel,
+.view-container .eco-table-wrap,
+.view-container .eco-form-card,
+.view-container .eco-grid > *,
+.view-container .dashboard-view .metric-card,
+.view-container .metrics-grid .metric-card,
+.view-container .view-container .card,
+.view-container .card,
+.view-container .panel,
+.view-container .widget,
+.view-container .section-card,
+.view-container .stat-card,
+.view-container .metric-card,
+.view-container .dash-section,
+.view-container .settings-card,
+.view-container .employee-card,
+.view-container .survey-card,
+.view-container .project-card,
+.view-container .goal-card,
+.view-container .habit-card,
+.view-container .task-card,
+.view-container .calendar-panel,
+.view-container .meeting-card {
+  background:#121a29 !important;
+  color:#edf2ff !important;
+  border:1px solid rgba(164,180,208,.15) !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.14) !important;
+}
+.view-container .eco-card p,
+.view-container .eco-card small,
+.view-container .eco-stat-label,
+.view-container .metric-label,
+.view-container .dashboard-view .metric-label,
+.view-container .eco-table-wrap td {
+  color:#aab8d0 !important;
+}
+.view-container .eco-stat-value,
+.view-container .metric-value,
+.view-container .dashboard-view .metric-value {
+  color:#f3f6ff !important;
+}
+/* Single primary-button language: FocusAI violet, never mixed blue/purple. */
+.btn-primary, .eco-btn-primary, .eco-button-primary,
+button.btn-primary, .view-container button[type="submit"],
+.view-container .btn-primary {
+  background:linear-gradient(135deg,#7775ff 0%,#625ff0 100%) !important;
+  border:1px solid rgba(157,154,255,.35) !important;
+  color:#fff !important;
+  box-shadow:0 7px 20px rgba(101,95,240,.22) !important;
+}
+.btn-primary:hover:not(:disabled), .eco-btn-primary:hover,
+.eco-button-primary:hover, .view-container .btn-primary:hover {
+  background:linear-gradient(135deg,#8987ff 0%,#706df7 100%) !important;
+  color:#fff !important;
+}
+button:not(.btn-primary):not(.mode-tab):not(.project-tab):not(.nav-item),
+.icon-btn, .mode-tab, .project-tab {
+  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease;
+}
+.mode-tab.active, .view-toggle .mode-tab.active {
+  background:#7775ff !important; color:#fff !important;
+}
+.view-toggle { background:#171f30 !important; border:1px solid rgba(164,180,208,.12); }
+.mode-tab { color:#aab8d0 !important; }
+.mode-tab:hover { color:#fff !important; }
+/* Projects page: fix dark-on-dark heading and give the empty state a deliberate layout. */
+.projects-view { color:#edf2ff !important; }
+.projects-view .view-header {
+  display:flex; align-items:center; justify-content:space-between; gap:18px;
+  flex-wrap:wrap; margin:0 0 28px !important;
+}
+.projects-view .view-title { color:#f3f6ff !important; font-size:clamp(1.65rem,2.5vw,2.15rem); }
+.projects-view .header-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.projects-view .project-selector {
+  border-bottom:1px solid rgba(164,180,208,.14) !important;
+  margin-bottom:20px !important; padding:0 0 14px !important;
+  color:#aab8d0 !important;
+}
+.projects-view .project-selector .text-muted { color:#aab8d0 !important; }
+.projects-view .project-content { min-height:0 !important; }
+.projects-view .empty-state {
+  min-height:340px; padding:40px 24px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:18px; text-align:center;
+  background:radial-gradient(ellipse at 50% 0%,rgba(119,117,255,.09),transparent 58%),#101827;
+  border:1px solid rgba(164,180,208,.13); border-radius:22px;
+  box-shadow:0 16px 38px rgba(0,0,0,.13);
+}
+.projects-view .empty-state .empty-icon {
+  width:76px;height:76px;display:grid;place-items:center;border-radius:22px;
+  background:rgba(119,117,255,.13);border:1px solid rgba(119,117,255,.22);
+  font-size:34px;
+}
+.projects-view .empty-state p {
+  color:#e2e8f7 !important; font-size:1.08rem; font-weight:650; margin:0;
+}
+.projects-view .empty-state .btn { min-height:44px; padding:0 22px; }
+.projects-view .project-tab {
+  background:#141d2d !important; border:1px solid rgba(164,180,208,.14) !important;
+  border-radius:10px !important; color:#c0cbe0 !important;
+}
+.projects-view .project-tab.active {
+  background:rgba(119,117,255,.14) !important; color:#fff !important;
+  border-color:rgba(119,117,255,.55) !important;
+}
+.projects-view .project-stats-bar {
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:14px 16px; border:1px solid rgba(164,180,208,.13);
+  border-radius:14px; background:#121a29; color:#b7c4da !important;
+}
+.projects-view .proj-progress-bar { flex:1; min-width:100px; background:#263149; border-radius:99px; overflow:hidden; }
+.projects-view input, .projects-view select, .projects-view textarea,
+.view-container .eco-page input, .view-container .eco-page select, .view-container .eco-page textarea {
+  background:#0d1421 !important; color:#f3f6ff !important;
+  border:1px solid rgba(164,180,208,.2) !important;
+}
+.view-container input::placeholder, .view-container textarea::placeholder { color:#7f8da7 !important; }
+.view-container .eco-table-wrap th, .view-container .eco-table-wrap td { border-color:rgba(164,180,208,.14) !important; }
+.view-container .eco-pill { background:rgba(66,214,164,.12) !important; color:#69e5bd !important; border-color:rgba(66,214,164,.2) !important; }
+.view-container .eco-pill-warning { background:rgba(246,189,96,.12) !important; color:#ffd18a !important; border-color:rgba(246,189,96,.2) !important; }
+@media(max-width:760px) {
+  .projects-view .empty-state { min-height:260px; padding:28px 16px; }
+  .projects-view .header-actions { width:100%; justify-content:space-between; }
+}
