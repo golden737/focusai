@@ -310,3 +310,90 @@ button:not(.btn-primary):not(.mode-tab):not(.project-tab):not(.nav-item),
   .projects-view .empty-state { min-height:260px; padding:28px 16px; }
   .projects-view .header-actions { width:100%; justify-content:space-between; }
 }
+
+
+/* FOCUSAI v3 — fluid workspace and per-user accent tokenization */
+:root {
+  --accent: #7775ff;
+  --accent-hover: #8987ff;
+  --accent-soft: rgba(119,117,255,.16);
+  --accent-rgb: 119,117,255;
+  --accent-glow: rgba(119,117,255,.28);
+  --focusai-accent-gradient: linear-gradient(135deg, #8987ff, #7775ff);
+}
+/* Let each workspace use the whole area beside the sidebar. */
+#view-container.view-container {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  scrollbar-gutter: auto !important;
+  overflow-x: hidden;
+}
+#view-container > .view {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: clamp(20px, 2.2vw, 36px) clamp(20px, 2.5vw, 44px) 48px !important;
+  box-sizing: border-box !important;
+}
+#view-container > .view > * { min-width: 0; }
+#view-container .stats-grid,
+#view-container .stats-kpi-row,
+#view-container .metrics-grid,
+#view-container .eco-grid,
+#view-container .eco-grid-3,
+#view-container .eco-grid-main { width: 100%; }
+/* Native scrollbar stays flush to the right edge of the workspace. */
+.main-content { min-width: 0; width: 0; flex: 1 1 auto; }
+#view-container::-webkit-scrollbar { width: 10px; }
+#view-container::-webkit-scrollbar-track { background: transparent; }
+#view-container::-webkit-scrollbar-thumb { background: rgba(164,180,208,.22); border: 3px solid transparent; background-clip: padding-box; border-radius: 99px; }
+#view-container::-webkit-scrollbar-thumb:hover { background: rgba(164,180,208,.38); border: 3px solid transparent; background-clip: padding-box; }
+/* Every interactive accent follows the current user's saved color. */
+.btn-primary, .eco-btn-primary, .eco-button-primary,
+button.btn-primary, #view-container button[type="submit"],
+#view-container .btn-primary {
+  background: var(--focusai-accent-gradient) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 7px 20px var(--accent-glow) !important;
+}
+.btn-primary:hover:not(:disabled), .eco-btn-primary:hover,
+.eco-button-primary:hover, #view-container .btn-primary:hover {
+  background: var(--accent) !important;
+  filter: brightness(1.08);
+}
+.sidebar .nav-item.active {
+  background: linear-gradient(100deg, var(--accent-soft), rgba(var(--accent-rgb),.055)) !important;
+  border-color: rgba(var(--accent-rgb),.28) !important;
+  box-shadow: inset 3px 0 var(--accent) !important;
+}
+.sidebar .nav-item.active .nav-icon,
+.sidebar .nav-item.active .nav-emoji,
+.sidebar .nav-item.active { color: #f7f8ff !important; }
+.view-container a:not(.nav-item), .view-container .text-accent,
+.view-container .accent-text, .view-container .eyebrow { color: var(--accent-hover); }
+.view-container input:focus, .view-container select:focus,
+.view-container textarea:focus, .view-container button:focus-visible {
+  outline-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+.view-container input[type="checkbox"], .view-container input[type="radio"],
+.view-container input[type="range"], .view-container progress { accent-color: var(--accent) !important; }
+.view-container .mode-tab.active, .view-container .view-toggle .mode-tab.active,
+.view-container .project-tab.active {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+.view-container .project-tab.active { box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),.14); }
+.view-container .project-progress-fill, .view-container .progress-fill,
+.view-container .xp-fill, .view-container .loader-fill { background: var(--accent) !important; }
+.view-container .project-selector [aria-selected="true"],
+.view-container [data-active="true"] { color: var(--accent-hover) !important; }
+@media (max-width: 760px) {
+  #view-container > .view { padding: 18px 14px 32px !important; }
+}

@@ -196,7 +196,23 @@ window.FlowApp = (() => {
   }
 
   function _applyAccent(color) {
-    document.documentElement.style.setProperty('--accent', color || DEFAULT_ACCENT);
+    const root = document.documentElement;
+    const chosen = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? String(color) : DEFAULT_ACCENT;
+    const rgb = chosen.match(/[0-9a-f]{2}/ig).map(v => parseInt(v, 16));
+    const mix = (a, b, t) => Math.round(a + (b - a) * t);
+    const toHex = (v) => v.toString(16).padStart(2, '0');
+    const hover = '#' + rgb.map(c => toHex(mix(c, 255, .13))).join('');
+    const soft = `rgba(${rgb.join(',')},.16)`;
+    const glow = `rgba(${rgb.join(',')},.28)`;
+    root.style.setProperty('--accent', chosen);
+    root.style.setProperty('--accent-hover', hover);
+    root.style.setProperty('--accent-soft', soft);
+    root.style.setProperty('--accent-rgb', rgb.join(','));
+    root.style.setProperty('--accent-glow', glow);
+    root.style.setProperty('--border-focus', chosen);
+    root.style.setProperty('--shadow-accent', `0 8px 26px ${glow}`);
+    root.style.setProperty('--eco-blue', chosen);
+    root.style.setProperty('--focusai-accent-gradient', `linear-gradient(135deg, ${hover}, ${chosen})`);
   }
 
   function _updateXPBar(g) {
