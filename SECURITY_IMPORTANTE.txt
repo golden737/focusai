@@ -1,0 +1,1 @@
+Este paquete excluye intencionalmente .env porque contiene secretos. No subas credenciales al repositorio. Si el ZIP original contenía credenciales reales y se compartió o subió a GitHub, rota esas credenciales en el proveedor correspondiente y configúralas únicamente como variables de entorno en Render.

@@ -397,3 +397,130 @@ button.btn-primary, #view-container button[type="submit"],
 @media (max-width: 760px) {
   #view-container > .view { padding: 18px 14px 32px !important; }
 }
+
+
+/* ── FocusAI hotfix: true per-user accent + consistent ecosystem layout ── */
+/* Every non-semantic accent is derived from the logged-in user's --accent token. */
+#sidebar .sidebar-logo rect,
+#sidebar .sidebar-header .sidebar-logo rect,
+#app-loader .loader-logo svg rect {
+  fill: var(--accent) !important;
+}
+#sidebar .nav-item.active,
+#sidebar .nav-item.active:hover {
+  color: var(--text-primary) !important;
+  background: linear-gradient(100deg,var(--accent-soft),rgba(var(--accent-rgb),.055)) !important;
+  border-color: rgba(var(--accent-rgb),.32) !important;
+  box-shadow: inset 3px 0 var(--accent) !important;
+}
+#sidebar .nav-item.active .nav-icon,
+#sidebar .nav-item.active .nav-emoji,
+#sidebar .nav-item.active svg {
+  color: var(--accent) !important;
+  stroke: var(--accent) !important;
+}
+#sidebar .nav-item.active .nav-emoji { color: var(--accent) !important; }
+#user-avatar, #user-avatar[style] { background: var(--accent) !important; }
+#view-container .btn-primary,
+#view-container button.btn-primary,
+#view-container .eco-btn-primary,
+#view-container .eco-button-primary,
+#view-container .eco-btn.eco-btn-primary,
+#view-container button[type="submit"]:not(.btn-danger):not(.eco-btn-danger),
+#view-container input[type="submit"],
+#view-container .mode-tab.active,
+#view-container .project-tab.active,
+#view-container .theme-btn.active,
+#view-container .color-option.active {
+  background: var(--focusai-accent-gradient) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px var(--accent-glow) !important;
+}
+#view-container .btn-primary:hover:not(:disabled),
+#view-container .eco-btn-primary:hover:not(:disabled),
+#view-container .eco-button-primary:hover:not(:disabled),
+#view-container button[type="submit"]:not(:disabled):not(.btn-danger):not(.eco-btn-danger):hover {
+  background: var(--accent) !important;
+  border-color: var(--accent-hover) !important;
+  filter: brightness(1.06);
+}
+#view-container .eco-icon,
+#view-container .eco-avatar,
+#view-container .eco-level,
+#view-container .eco-mini-tag {
+  color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+  border-color: rgba(var(--accent-rgb),.22) !important;
+}
+#view-container .eco-heading .eyebrow,
+#view-container .eco-page .text-accent,
+#view-container .eco-page .accent-text,
+#view-container .eco-page a:not(.eco-btn) {
+  color: var(--accent-hover) !important;
+}
+#view-container input:focus,
+#view-container select:focus,
+#view-container textarea:focus,
+#view-container button:focus-visible {
+  border-color: var(--accent) !important;
+  outline-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+#view-container input[type="checkbox"],
+#view-container input[type="radio"],
+#view-container input[type="range"],
+#view-container progress { accent-color: var(--accent) !important; }
+#view-container .project-progress-bar > *,
+#view-container .project-progress-fill,
+#view-container .progress-fill,
+#view-container .xp-fill { background-color: var(--accent) !important; }
+#view-container .project-tab.active,
+#view-container [data-active="true"] {
+  border-color: var(--accent) !important;
+}
+/* The ecosystem views are <section class="eco-page">, not .view; give them
+   their own workspace padding and prevent headings touching/clipping at sidebar. */
+#view-container > .eco-page {
+  display: grid !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: clamp(20px,2.2vw,36px) clamp(20px,2.5vw,44px) 48px !important;
+  box-sizing: border-box !important;
+  color: var(--text-primary) !important;
+  background: transparent !important;
+}
+#view-container > .eco-page .eco-heading h1,
+#view-container > .eco-page .eco-card h2,
+#view-container > .eco-page .eco-card h3,
+#view-container > .eco-page .eco-form label,
+#view-container > .eco-page .eco-card > label {
+  color: var(--text-primary) !important;
+}
+#view-container > .eco-page .eco-heading p,
+#view-container > .eco-page .eco-note { color: var(--text-secondary) !important; }
+#view-container > .eco-page .eco-card {
+  min-width: 0;
+  color: var(--text-primary) !important;
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+#view-container > .eco-page .eco-form input,
+#view-container > .eco-page .eco-form select,
+#view-container > .eco-page .eco-form textarea,
+#view-container > .eco-page .eco-card input:not([type=checkbox]),
+#view-container > .eco-page .eco-card textarea,
+#view-container > .eco-page .eco-card select {
+  color: var(--text-primary) !important;
+  background: var(--bg-base) !important;
+  border-color: var(--border) !important;
+}
+#view-container > .eco-page .eco-form label,
+#view-container > .eco-page .eco-card > label { color: var(--text-secondary) !important; }
+@media(max-width:760px) {
+  #view-container > .eco-page { padding: 18px 14px 32px !important; }
+}
+/* Preserve semantic status colors (success/warning/danger); only brand accents change. */

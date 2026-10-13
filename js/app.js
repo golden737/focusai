@@ -212,6 +212,9 @@ window.FlowApp = (() => {
     root.style.setProperty('--border-focus', chosen);
     root.style.setProperty('--shadow-accent', `0 8px 26px ${glow}`);
     root.style.setProperty('--eco-blue', chosen);
+    root.style.setProperty('--eco-blue-rgb', rgb.join(','));
+    root.style.setProperty('--eco-blue-soft', soft);
+    root.style.setProperty('--eco-blue-hover', hover);
     root.style.setProperty('--focusai-accent-gradient', `linear-gradient(135deg, ${hover}, ${chosen})`);
   }
 
