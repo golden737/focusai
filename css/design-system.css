@@ -399,102 +399,128 @@ button.btn-primary, #view-container button[type="submit"],
 }
 
 
-/* FOCUSAI PER-USER ACCENT — GLOBAL OVERRIDE LAYER
-   All decorative/interactive brand accents use the signed-in user's --accent.
-   Semantic success/warning/danger statuses intentionally remain semantic. */
-:root {
-  --accent: #6366f1;
-  --accent-hover: #777af5;
-  --accent-soft: rgba(99,102,241,.16);
-  --accent-rgb: 99,102,241;
-  --accent-glow: rgba(99,102,241,.28);
-  --focusai-accent-gradient: linear-gradient(135deg, var(--accent-hover), var(--accent));
-  --shadow-accent: 0 8px 26px var(--accent-glow);
-  --border-focus: var(--accent);
-  accent-color: var(--accent);
-}
-.sidebar .sidebar-logo rect,
+/* ── FocusAI hotfix: true per-user accent + consistent ecosystem layout ── */
+/* Every non-semantic accent is derived from the logged-in user's --accent token. */
 #sidebar .sidebar-logo rect,
-.sidebar-header .sidebar-logo rect,
-#sidebar .sidebar-header svg rect { fill: var(--accent) !important; }
-.sidebar-logo { filter: drop-shadow(0 5px 12px var(--accent-glow)) !important; }
-.btn-primary,
-button.btn-primary,
-.eco-btn-primary,
-.eco-button-primary,
-button[type="submit"],
-.view-container button[type="submit"],
-.auth-form .btn-primary,
-#view-container .btn-primary {
-  background: var(--focusai-accent-gradient) !important;
-  background-color: var(--accent) !important;
-  border-color: var(--accent) !important;
-  color: #fff !important;
-  box-shadow: 0 7px 20px var(--accent-glow) !important;
+#sidebar .sidebar-header .sidebar-logo rect,
+#app-loader .loader-logo svg rect {
+  fill: var(--accent) !important;
 }
-.btn-primary:hover:not(:disabled),
-.eco-btn-primary:hover:not(:disabled),
-.eco-button-primary:hover:not(:disabled),
-button[type="submit"]:hover:not(:disabled) {
-  background: var(--accent-hover) !important;
-  background-color: var(--accent-hover) !important;
-  border-color: var(--accent-hover) !important;
-}
-.sidebar .nav-item.active,
-.sidebar .nav-item[aria-current="page"],
-.sidebar .nav-item.active:hover {
-  background: linear-gradient(100deg, var(--accent-soft), rgba(var(--accent-rgb),.055)) !important;
-  border-color: rgba(var(--accent-rgb),.30) !important;
+#sidebar .nav-item.active,
+#sidebar .nav-item.active:hover {
+  color: var(--text-primary) !important;
+  background: linear-gradient(100deg,var(--accent-soft),rgba(var(--accent-rgb),.055)) !important;
+  border-color: rgba(var(--accent-rgb),.32) !important;
   box-shadow: inset 3px 0 var(--accent) !important;
 }
-.sidebar .nav-item.active .nav-icon,
-.sidebar .nav-item.active .nav-emoji { color: var(--accent) !important; stroke: var(--accent) !important; }
-.sidebar .sidebar-logo rect,
-.welcome-mark,
-.loader-logo rect,
-.auth-logo { background-color: var(--accent); }
-.view-container .text-accent,
-.view-container .accent-text,
-.view-container .eyebrow,
-.view-container a:not(.nav-item):not(.btn):not(.button),
-.view-container .nav-icon.active { color: var(--accent-hover) !important; }
-.view-container input:focus,
-.view-container textarea:focus,
-.view-container select:focus,
-.view-container button:focus-visible,
-.form-input:focus {
+#sidebar .nav-item.active .nav-icon,
+#sidebar .nav-item.active .nav-emoji,
+#sidebar .nav-item.active svg {
+  color: var(--accent) !important;
+  stroke: var(--accent) !important;
+}
+#sidebar .nav-item.active .nav-emoji { color: var(--accent) !important; }
+#user-avatar, #user-avatar[style] { background: var(--accent) !important; }
+#view-container .btn-primary,
+#view-container button.btn-primary,
+#view-container .eco-btn-primary,
+#view-container .eco-button-primary,
+#view-container .eco-btn.eco-btn-primary,
+#view-container button[type="submit"]:not(.btn-danger):not(.eco-btn-danger),
+#view-container input[type="submit"],
+#view-container .mode-tab.active,
+#view-container .project-tab.active,
+#view-container .theme-btn.active,
+#view-container .color-option.active {
+  background: var(--focusai-accent-gradient) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px var(--accent-glow) !important;
+}
+#view-container .btn-primary:hover:not(:disabled),
+#view-container .eco-btn-primary:hover:not(:disabled),
+#view-container .eco-button-primary:hover:not(:disabled),
+#view-container button[type="submit"]:not(:disabled):not(.btn-danger):not(.eco-btn-danger):hover {
+  background: var(--accent) !important;
+  border-color: var(--accent-hover) !important;
+  filter: brightness(1.06);
+}
+#view-container .eco-icon,
+#view-container .eco-avatar,
+#view-container .eco-level,
+#view-container .eco-mini-tag {
+  color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+  border-color: rgba(var(--accent-rgb),.22) !important;
+}
+#view-container .eco-heading .eyebrow,
+#view-container .eco-page .text-accent,
+#view-container .eco-page .accent-text,
+#view-container .eco-page a:not(.eco-btn) {
+  color: var(--accent-hover) !important;
+}
+#view-container input:focus,
+#view-container select:focus,
+#view-container textarea:focus,
+#view-container button:focus-visible {
   border-color: var(--accent) !important;
   outline-color: var(--accent) !important;
   box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
-input[type="checkbox"], input[type="radio"], input[type="range"], progress { accent-color: var(--accent) !important; }
-.view-container .mode-tab.active,
-.view-container .project-tab.active,
-.view-container .filter-tab.active,
-.view-container .theme-btn.active,
-.view-container .color-option.active,
-.view-container [data-active="true"] {
+#view-container input[type="checkbox"],
+#view-container input[type="radio"],
+#view-container input[type="range"],
+#view-container progress { accent-color: var(--accent) !important; }
+#view-container .project-progress-bar > *,
+#view-container .project-progress-fill,
+#view-container .progress-fill,
+#view-container .xp-fill { background-color: var(--accent) !important; }
+#view-container .project-tab.active,
+#view-container [data-active="true"] {
   border-color: var(--accent) !important;
 }
-.view-container .project-tab.active,
-.view-container .mode-tab.active,
-.view-container .filter-tab.active,
-.view-container .theme-btn.active {
-  background: var(--accent-soft) !important;
-  color: var(--accent-hover) !important;
+/* The ecosystem views are <section class="eco-page">, not .view; give them
+   their own workspace padding and prevent headings touching/clipping at sidebar. */
+#view-container > .eco-page {
+  display: grid !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: clamp(20px,2.2vw,36px) clamp(20px,2.5vw,44px) 48px !important;
+  box-sizing: border-box !important;
+  color: var(--text-primary) !important;
+  background: transparent !important;
 }
-.view-container .xp-fill,
-.view-container .loader-fill,
-.view-container .progress-fill,
-.view-container .project-progress-fill,
-.view-container .challenge-fill,
-.view-container .pom-dot.active { background: var(--accent) !important; }
-.view-container .label-tag,
-.view-container .reflection-prompts,
-.view-container .focus-status-card.active,
-.view-container .focus-mode-card.selected {
-  background: var(--accent-soft) !important;
-  border-color: rgba(var(--accent-rgb),.30) !important;
+#view-container > .eco-page .eco-heading h1,
+#view-container > .eco-page .eco-card h2,
+#view-container > .eco-page .eco-card h3,
+#view-container > .eco-page .eco-form label,
+#view-container > .eco-page .eco-card > label {
+  color: var(--text-primary) !important;
 }
-::selection { background: var(--accent-soft) !important; }
-::-webkit-scrollbar-thumb:hover { background-color: var(--accent) !important; }
+#view-container > .eco-page .eco-heading p,
+#view-container > .eco-page .eco-note { color: var(--text-secondary) !important; }
+#view-container > .eco-page .eco-card {
+  min-width: 0;
+  color: var(--text-primary) !important;
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+#view-container > .eco-page .eco-form input,
+#view-container > .eco-page .eco-form select,
+#view-container > .eco-page .eco-form textarea,
+#view-container > .eco-page .eco-card input:not([type=checkbox]),
+#view-container > .eco-page .eco-card textarea,
+#view-container > .eco-page .eco-card select {
+  color: var(--text-primary) !important;
+  background: var(--bg-base) !important;
+  border-color: var(--border) !important;
+}
+#view-container > .eco-page .eco-form label,
+#view-container > .eco-page .eco-card > label { color: var(--text-secondary) !important; }
+@media(max-width:760px) {
+  #view-container > .eco-page { padding: 18px 14px 32px !important; }
+}
+/* Preserve semantic status colors (success/warning/danger); only brand accents change. */

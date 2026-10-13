@@ -135,12 +135,6 @@
     _val('s-time-format', sets.timeFormat||'24h');
     _val('s-week-start',  sets.weekStartsOn??1);
 
-    const currentAccent = user.accentColor || '#6366f1';
-    document.querySelectorAll('.color-option').forEach(o => {
-      const active = String(o.dataset.color || '').toLowerCase() === String(currentAccent).toLowerCase();
-      o.classList.toggle('active', active);
-      o.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
     const theme = FlowState.get('user.theme')||'dark';
     document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active', b.dataset.theme===theme));
 
