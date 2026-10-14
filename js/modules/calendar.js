@@ -12,7 +12,7 @@ window.FlowCalendar = (() => {
       title:       data.title       || 'Nuevo evento',
       description: data.description || '',
       type:        data.type        || 'event',  // 'event'|'meeting'|'block'|'reminder'
-      color:       data.color       || (FlowApp.getAccentColor?.() || '#6366f1'),
+      color:       data.color       || '#6366f1',
       allDay:      data.allDay      || false,
       startDate:   data.startDate   || now.split('T')[0],
       startTime:   data.startTime   || '09:00',
@@ -108,7 +108,7 @@ window.FlowCalendar = (() => {
     return createEvent({
       title,
       type:      'block',
-      color:     (FlowApp.getAccentColor?.() || '#8b5cf6'),
+      color:     '#8b5cf6',
       startDate: date,
       endDate:   date,
       startTime,

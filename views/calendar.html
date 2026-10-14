@@ -59,7 +59,7 @@
           const events = FlowCalendar.getEventsForDay(cell.date).slice(0,3);
           return `<div class="month-cell ${cell.currentMonth?'':'other-month'} ${cell.isToday?'today':''}" onclick="_openDay('${cell.date}')">
             <span class="month-day-num">${new Date(cell.date+'T12:00:00').getDate()}</span>
-            ${events.map(e=>`<div class="month-event" style="background:${e.color||'var(--accent)'}">${FlowHelpers.escapeHTML(e.title)}</div>`).join('')}
+            ${events.map(e=>`<div class="month-event" style="background:${e.color||'#6366f1'}">${FlowHelpers.escapeHTML(e.title)}</div>`).join('')}
           </div>`;
         }).join('')}</div>
       </div>`;
@@ -88,7 +88,7 @@
               ${events.map(e=>{
                 const top  = _timeToY(e.startTime);
                 const height = Math.max(30, _timeToY(e.endTime) - top);
-                return `<div class="week-event" style="top:${top}px;height:${height}px;background:${e.color||'var(--accent)'}" onclick="_editEvent('${e.id}')">
+                return `<div class="week-event" style="top:${top}px;height:${height}px;background:${e.color||'#6366f1'}" onclick="_editEvent('${e.id}')">
                   <span>${FlowHelpers.escapeHTML(e.title)}</span>
                   <small>${e.startTime}–${e.endTime}</small>
                 </div>`;
@@ -113,7 +113,7 @@
             ${events.map(e=>{
               const top    = _timeToY(e.startTime);
               const height = Math.max(40, _timeToY(e.endTime)-top);
-              return `<div class="week-event" style="top:${top}px;height:${height}px;background:${e.color||'var(--accent)'}" onclick="_editEvent('${e.id}')">
+              return `<div class="week-event" style="top:${top}px;height:${height}px;background:${e.color||'#6366f1'}" onclick="_editEvent('${e.id}')">
                 <span>${FlowHelpers.escapeHTML(e.title)}</span><small>${e.startTime}–${e.endTime}</small>
               </div>`;
             }).join('')}
@@ -159,7 +159,7 @@
               <option value="block" ${data.type==='block'?'selected':''}>Bloque de tiempo</option>
             </select>
           </div>
-          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${data.color||FlowApp.getAccentColor()}"></div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${data.color||'#6366f1'}"></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" type="date" name="startDate" value="${data.startDate||''}" required></div>

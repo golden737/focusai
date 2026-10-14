@@ -66,15 +66,34 @@
   let jitsiApi = null;
   let pendingCallId = null;
   let currentMeetingResults = null;
+  let meetingDirectory = [];
+  const selectedInvitees = new Set();
   async function apiMeeting(url, options={}) {
     const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});
     const b=await r.json().catch(()=>({})); if(!r.ok)throw new Error(b.error||`Error HTTP ${r.status}`); return b;
+  }
+  async function loadMeetingDirectory(){
+    if(!el('#meeting-people-list'))return;
+    try{meetingDirectory=await apiMeeting('/api/meeting-directory');renderMeetingDirectory();}
+    catch(err){el('#meeting-people-list').innerHTML=`<p class="eco-note">No se pudo cargar el directorio: ${esc(err.message)}</p>`;}
+  }
+  function renderMeetingDirectory(){
+    const box=el('#meeting-people-list');if(!box)return;
+    const term=(el('#meeting-people-search')?.value||'').trim().toLowerCase();
+    const people=meetingDirectory.filter(p=>`${p.name||''} ${p.email||''} ${p.role||''}`.toLowerCase().includes(term));
+    box.innerHTML=people.length?people.map(p=>`<label class="meeting-person-option"><input type="checkbox" data-meeting-person="${esc(p.id)}" ${selectedInvitees.has(p.id)?'checked':''}><span><b>${esc(p.name||'Sin nombre')}</b><small>${esc(p.email||'Sin correo')} · ${esc(({admin:'Administrador',hr:'RR. HH.',employee:'Empleado'})[p.role]||'Empleado')}</small></span></label>`).join(''):'<p class="eco-note">No se encontraron personas con esa búsqueda.</p>';
+    const count=el('#meeting-invite-count');if(count)count.textContent=selectedInvitees.size?`${selectedInvitees.size} persona(s) seleccionada(s).`:'No hay personas seleccionadas.';
+  }
+  async function renderInvitations(){
+    const box=el('#meeting-invitations');if(!box)return;
+    try{const rows=await apiMeeting('/api/meetings/invitations');if(!rows.length){box.className='eco-empty';box.textContent='No tienes invitaciones pendientes ni anteriores.';return;}box.className='eco-list';box.innerHTML=rows.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.creatorName||'Un compañero')} · ${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(({pending:'Pendiente',accepted:'Aceptada',declined:'Rechazada'})[m.invitationStatus]||m.invitationStatus)}</p></div><div class="meeting-list-actions">${m.invitationStatus==='pending'?`<button class="eco-btn eco-btn-primary eco-btn-small" data-accept-invitation="${esc(m.id)}">Aceptar y unirse</button><button class="eco-btn eco-btn-small" data-decline-invitation="${esc(m.id)}">Rechazar</button>`:m.invitationStatus==='accepted'?`<button class="eco-btn eco-btn-primary eco-btn-small" data-join-invitation="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Unirse a llamada</button>`:''}</div></article>`).join('');}
+    catch(err){box.className='eco-empty';box.textContent=err.message;}
   }
   async function renderMeetings() {
     if (!el('#meetings-page')) return;
     const list=el('#meeting-history');
     try {
-      const meetings=await apiMeeting('/api/meetings'); state().meetings=meetings;
+      const meetings=await apiMeeting('/api/meetings'); state().meetings=meetings; await renderInvitations();
       el('#meeting-count').textContent=meetings.length;
       el('#meeting-actions').textContent=meetings.reduce((n,m)=>n+(Array.isArray(m.actions)?m.actions.length:(m.actions?.actions||[]).length),0);
       if (!meetings.length) { list.className='eco-empty'; list.textContent='Todavía no hay reuniones guardadas.'; return; }
@@ -110,7 +129,7 @@
     const title=el('#meeting-title')?.value.trim();if(!title){toast('Escribe un nombre para la reunión.');return;}
     if(!el('#meeting-consent')?.checked){toast('Confirma que informarás a los participantes si la reunión se procesa con IA.');return;}
     const btn=el('#start-call-btn');btn.disabled=true;
-    try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,participants:el('#meeting-participants')?.value.trim()||''})});activeCall=meeting;pendingCallId=meeting.id;await launchJitsi(meeting);await renderMeetings();}
+    try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();await launchJitsi(meeting);await renderMeetings();}
     catch(err){toast('No se pudo iniciar la reunión: '+err.message);}finally{btn.disabled=false;}
   }
   async function finishMeeting() {
@@ -188,6 +207,11 @@
       const s=state(); s.employees.push({id:id(),name,email:'',job:'',department:'General',role:'employee',status:'Activo'});write(s);renderEmployees();
     }
   }
+  async function renderHRMetrics(){
+    if(!el('#hr-performance-table'))return;
+    try{const data=await apiMeeting('/api/enterprise/overview');el('#hr-completion-rate').textContent=`${data.completionRate}%`;el('#hr-completion-detail').textContent=`${data.completed} de ${data.tasks} tareas completadas`;el('#hr-overdue-count').textContent=data.overdue;el('#hr-skill-gaps').textContent=data.skillGaps;el('#hr-skill-detail').textContent=`${data.assessedSkills} competencias evaluadas`;el('#hr-performance-table').innerHTML=data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.tasks}</td><td>${p.completed}</td><td>${p.overdue}</td><td><span class="eco-status ${p.completionRate>=80?'is-active':'is-inactive'}">${p.completionRate}%</span></td></tr>`).join('');if(!data.people.length)el('#hr-performance-table').innerHTML='<tr><td colspan="5">Aún no hay tareas disponibles para calcular métricas.</td></tr>';}
+    catch(err){el('#hr-performance-table').innerHTML=`<tr><td colspan="5">${esc(err.message)}</td></tr>`;}
+  }
   function renderEmployees() {
     if(!el('#employees-page'))return;
     const s=state(), term=(el('#employee-search')?.value||'').toLowerCase();
@@ -236,7 +260,7 @@
   }
 
   function renderCurrent() {
-    renderMeetings(); renderSurveys(); renderEmployees(); renderSkills(); renderAdmin(); renderMySurveys(); renderOrganizationJoin(); if(el('#admin-page'))loadOrganizationInvite();
+    renderMeetings(); loadMeetingDirectory(); renderInvitations(); renderSurveys(); renderEmployees(); renderHRMetrics(); renderSkills(); renderAdmin(); renderMySurveys(); renderOrganizationJoin(); if(el('#admin-page'))loadOrganizationInvite();
     const current=FlowRouter.getCurrentPath();
     document.querySelectorAll('.nav-section-label').forEach(x=>x.style.display='');
     if(current==='meetings'&&el('#meetings-page')) renderMeetings();
@@ -257,11 +281,18 @@
       const s=state();s.surveys.push({id:id(),title,category:el('#survey-category').value,questions,anonymous:el('#survey-anonymous').checked,responses:[],createdAt:new Date().toISOString()});write(s);ev.target.reset();renderSurveys();toast('Encuesta publicada en Neon.');
     }
   });
+  document.addEventListener('input',ev=>{if(ev.target.id==='meeting-people-search')renderMeetingDirectory();});
+  document.addEventListener('change',ev=>{if(ev.target.matches('[data-meeting-person]')){if(ev.target.checked)selectedInvitees.add(ev.target.dataset.meetingPerson);else selectedInvitees.delete(ev.target.dataset.meetingPerson);renderMeetingDirectory();}});
   document.addEventListener('click',ev=>{
     const t=ev.target.closest('button'); if(!t)return;
     if(t.dataset.skillHistory){fetch(`/api/enterprise/skills/${encodeURIComponent(t.dataset.skillHistory)}/history`,{credentials:'same-origin',cache:'no-store'}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.error||'No se pudo cargar el historial.');const content=b.length?`<ol>${b.map(x=>`<li><b>${esc(x.skill)}</b>: ${x.previous_level==null?'Sin nivel previo':x.previous_level+'/5'} → <b>${x.assessed_level}/5</b> · ${esc(x.assessment_date)}${x.assessed_by?' · '+esc(x.assessed_by):''}</li>`).join('')}</ol>`:'<p>Aún no hay evaluaciones históricas para este empleado.</p>';showGlobalModal({title:'Historial de competencias',content,size:'md'});}).catch(err=>toast(err.message));}
     if(t.id==='copy-organization-code'){const code=el('#organization-invite-code')?.textContent||'';if(code&&code!=='Cargando código…')navigator.clipboard?.writeText(code).then(()=>toast('Código copiado.')).catch(()=>toast('No se pudo copiar automáticamente.'));}
     if(t.id==='start-call-btn')startMeeting();
+    if(t.id==='refresh-invitations-btn')renderInvitations();
+    if(t.id==='refresh-hr-metrics')renderHRMetrics();
+    if(t.dataset.meetingPerson){if(t.checked)selectedInvitees.add(t.dataset.meetingPerson);else selectedInvitees.delete(t.dataset.meetingPerson);renderMeetingDirectory();}
+    if(t.dataset.acceptInvitation||t.dataset.declineInvitation){const mid=t.dataset.acceptInvitation||t.dataset.declineInvitation;apiMeeting(`/api/meetings/${encodeURIComponent(mid)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:t.dataset.acceptInvitation?'accepted':'declined'})}).then(async()=>{await renderInvitations();toast(t.dataset.acceptInvitation?'Invitación aceptada. Ya puedes unirte a la llamada.':'Invitación rechazada.');}).catch(err=>toast(err.message));}
+    if(t.dataset.joinInvitation){const meeting={id:t.dataset.joinInvitation,roomName:t.dataset.roomName,title:t.dataset.roomTitle};activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting).catch(err=>toast(err.message));}
     if(t.id==='stop-call-btn')finishMeeting();
     if(t.id==='summarize-meeting-btn')processMeetingContent();
     if(t.id==='refresh-meetings-btn')renderMeetings();

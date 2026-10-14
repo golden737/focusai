@@ -165,3 +165,10 @@ body { background: var(--eco-canvas); }
 
 /* Llamadas Jitsi */
 .jitsi-call-container{margin-top:18px;border-top:1px solid var(--eco-line);padding-top:16px}.jitsi-call-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.jitsi-embedded{width:100%;min-height:360px;overflow:hidden;border-radius:12px;background:#101827}.jitsi-embedded iframe{border:0;border-radius:12px;max-width:100%}.meeting-list-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start}.eco-check{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.5;color:var(--eco-muted)}.eco-check input{margin-top:3px;flex-shrink:0}.eco-btn-danger{background:#a92e3b;color:#fff;border-color:#a92e3b}
+
+/* Meeting participant picker and invitation inbox */
+.meeting-people-list{display:grid;gap:7px;max-height:240px;overflow:auto;border:1px solid var(--eco-line);border-radius:10px;padding:9px;margin:8px 0 12px;background:var(--eco-surface)}
+.meeting-person-option{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.meeting-person-option:hover{background:var(--eco-canvas);border-color:var(--eco-line)}
+.meeting-person-option input{accent-color:var(--user-accent,var(--eco-blue));width:16px;height:16px;flex:none}
+.meeting-person-option span{display:grid;gap:3px;min-width:0}.meeting-person-option small{color:var(--eco-muted);overflow-wrap:anywhere}
