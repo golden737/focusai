@@ -134,7 +134,7 @@ window.FlowPersonal = (() => {
       datasets: [{
         label:           'Estado de ánimo',
         data,
-        borderColor:     '#6366f1',
+        borderColor:     (FlowApp.getAccentColor?.() || '#6366f1'),
         backgroundColor: colors,
         fill:            false,
         tension:         0.4,

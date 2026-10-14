@@ -24,7 +24,7 @@ window.FlowGoals = (() => {
       // Relaciones
       parentGoalId: data.parentGoalId || null,
       taskIds:      data.taskIds      || [],
-      color:        data.color        || '#6366f1',
+      color:        data.color        || (FlowApp.getAccentColor?.() || '#6366f1'),
       icon:         data.icon         || '🎯',
       completed:    false,
       completedAt:  null,

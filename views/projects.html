@@ -43,9 +43,9 @@
     if(!FlowState.get('projects.activeId') && projects.length) FlowProjects.setActive(projects[0].id);
     const activeId = FlowState.get('projects.activeId');
     el.innerHTML = projects.map(p=>`
-      <button class="project-tab ${p.id===activeId?'active':''}" onclick="FlowProjects.setActive('${p.id}')" style="${p.id===activeId?`border-bottom-color:${p.color||'#6366f1'}`:''}">
+      <button class="project-tab ${p.id===activeId?'active':''}" onclick="FlowProjects.setActive('${p.id}')" style="${p.id===activeId?`border-bottom-color:${p.color||FlowApp.getAccentColor()}`:''}">
         ${p.icon||'📁'} ${FlowHelpers.escapeHTML(p.name)}
-        <span class="project-status-dot" style="background:${{active:'#22c55e',on_hold:'#f59e0b',completed:'#6366f1',cancelled:'#ef4444'}[p.status]||'#64748b'}"></span>
+        <span class="project-status-dot" style="background:${{active:'#22c55e',on_hold:'#f59e0b',completed:'#22c55e',cancelled:'#ef4444'}[p.status]||'#64748b'}"></span>
       </button>`).join('');
   }
 
@@ -71,7 +71,7 @@
         <span>📊 ${stats.done}/${stats.total} tareas</span>
         <span>⚠️ ${stats.overdue} vencidas</span>
         <span>${stats.daysLeft!==null?(stats.daysLeft>0?`⏳ ${stats.daysLeft}d restantes`:'🔴 Vencido'):'Sin fecha'}</span>
-        <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${stats.progress}%;background:${proj.color||'#6366f1'}"></div></div>
+        <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${stats.progress}%;background:${proj.color||FlowApp.getAccentColor()}"></div></div>
         <span>${stats.progress}%</span>
       </div>
       <div class="kanban-board">
@@ -180,7 +180,7 @@
     FlowApp.showModal({ title:'Nueva columna', size:'sm', content:`
       <form id="col-form" class="task-form">
         <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" name="title" placeholder="Ej: En revisión" required autofocus></div>
-        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${FlowApp.getAccentColor()}"></div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary">Crear</button>
@@ -209,7 +209,7 @@
         <div class="form-row">
           <div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" type="date" name="startDate" value="${FlowDate.today()}"></div>
           <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" type="date" name="endDate"></div>
-          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${FlowApp.getAccentColor()}"></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>

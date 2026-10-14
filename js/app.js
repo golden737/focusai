@@ -196,7 +196,9 @@ window.FlowApp = (() => {
   }
 
   function _applyAccent(color) {
-    const root = document.documentElement;
+    // El acento elegido pertenece a la interfaz privada del usuario.
+    // Se aplica al body (no a :root) para no recolorear el login ni la portada pública.
+    const target = document.body;
     const chosen = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? String(color) : DEFAULT_ACCENT;
     const rgb = chosen.match(/[0-9a-f]{2}/ig).map(v => parseInt(v, 16));
     const mix = (a, b, t) => Math.round(a + (b - a) * t);
@@ -204,18 +206,37 @@ window.FlowApp = (() => {
     const hover = '#' + rgb.map(c => toHex(mix(c, 255, .13))).join('');
     const soft = `rgba(${rgb.join(',')},.16)`;
     const glow = `rgba(${rgb.join(',')},.28)`;
-    root.style.setProperty('--accent', chosen);
-    root.style.setProperty('--accent-hover', hover);
-    root.style.setProperty('--accent-soft', soft);
-    root.style.setProperty('--accent-rgb', rgb.join(','));
-    root.style.setProperty('--accent-glow', glow);
-    root.style.setProperty('--border-focus', chosen);
-    root.style.setProperty('--shadow-accent', `0 8px 26px ${glow}`);
-    root.style.setProperty('--eco-blue', chosen);
-    root.style.setProperty('--eco-blue-rgb', rgb.join(','));
-    root.style.setProperty('--eco-blue-soft', soft);
-    root.style.setProperty('--eco-blue-hover', hover);
-    root.style.setProperty('--focusai-accent-gradient', `linear-gradient(135deg, ${hover}, ${chosen})`);
+    const vars = {
+      '--accent': chosen,
+      '--accent-hover': hover,
+      '--accent-soft': soft,
+      '--accent-rgb': rgb.join(','),
+      '--accent-glow': glow,
+      '--border-focus': chosen,
+      '--shadow-accent': `0 8px 26px ${glow}`,
+      '--eco-blue': chosen,
+      '--eco-blue-rgb': rgb.join(','),
+      '--eco-blue-soft': soft,
+      '--eco-blue-hover': hover,
+      '--focusai-accent-gradient': `linear-gradient(135deg, ${hover}, ${chosen})`
+    };
+    Object.entries(vars).forEach(([name, value]) => target.style.setProperty(name, value));
+    target.dataset.userAccent = 'true';
+    // Vistas públicas mantienen siempre el tema original de FocusAI.
+    const keepBrandColors = () => {
+      const publicView = document.querySelector('.auth-page, .welcome-page');
+      target.classList.toggle('focusai-public-view', Boolean(publicView));
+    };
+    keepBrandColors();
+  }
+
+  // Las vistas se inyectan dinámicamente; detectar login/portada para conservar sus colores de marca.
+  if (!window.__focusAccentViewObserver && document.body) {
+    window.__focusAccentViewObserver = new MutationObserver(() => {
+      const isPublic = Boolean(document.querySelector('.auth-page, .welcome-page'));
+      document.body.classList.toggle('focusai-public-view', isPublic);
+    });
+    window.__focusAccentViewObserver.observe(document.getElementById('view-container') || document.body, { childList: true, subtree: true });
   }
 
   function _updateXPBar(g) {
@@ -576,6 +597,7 @@ window.FlowApp = (() => {
   setTheme, 
   reload,
   applyAccent: _applyAccent,
+  getAccentColor: () => getComputedStyle(document.body).getPropertyValue('--accent').trim() || DEFAULT_ACCENT,
   logout
 };
 

@@ -25,7 +25,7 @@ window.FlowHabits = (() => {
       name:           data.name           || 'Nuevo hábito',
       description:    data.description    || '',
       icon:           data.icon           || '⭐',
-      color:          data.color          || '#6366f1',
+      color:          data.color          || (FlowApp.getAccentColor?.() || '#6366f1'),
       frequency:      data.frequency      || 'daily',
       targetCount:    data.targetCount    || 1,
       reminderTime:   data.reminderTime   || null,

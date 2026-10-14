@@ -58,10 +58,10 @@
       const milestones=g.milestones||[];
       const msDone   = milestones.filter(m=>m.completed).length;
       return `
-      <div class="goal-card ${g.completed?'goal-done':''}" style="border-left-color:${g.color||'#6366f1'}">
+      <div class="goal-card ${g.completed?'goal-done':''}" style="border-left-color:${g.color||FlowApp.getAccentColor()}">
         <div class="goal-card-header">
           <div class="goal-icon-title">
-            <span class="goal-icon" style="background:${g.color||'#6366f1'}22">${g.icon||'🎯'}</span>
+            <span class="goal-icon" style="background:${g.color||FlowApp.getAccentColor()}22">${g.icon||'🎯'}</span>
             <div>
               <div class="goal-title">${FlowHelpers.escapeHTML(g.title)}</div>
               <div class="goal-meta">
@@ -80,7 +80,7 @@
 
         <div class="goal-progress-row">
           <div class="goal-progress-bar-wrap">
-            <div class="goal-progress-bar" style="width:${g.progress||0}%;background:${g.color||'#6366f1'}"></div>
+            <div class="goal-progress-bar" style="width:${g.progress||0}%;background:${g.color||FlowApp.getAccentColor()}"></div>
           </div>
           <span class="goal-progress-pct">${g.progress||0}%</span>
           <input type="range" class="goal-range" min="0" max="100" value="${g.progress||0}"
@@ -133,7 +133,7 @@
           </select>
         </div>
         <div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" type="date" name="targetDate" value="${g.targetDate||''}"></div>
-        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${g.color||'#6366f1'}"></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${g.color||FlowApp.getAccentColor()}"></div>
       </div>
       <div class="form-group"><label class="form-label">Medible (¿cómo sabrás que lo lograste?)</label><input class="form-input" name="measurable" value="${FlowHelpers.escapeHTML(g.measurable||'')}" placeholder="Ej: 10.000 pasos diarios durante 30 días"></div>
       <div class="form-group"><label class="form-label">Nuevo hito</label>

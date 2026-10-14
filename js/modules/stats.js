@@ -111,7 +111,7 @@ window.FlowStats = (() => {
       if (!proj) return;
       labels.push(proj.name);
       data.push(Math.round(min / 60 * 10) / 10);
-      colors.push(proj.color || '#6366f1');
+      colors.push(proj.color || (FlowApp.getAccentColor?.() || '#6366f1'));
     });
 
     return { labels, datasets: [{ label: 'Horas', data, backgroundColor: colors, borderWidth: 0 }] };
@@ -159,7 +159,7 @@ window.FlowStats = (() => {
     });
     return {
       labels:   Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2,'0')}:00`),
-      datasets: [{ label: 'Min trabajados', data: byHour, backgroundColor: '#6366f1', borderRadius: 4 }],
+      datasets: [{ label: 'Min trabajados', data: byHour, backgroundColor: (FlowApp.getAccentColor?.() || '#6366f1'), borderRadius: 4 }],
     };
   }
 
@@ -190,8 +190,8 @@ window.FlowStats = (() => {
       labels: days,
       timeChart: {
         datasets: [
-          { label: 'Esta semana (h)', data: thisWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: '#6366f1', borderRadius: 4 },
-          { label: 'Semana anterior (h)', data: lastWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: '#a5b4fc', borderRadius: 4 },
+          { label: 'Esta semana (h)', data: thisWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: (FlowApp.getAccentColor?.() || '#6366f1'), borderRadius: 4 },
+          { label: 'Semana anterior (h)', data: lastWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: (FlowApp.getAccentColor?.() || '#a5b4fc'), borderRadius: 4 },
         ],
       },
       tasksChart: {
@@ -264,7 +264,7 @@ window.FlowStats = (() => {
     });
     return {
       labels,
-      datasets: [{ label, data: Object.values(obj), backgroundColor: '#6366f1', borderRadius: 6 }],
+      datasets: [{ label, data: Object.values(obj), backgroundColor: (FlowApp.getAccentColor?.() || '#6366f1'), borderRadius: 6 }],
     };
   }
 

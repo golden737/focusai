@@ -170,7 +170,7 @@
     const minutes = Object.values(data).map(d=>d.minutes);
     FlowCharts.bar('focus-history-chart', {
       labels,
-      datasets:[{ label:'Minutos de enfoque', data:minutes, backgroundColor:'#6366f1', borderRadius:6 }]
+      datasets:[{ label:'Minutos de enfoque', data:minutes, backgroundColor:FlowApp.getAccentColor(), borderRadius:6 }]
     }, { plugins:{ legend:{display:false} } });
   }
 

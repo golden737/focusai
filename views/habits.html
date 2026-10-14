@@ -78,12 +78,12 @@
     if(!habits.length){ el.innerHTML='<div class="empty-state-sm">Sin hábitos programados para hoy. <button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'new-habit-btn\').click()">Crear uno</button></div>'; return; }
     el.innerHTML=habits.map(h=>`
       <div class="habit-card ${h.todayComplete?'habit-done':''}">
-        <div class="habit-card-icon" style="background:${h.color||'#6366f1'}22;color:${h.color||'#6366f1'}">${h.icon||'⭐'}</div>
+        <div class="habit-card-icon" style="background:${h.color||FlowApp.getAccentColor()}22;color:${h.color||FlowApp.getAccentColor()}">${h.icon||'⭐'}</div>
         <div class="habit-card-body">
           <div class="habit-card-name">${FlowHelpers.escapeHTML(h.name)}</div>
           ${h.streak>1?`<div class="habit-streak-badge">🔥 ${h.streak} días</div>`:''}
           <div class="habit-progress-row">
-            ${Array.from({length:h.targetCount},(_,i)=>`<div class="habit-pip ${i<h.todayCount?'filled':''}" style="background:${i<h.todayCount?(h.color||'#6366f1'):''}"></div>`).join('')}
+            ${Array.from({length:h.targetCount},(_,i)=>`<div class="habit-pip ${i<h.todayCount?'filled':''}" style="background:${i<h.todayCount?(h.color||FlowApp.getAccentColor()):''}"></div>`).join('')}
           </div>
         </div>
         <div class="habit-card-actions">
@@ -161,7 +161,7 @@
             </select>
           </div>
           <div class="form-group"><label class="form-label">Recordatorio</label><input class="form-input" type="time" name="reminderTime" value="${h.reminderTime||''}"></div>
-          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${h.color||'#6366f1'}"></div>
+          <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${h.color||FlowApp.getAccentColor()}"></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>
@@ -198,7 +198,7 @@
               </select>
             </div>
             <div class="form-group"><label class="form-label">Recordatorio</label><input class="form-input" type="time" name="reminderTime"></div>
-            <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="#6366f1"></div>
+            <div class="form-group"><label class="form-label">Color</label><input class="form-input" type="color" name="color" value="${FlowApp.getAccentColor()}"></div>
           </div>
           <div class="form-actions">
             <button type="button" class="btn btn-ghost" onclick="FlowApp.closeModal()">Cancelar</button>

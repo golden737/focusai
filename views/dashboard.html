@@ -168,7 +168,7 @@
     const el=document.getElementById('dash-events-list'); if(!el) return;
     const events=FlowCalendar.getEventsForDay(FlowDate.today()).slice(0,4);
     el.innerHTML=events.length?events.map(e=>`
-      <div class="dash-event-item" style="border-left-color:${e.color||'#6366f1'}">
+      <div class="dash-event-item" style="border-left-color:${e.color||'var(--accent)'}">
         <span class="event-time">${e.allDay?'Todo el día':e.startTime}</span>
         <span class="event-title">${FlowHelpers.escapeHTML(e.title)}</span>
       </div>`).join(''):'<div class="empty-state-sm">Sin eventos hoy</div>';
@@ -201,7 +201,7 @@
   }
   function _charts(){
     Chart.defaults.responsive = false;
-    FlowCharts.sparkline('spark-tasks', FlowStats.getTasksCompletedByDay(7).datasets[0].data, '#6366f1');
+    FlowCharts.sparkline('spark-tasks', FlowStats.getTasksCompletedByDay(7).datasets[0].data, FlowApp.getAccentColor());
     FlowCharts.sparkline('spark-time',  FlowStats.getTimeByDay(7).datasets[0].data, '#22c55e');
     FlowCharts.bar('dash-activity-chart', FlowStats.getTasksCompletedByDay(7), { plugins:{ legend:{ display:false } } });
   }

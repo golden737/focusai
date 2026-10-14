@@ -5,14 +5,14 @@ window.FlowCharts = (() => {
 
   // Paleta de colores de la app
   const COLORS = {
-    primary:   '#6366f1',
-    secondary: '#8b5cf6',
+    primary:   (getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#6366f1'),
+    secondary: (getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#8b5cf6'),
     success:   '#22c55e',
     warning:   '#f59e0b',
     danger:    '#ef4444',
     info:      '#3b82f6',
     muted:     '#64748b',
-    palette: ['#6366f1','#22c55e','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316','#a855f7'],
+    palette: [(getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#6366f1'),'#22c55e','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316','#a855f7'],
   };
 
   // ── Defaults globales de Chart.js ─────────────────────────────────────────
