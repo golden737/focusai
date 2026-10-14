@@ -1,0 +1,228 @@
+<!-- ── Personal View ─────────────────────────────────────────────────────── -->
+<div class="view personal-view">
+  <header class="view-header">
+    <div><h1 class="view-title">Personal</h1><p class="view-subtitle text-muted" id="personal-date"></p></div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" id="reflection-btn">💭 Reflexión guiada</button>
+      <button class="btn btn-primary" id="save-entry-btn">💾 Guardar</button>
+    </div>
+  </header>
+
+  <div class="personal-body">
+    <div class="personal-main">
+
+      <!-- Estado de ánimo -->
+      <section class="personal-section">
+        <h2 class="section-title">¿Cómo te sientes hoy?</h2>
+        <div class="mood-selector" id="mood-selector">
+          <button class="mood-btn" data-mood="5">😄<span>Excelente</span></button>
+          <button class="mood-btn" data-mood="4">🙂<span>Bien</span></button>
+          <button class="mood-btn" data-mood="3">😐<span>Regular</span></button>
+          <button class="mood-btn" data-mood="2">😕<span>Bajo</span></button>
+          <button class="mood-btn" data-mood="1">😔<span>Mal</span></button>
+        </div>
+      </section>
+
+      <!-- Emociones -->
+      <section class="personal-section">
+        <h2 class="section-title">Emociones</h2>
+        <div class="emotions-grid" id="emotions-grid">
+          ${FlowPersonal ? FlowPersonal.EMOTIONS.map(e=>`<button class="emotion-btn" data-emotion="${e}">${e}</button>`).join('') : ''}
+        </div>
+      </section>
+
+      <!-- Diario -->
+      <section class="personal-section">
+        <h2 class="section-title">📔 Diario del día</h2>
+        <div id="reflection-prompts" class="reflection-prompts" hidden></div>
+        <textarea class="form-input journal-textarea" id="journal-content" rows="10" placeholder="¿Cómo fue tu día? ¿Qué aprendiste? ¿Qué te preocupa?"></textarea>
+        <div class="journal-wordcount"><span id="word-count">0</span> palabras</div>
+      </section>
+
+      <!-- Reflexión -->
+      <section class="personal-section">
+        <h2 class="section-title">🌟 Reflexión</h2>
+        <div class="form-group">
+          <label class="form-label">Logros del día</label>
+          <textarea class="form-input form-textarea" id="highlights" rows="2" placeholder="¿Qué lograste hoy?"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Qué mejorarías?</label>
+          <textarea class="form-input form-textarea" id="improvements" rows="2" placeholder="¿Qué harías diferente?"></textarea>
+        </div>
+      </section>
+
+      <!-- Gratitud -->
+      <section class="personal-section">
+        <h2 class="section-title">🙏 Gratitud</h2>
+        <div id="gratitude-list" class="gratitude-list"></div>
+        <div class="input-inline">
+          <input class="form-input" id="gratitude-input" placeholder="Estoy agradecido/a por…">
+          <button class="btn btn-ghost btn-sm" id="add-gratitude-btn">+ Agregar</button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="personal-side">
+
+      <!-- Stats -->
+      <section class="personal-section">
+        <h2 class="section-title">📊 Resumen</h2>
+        <div class="personal-stats">
+          <div class="p-stat"><span id="ps-entries">0</span><small>Entradas totales</small></div>
+          <div class="p-stat"><span id="ps-streak">0</span><small>Racha diario</small></div>
+          <div class="p-stat"><span id="ps-mood">—</span><small>Ánimo promedio</small></div>
+          <div class="p-stat"><span id="ps-words">0</span><small>Palabras totales</small></div>
+        </div>
+      </section>
+
+      <!-- Gráfico de ánimo -->
+      <section class="personal-section">
+        <h2 class="section-title">Estado de ánimo — 14 días</h2>
+        <div class="chart-container" style="height:160px"><canvas id="mood-chart"></canvas></div>
+      </section>
+
+      <!-- Entradas recientes -->
+      <section class="personal-section">
+        <h2 class="section-title">Entradas recientes</h2>
+        <div id="recent-entries" class="recent-entries"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let selectedMood = null;
+  let selectedEmotions = [];
+  let gratitudeItems = [];
+
+  function init(){
+    _t('personal-date', FlowDate.format(new Date(),'dddd, DD de MMMM YYYY'));
+    _loadTodayEntry();
+    _renderStats();
+    _renderRecentEntries();
+    FlowCharts.line('mood-chart', FlowPersonal.getMoodChartData(14));
+    _bind();
+  }
+
+  function _loadTodayEntry(){
+    const entry = FlowPersonal.getTodayEntry();
+    const mood  = FlowPersonal.getTodayMood();
+
+    if(mood) _selectMood(mood.mood, false);
+    if(mood?.emotions) mood.emotions.forEach(e=>_toggleEmotion(e, false));
+
+    if(entry){
+      const ta=document.getElementById('journal-content'); if(ta) ta.value=entry.content||'';
+      const hi=document.getElementById('highlights');      if(hi) hi.value=entry.highlights||'';
+      const im=document.getElementById('improvements');    if(im) im.value=entry.improvements||'';
+      gratitudeItems = entry.gratitude||[];
+      _renderGratitude();
+      _updateWordCount();
+    }
+
+    // Renderizar emociones
+    const grid=document.getElementById('emotions-grid');
+    if(grid && FlowPersonal.EMOTIONS){
+      grid.innerHTML=FlowPersonal.EMOTIONS.map(e=>`<button class="emotion-btn ${selectedEmotions.includes(e)?'active':''}" data-emotion="${e}">${e}</button>`).join('');
+      grid.querySelectorAll('.emotion-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>_toggleEmotion(btn.dataset.emotion, true));
+      });
+    }
+  }
+
+  function _selectMood(id, updateDOM=true){
+    selectedMood = id;
+    if(updateDOM){
+      document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('active', Number(b.dataset.mood)===id));
+    }
+  }
+
+  function _toggleEmotion(name, updateDOM=true){
+    if(selectedEmotions.includes(name)) selectedEmotions=selectedEmotions.filter(e=>e!==name);
+    else selectedEmotions.push(name);
+    if(updateDOM){
+      document.querySelectorAll('.emotion-btn').forEach(b=>b.classList.toggle('active', selectedEmotions.includes(b.dataset.emotion)));
+    }
+  }
+
+  function _renderGratitude(){
+    const el=document.getElementById('gratitude-list'); if(!el) return;
+    el.innerHTML=gratitudeItems.map((g,i)=>`
+      <div class="gratitude-item">
+        <span>🙏 ${FlowHelpers.escapeHTML(g)}</span>
+        <button class="icon-btn btn-sm" onclick="_removeGratitude(${i})">✕</button>
+      </div>`).join('') || '<div class="empty-state-sm">Sin elementos de gratitud aún</div>';
+  }
+  window._removeGratitude=(i)=>{ gratitudeItems.splice(i,1); _renderGratitude(); };
+
+  function _updateWordCount(){
+    const ta=document.getElementById('journal-content');
+    const el=document.getElementById('word-count');
+    if(ta&&el) el.textContent=FlowHelpers.countWords(ta.value);
+  }
+
+  function _renderStats(){
+    const s=FlowPersonal.getStats();
+    _t('ps-entries', s.totalEntries);
+    _t('ps-streak',  s.streak+' días');
+    _t('ps-mood',    s.avgMoodEmoji+' '+s.avgMoodLabel);
+    _t('ps-words',   FlowHelpers.formatNumber(s.totalWords));
+  }
+
+  function _renderRecentEntries(){
+    const el=document.getElementById('recent-entries'); if(!el) return;
+    const entries=FlowPersonal.getRecentEntries(7);
+    el.innerHTML=entries.map(e=>{
+      const mood=FlowPersonal.MOODS.find(m=>m.id===e.mood);
+      return `<div class="recent-entry" onclick="_viewEntry('${e.id}')">
+        <span class="entry-date">${FlowDate.format(new Date(e.date+'T12:00:00'),'DD MMM')}</span>
+        ${mood?`<span class="entry-mood">${mood.emoji}</span>`:''}
+        <span class="entry-preview">${FlowHelpers.truncate(e.content,40)}</span>
+      </div>`;
+    }).join('') || '<div class="empty-state-sm">Sin entradas recientes</div>';
+  }
+  window._viewEntry=(id)=>{ FlowApp.toast('Próximamente: vista de entradas anteriores','info'); };
+
+  function _bind(){
+    document.querySelectorAll('.mood-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>_selectMood(Number(btn.dataset.mood)));
+    });
+
+    document.getElementById('journal-content')?.addEventListener('input', _updateWordCount);
+
+    document.getElementById('add-gratitude-btn')?.addEventListener('click',()=>{
+      const inp=document.getElementById('gratitude-input');
+      if(inp?.value.trim()){ gratitudeItems.push(inp.value.trim()); inp.value=''; _renderGratitude(); }
+    });
+    document.getElementById('gratitude-input')?.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('add-gratitude-btn')?.click(); } });
+
+    document.getElementById('save-entry-btn')?.addEventListener('click', async ()=>{
+      const content    = document.getElementById('journal-content')?.value||'';
+      const highlights = document.getElementById('highlights')?.value||'';
+      const improvements=document.getElementById('improvements')?.value||'';
+      await FlowPersonal.saveEntry({ content, mood:selectedMood, emotions:selectedEmotions, gratitude:gratitudeItems, highlights, improvements });
+      if(selectedMood) await FlowPersonal.logMood(selectedMood, selectedEmotions);
+      _renderStats();
+      _renderRecentEntries();
+      FlowCharts.line('mood-chart', FlowPersonal.getMoodChartData(14));
+    });
+
+    document.getElementById('reflection-btn')?.addEventListener('click', async ()=>{
+      const btn=document.getElementById('reflection-btn');
+      btn.textContent='⏳ Generando…'; btn.disabled=true;
+      const prompts = await FlowPersonal.aiReflectionPrompt();
+      const el=document.getElementById('reflection-prompts');
+      if(el){ el.innerHTML=prompts.replace(/\n/g,'<br>'); el.hidden=false; }
+      btn.textContent='💭 Reflexión guiada'; btn.disabled=false;
+    });
+  }
+
+  function _t(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+  init();
+})();
+</script>

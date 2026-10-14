@@ -1,1 +1,11 @@
-Este paquete excluye intencionalmente .env porque contiene secretos. No subas credenciales al repositorio. Si el ZIP original contenía credenciales reales y se compartió o subió a GitHub, rota esas credenciales en el proveedor correspondiente y configúralas únicamente como variables de entorno en Render.
+SEGURIDAD — IMPORTANTE
+
+Este paquete no incluye el archivo .env para evitar publicar credenciales.
+
+El archivo .env que venía en el ZIP original contenía una URL de conexión a Neon con credenciales y un SESSION_SECRET. Como ese contenido se compartió en esta conversación, por seguridad:
+1. Rota/cambia la contraseña o credencial de la base de datos Neon.
+2. Genera un SESSION_SECRET nuevo y fuerte.
+3. Mantén .env fuera de GitHub y de cualquier ZIP público.
+4. Configura esas variables únicamente en el entorno seguro del backend (por ejemplo, Render).
+
+La interfaz frontend no debe contener credenciales privadas.
