@@ -5,7 +5,7 @@
 (() => {
   'use strict';
   const STORE = 'focusai.ecosystem.v1';
-  const ROLE_LABELS = { admin: 'Administrador', hr: 'RR. HH.', employee: 'Empleado' };
+  const ROLE_LABELS = { superadmin: 'Superadministrador', admin: 'Administrador', hr: 'RR. HH.', employee: 'Empleado' };
   let current = { employees: [], meetings: [], surveys: [], skills: [], role: 'employee' };
   let loaded = false;
   let saveQueue = Promise.resolve();
@@ -40,9 +40,9 @@
     else alert(msg);
   };
   const role = () => window.FlowState?.get('user.role') || state().role || 'employee';
-  const canPeople = () => ['admin','hr'].includes(role());
+  const canPeople = () => ['superadmin','admin','hr'].includes(role());
   const guardAdmin = () => {
-    if (role() === 'admin') return true;
+    if (['superadmin','admin'].includes(role())) return true;
     toast('Esta sección requiere el rol de administrador.');
     setTimeout(() => FlowRouter.navigate('dashboard'), 0); return false;
   };
@@ -86,7 +86,7 @@
   }
   async function renderInvitations(){
     const box=el('#meeting-invitations');if(!box)return;
-    try{const rows=await apiMeeting('/api/meetings/invitations');if(!rows.length){box.className='eco-empty';box.textContent='No tienes invitaciones pendientes ni anteriores.';return;}box.className='eco-list';box.innerHTML=rows.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.creatorName||'Un compañero')} · ${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(({pending:'Pendiente',accepted:'Aceptada',declined:'Rechazada'})[m.invitationStatus]||m.invitationStatus)}</p></div><div class="meeting-list-actions">${m.invitationStatus==='pending'?`<button class="eco-btn eco-btn-primary eco-btn-small" data-accept-invitation="${esc(m.id)}">Aceptar y unirse</button><button class="eco-btn eco-btn-small" data-decline-invitation="${esc(m.id)}">Rechazar</button>`:m.invitationStatus==='accepted'?`<button class="eco-btn eco-btn-primary eco-btn-small" data-join-invitation="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Unirse a llamada</button>`:''}</div></article>`).join('');}
+    try{const rows=await apiMeeting('/api/meetings/invitations');if(!rows.length){box.className='eco-empty';box.textContent='No tienes invitaciones pendientes ni anteriores.';return;}box.className='eco-list';box.innerHTML=rows.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.creatorName||'Un compañero')} · ${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(({pending:'Pendiente',accepted:'Aceptada',declined:'Rechazada'})[m.invitationStatus]||m.invitationStatus)}</p></div><div class="meeting-list-actions">${m.status!=='in_progress'?`<span class="eco-status is-inactive">Terminada</span>`:m.invitationStatus==='pending'?`<button class="eco-btn eco-btn-primary eco-btn-small" data-accept-invitation="${esc(m.id)}">Aceptar invitación</button><button class="eco-btn eco-btn-small" data-decline-invitation="${esc(m.id)}">Rechazar</button>`:m.invitationStatus==='accepted'?`<button class="eco-btn eco-btn-primary eco-btn-small" data-join-invitation="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Unirse a llamada</button>`:''}</div></article>`).join('');}
     catch(err){box.className='eco-empty';box.textContent=err.message;}
   }
   async function renderMeetings() {
@@ -98,7 +98,7 @@
       el('#meeting-actions').textContent=meetings.reduce((n,m)=>n+(Array.isArray(m.actions)?m.actions.length:(m.actions?.actions||[]).length),0);
       if (!meetings.length) { list.className='eco-empty'; list.textContent='Todavía no hay reuniones guardadas.'; return; }
       list.className='eco-list';
-      list.innerHTML=meetings.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(m.status||'')} · ${esc(m.creatorName||'')}</p>${m.summary?`<p class="eco-summary-text">${esc(m.summary)}</p>`:''}${m.actions?.length?`<ul>${m.actions.map(a=>`<li>${esc(typeof a==='string'?a:(a.task||JSON.stringify(a)))}${a.owner?` — ${esc(a.owner)}`:''}${a.dueDate?` · ${esc(a.dueDate)}`:''}</li>`).join('')}</ul>`:''}${m.transcript?`<details><summary>Ver transcripción</summary><p>${esc(m.transcript).replace(/\n/g,'<br>')}</p></details>`:''}</div><div class="meeting-list-actions">${m.roomName?`<button class="eco-btn eco-btn-small" data-rejoin-meeting="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Abrir sala</button>`:''}<button class="eco-btn eco-btn-small" data-select-meeting="${esc(m.id)}">Procesar resumen</button><button class="eco-btn eco-btn-small" data-delete-meeting="${esc(m.id)}">Eliminar</button></div></article>`).join('');
+      list.innerHTML=meetings.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(m.status||'')} · ${esc(m.creatorName||'')}</p>${m.summary?`<p class="eco-summary-text">${esc(m.summary)}</p>`:''}${m.actions?.length?`<ul>${m.actions.map(a=>`<li>${esc(typeof a==='string'?a:(a.task||JSON.stringify(a)))}${a.owner?` — ${esc(a.owner)}`:''}${a.dueDate?` · ${esc(a.dueDate)}`:''}</li>`).join('')}</ul>`:''}${m.transcript?`<details><summary>Ver transcripción</summary><p>${esc(m.transcript).replace(/\n/g,'<br>')}</p></details>`:''}</div><div class="meeting-list-actions">${m.status==='in_progress'&&m.createdBy===FlowState.get('user.id')?`<button class="eco-btn eco-btn-small" data-rejoin-meeting="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Abrir sala</button>`:''}${m.status!=='in_progress'?`<span class="eco-status is-inactive">Reunión terminada</span>`:''}<button class="eco-btn eco-btn-small" data-select-meeting="${esc(m.id)}">Procesar resumen</button>${m.createdBy===FlowState.get('user.id')?`<button class="eco-btn eco-btn-small" data-delete-meeting="${esc(m.id)}">Eliminar</button>`:''}</div></article>`).join('');
     } catch(err) { list.className='eco-empty'; list.textContent=err.message; }
   }
   function showMeetingResult(m) {
@@ -116,12 +116,12 @@
       const script=document.createElement('script');script.src='https://meet.jit.si/external_api.js';script.async=true;script.dataset.jitsiExternal='true';script.onload=resolve;script.onerror=()=>reject(new Error('No se pudo cargar Jitsi. Comprueba tu conexión a Internet.'));document.head.appendChild(script);
     });
   }
-  async function launchJitsi(meeting) {
+  async function launchJitsi(meeting, isCreator=false) {
     await loadJitsiScript();
     if(jitsiApi){try{jitsiApi.dispose()}catch{}jitsiApi=null;}
     const container=el('#jitsi-embedded');container.replaceChildren();
-    el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;
-    jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:520,parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:true,enableWelcomePage:false,disableDeepLinking:true},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
+    el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;el('#stop-call-btn').hidden=!isCreator;el('#copy-call-link-btn').hidden=false;
+    jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:520,parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:false,enableWelcomePage:false,disableDeepLinking:true,enableLobby:false},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
     jitsiApi.addEventListener('videoConferenceJoined',()=>{const st=el('#call-status');if(st)st.textContent='Conectado a la sala. Comparte el nombre/enlace de la sala con los participantes.';});
     jitsiApi.addEventListener('readyToClose',()=>{if(el('#call-status'))el('#call-status').textContent='La sala se cerró. Sube una grabación autorizada o pega la transcripción para generar el resumen.';});
   }
@@ -129,7 +129,7 @@
     const title=el('#meeting-title')?.value.trim();if(!title){toast('Escribe un nombre para la reunión.');return;}
     if(!el('#meeting-consent')?.checked){toast('Confirma que informarás a los participantes si la reunión se procesa con IA.');return;}
     const btn=el('#start-call-btn');btn.disabled=true;
-    try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();await launchJitsi(meeting);await renderMeetings();}
+    try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();await launchJitsi(meeting,true);await renderMeetings();}
     catch(err){toast('No se pudo iniciar la reunión: '+err.message);}finally{btn.disabled=false;}
   }
   async function finishMeeting() {
@@ -197,7 +197,7 @@
   }
   function showEmployeeForm(existing) {
     const e=existing||{};
-    const content=`<form id="employee-edit-form" class="eco-form"><label>Nombre completo</label><input name="name" required value="${esc(e.name||'')}" placeholder="Nombre del empleado"><label>Correo</label><input name="email" type="email" required value="${esc(e.email||'')}" placeholder="nombre@empresa.com"><label>Puesto</label><input name="job" required value="${esc(e.job||'')}" placeholder="Puesto"><label>Departamento</label><input name="department" required value="${esc(e.department||'')}" placeholder="Departamento"><label>Rol de acceso</label><select name="role">${Object.entries(ROLE_LABELS).map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v}</option>`).join('')}</select><label>Estado</label><select name="status"><option ${!e.status||e.status==='Activo'?'selected':''}>Activo</option><option ${e.status==='Inactivo'?'selected':''}>Inactivo</option></select><div class="eco-actions"><button class="eco-btn eco-btn-primary" type="submit">Guardar perfil</button></div></form>`;
+    const content=`<form id="employee-edit-form" class="eco-form"><label>Nombre completo</label><input name="name" required value="${esc(e.name||'')}" placeholder="Nombre del empleado"><label>Correo</label><input name="email" type="email" required value="${esc(e.email||'')}" placeholder="nombre@empresa.com"><label>Puesto</label><input name="job" required value="${esc(e.job||'')}" placeholder="Puesto"><label>Departamento</label><input name="department" required value="${esc(e.department||'')}" placeholder="Departamento"><label>Rol de acceso</label><select name="role">${Object.entries(ROLE_LABELS).filter(([k])=>k!=='superadmin').map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v}</option>`).join('')}</select><label>Estado</label><select name="status"><option ${!e.status||e.status==='Activo'?'selected':''}>Activo</option><option ${e.status==='Inactivo'?'selected':''}>Inactivo</option></select><div class="eco-actions"><button class="eco-btn eco-btn-primary" type="submit">Guardar perfil</button></div></form>`;
     if(window.showGlobalModal) {
       showGlobalModal({title:e.id?'Editar empleado':'Añadir empleado',content,size:'md'});
       const form=el('#global-dialog #employee-edit-form');
@@ -241,10 +241,11 @@
   }
   function renderAdmin() {
     if(!el('#admin-page'))return;
+    if(!['superadmin','admin'].includes(role())){el('#admin-page').innerHTML='<article class="eco-card"><h2>Acceso restringido</h2><p>Solo administración puede gestionar usuarios y permisos.</p></article>';return;}
     const s=state();
     el('#admin-user-count').textContent=s.employees.length;
     el('#admin-admin-count').textContent=s.employees.filter(e=>e.role==='admin'&&e.status!=='Inactivo').length;
-    el('#admin-user-table').innerHTML=s.employees.map(e=>`<tr><td><b>${esc(e.name)}</b></td><td>${esc(e.email||'—')}</td><td><select class="eco-role-select" data-role-user="${esc(e.id)}">${Object.entries(ROLE_LABELS).map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v}</option>`).join('')}</select></td><td><span class="eco-status ${e.status==='Activo'?'is-active':'is-inactive'}">${esc(e.status||'Activo')}</span></td><td><div class="eco-actions"><button class="eco-btn eco-btn-small" data-edit-employee="${esc(e.id)}">Editar</button><button class="eco-btn eco-btn-small" data-toggle-employee="${esc(e.id)}">${e.status==='Inactivo'?'Activar':'Desactivar'}</button></div></td></tr>`).join('');
+    el('#admin-user-table').innerHTML=s.employees.map(e=>`<tr><td><b>${esc(e.name)}</b></td><td>${esc(e.email||'—')}</td><td><select class="eco-role-select" data-role-user="${esc(e.id)}">${Object.entries(ROLE_LABELS).filter(([k])=>k!=='superadmin').map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v}</option>`).join('')}</select></td><td><span class="eco-status ${e.status==='Activo'?'is-active':'is-inactive'}">${esc(e.status||'Activo')}</span></td><td><div class="eco-actions"><button class="eco-btn eco-btn-small" data-edit-employee="${esc(e.id)}">Editar</button><button class="eco-btn eco-btn-small" data-toggle-employee="${esc(e.id)}">${e.status==='Inactivo'?'Activar':'Desactivar'}</button></div></td></tr>`).join('');
   }
   async function renderOrganizationJoin(){
     const form=el('#join-organization-form');if(!form||form.dataset.bound)return;form.dataset.bound='1';
@@ -292,17 +293,17 @@
     if(t.id==='refresh-hr-metrics')renderHRMetrics();
     if(t.dataset.meetingPerson){if(t.checked)selectedInvitees.add(t.dataset.meetingPerson);else selectedInvitees.delete(t.dataset.meetingPerson);renderMeetingDirectory();}
     if(t.dataset.acceptInvitation||t.dataset.declineInvitation){const mid=t.dataset.acceptInvitation||t.dataset.declineInvitation;apiMeeting(`/api/meetings/${encodeURIComponent(mid)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:t.dataset.acceptInvitation?'accepted':'declined'})}).then(async()=>{await renderInvitations();toast(t.dataset.acceptInvitation?'Invitación aceptada. Ya puedes unirte a la llamada.':'Invitación rechazada.');}).catch(err=>toast(err.message));}
-    if(t.dataset.joinInvitation){const meeting={id:t.dataset.joinInvitation,roomName:t.dataset.roomName,title:t.dataset.roomTitle};activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting).catch(err=>toast(err.message));}
+    if(t.dataset.joinInvitation){const meeting={id:t.dataset.joinInvitation,roomName:t.dataset.roomName,title:t.dataset.roomTitle};activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting,false).catch(err=>toast(err.message));}
     if(t.id==='stop-call-btn')finishMeeting();
     if(t.id==='summarize-meeting-btn')processMeetingContent();
     if(t.id==='refresh-meetings-btn')renderMeetings();
     if(t.id==='copy-call-link-btn'&&activeCall){const link='https://meet.jit.si/'+activeCall.roomName;navigator.clipboard?.writeText(link).then(()=>toast('Enlace de la sala copiado.')).catch(()=>prompt('Copia este enlace para invitar a participantes:',link));}
-    if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting){activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting).catch(err=>toast(err.message));}}
+    if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting&&meeting.status==='in_progress'&&meeting.createdBy===FlowState.get('user.id')){activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting,true).catch(err=>toast(err.message));}}
     if(t.dataset.selectMeeting){pendingCallId=t.dataset.selectMeeting;el('#meeting-transcript')?.focus();toast('Reunión seleccionada. Adjunta su grabación o pega la transcripción.');}
     if(t.id==='new-survey-btn') { el('#survey-title')?.focus(); el('#survey-title')?.scrollIntoView({behavior:'smooth',block:'center'}); }
-    if(t.id==='new-employee-btn'||t.id==='admin-add-user-btn')showEmployeeForm();
+    if((t.id==='new-employee-btn'||t.id==='admin-add-user-btn')&&['superadmin','admin'].includes(role()))showEmployeeForm();
     if(t.id==='new-skill-btn')showSkillForm();
-    if(t.dataset.editEmployee) {const e=state().employees.find(x=>x.id===t.dataset.editEmployee);if(e)showEmployeeForm(e);}
+    if(t.dataset.editEmployee&&['superadmin','admin'].includes(role())) {const e=state().employees.find(x=>x.id===t.dataset.editEmployee);if(e)showEmployeeForm(e);}
     if(t.dataset.removeEmployee) {const s=state(),e=s.employees.find(x=>x.id===t.dataset.removeEmployee);if(!e)return;const next=e.status==='Inactivo'?'Activo':'Inactivo';if(!confirm(`${next==='Inactivo'?'¿Desactivar':'¿Reactivar'} este perfil? Se conservarán la cuenta y el historial.`))return;e.status=next;write(s);renderEmployees();renderAdmin();renderSkills();}
     if(t.dataset.toggleEmployee) {const s=state(),e=s.employees.find(x=>x.id===t.dataset.toggleEmployee);if(e){e.status=e.status==='Inactivo'?'Activo':'Inactivo';write(s);renderAdmin();renderEmployees();}}
     if(t.dataset.deleteMeeting) {if(!confirm('¿Eliminar esta reunión y su transcripción/resumen?'))return;apiMeeting(`/api/meetings/${encodeURIComponent(t.dataset.deleteMeeting)}`,{method:'DELETE'}).then(renderMeetings).catch(err=>toast(err.message));}
@@ -316,7 +317,7 @@
     if(ev.target.id==='employee-search')renderEmployees();
     if(ev.target.id==='skill-search')renderSkills();
   });
-  window.addEventListener('flowrouter:navigate',()=>{if(activeCall)finishMeeting();renderCurrent();});
+  window.addEventListener('flowrouter:navigate',()=>{if(activeCall){try{jitsiApi?.dispose()}catch{}jitsiApi=null;activeCall=null;el('#jitsi-call-container').hidden=true;}renderCurrent();});
   document.addEventListener('DOMContentLoaded',()=>{ loadRemoteState(); });
   window.addEventListener('focusai:authenticated',()=>loadRemoteState());
 })();

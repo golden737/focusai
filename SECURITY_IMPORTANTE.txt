@@ -1,1 +1,4 @@
 Seguridad: configura DATABASE_URL y SESSION_SECRET en las variables de entorno del servidor (Render). No publiques credenciales en GitHub. Cambia cualquier secreto que haya estado dentro de un ZIP compartido.
+
+
+VALIDACIÓN DE ROLES (actualización): FocusAI lee el rol de cada usuario desde public.profiles.role en Neon en cada solicitud autenticada. Para designar superadmin, actualiza ese campo en Neon y asegúrate de que la restricción CHECK permita el valor superadmin. No se utiliza SUPERADMIN_EMAIL para otorgar permisos. Las cuentas nuevas se registran como employee; los perfiles invitados conservan el rol previamente asignado en la base de datos.

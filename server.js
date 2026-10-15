@@ -103,6 +103,8 @@ async function bootstrap() {
 
 async function currentUser(req) {
   if (!req.session?.userId) return null;
+  // El rol autorizado SIEMPRE se obtiene de Neon (profiles.role).
+  // No se eleva el rol por correo ni por variables de entorno.
   const { rows } = await pool.query(`SELECT p.id, p.name, COALESCE(p.email,a.email) AS email,
       p.role, p.accent_color, p.avatar_url, p.theme, p.organization_id, p.department_id, p.position_id, p.employment_status
     FROM profiles p LEFT JOIN auth_users a ON a.id=p.id WHERE p.id=$1`, [req.session.userId]);
@@ -113,7 +115,7 @@ async function requireAuth(req,res,next) {
   catch(e){next(e);}
 }
 async function requireRole(req,res,next) {
-  if (!['admin','hr'].includes(req.user.role)) return res.status(403).json({error:'Necesitas permisos de RR. HH. o administrador.'});
+  if (!['superadmin','admin','hr'].includes(req.user.role)) return res.status(403).json({error:'Necesitas permisos de RR. HH. o administración.'});
   next();
 }
 async function isTeamMember(teamId,userId) {
@@ -158,14 +160,16 @@ app.post('/api/auth/signup', async (req,res,next)=>{
     try { await client.query('BEGIN');
       // Si RR. HH. creó previamente un perfil con este correo, se vincula la cuenta al perfil y organización existentes.
       const invited=await client.query(`SELECT p.id,p.organization_id,p.role FROM profiles p WHERE lower(p.email)=lower($1) AND p.organization_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM auth_users a WHERE a.id=p.id) ORDER BY p.created_at LIMIT 1 FOR UPDATE`,[email]);
-      let u, role='admin';
+      let u, role='employee';
       if(invited.rows[0]){
-        const linked=await client.query('INSERT INTO auth_users(id,email,password_hash,name) VALUES($1,$2,$3,$4) RETURNING id,email,name',[invited.rows[0].id,email,hash,name]);u=linked.rows[0];role=invited.rows[0].role==='hr'?'hr':invited.rows[0].role==='admin'?'admin':'employee';
+        const linked=await client.query('INSERT INTO auth_users(id,email,password_hash,name) VALUES($1,$2,$3,$4) RETURNING id,email,name',[invited.rows[0].id,email,hash,name]);u=linked.rows[0];
+        // Conserva el rol que RR. HH./administración asignó previamente en Neon.
+        role=['superadmin','admin','hr','employee'].includes(invited.rows[0].role)?invited.rows[0].role:'employee';
         await client.query('UPDATE profiles SET name=$2,email=$3,role=$4,updated_at=now() WHERE id=$1',[u.id,name,email,role]);
       } else {
         const created=await client.query('INSERT INTO auth_users(email,password_hash,name) VALUES($1,$2,$3) RETURNING id,email,name',[email,hash,name]);u=created.rows[0];
         const orgResult=await client.query('INSERT INTO organizations(name,slug,invite_code) VALUES($1,$2,$3) RETURNING id',[`${name} - Organización`, `${email.split('@')[0].toLowerCase().replace(/[^a-z0-9-]/g,'-').slice(0,35)}-${u.id.slice(0,8)}`,require('crypto').randomBytes(5).toString('hex').toUpperCase()]);
-        await client.query(`INSERT INTO profiles(id,name,email,role,organization_id,created_at,updated_at) VALUES($1,$2,$3,'admin',$4,now(),now()) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,organization_id=COALESCE(profiles.organization_id,EXCLUDED.organization_id)`,[u.id,u.name,u.email,orgResult.rows[0].id]);
+        await client.query(`INSERT INTO profiles(id,name,email,role,organization_id,created_at,updated_at) VALUES($1,$2,$3,$5,$4,now(),now()) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,role=EXCLUDED.role,organization_id=COALESCE(profiles.organization_id,EXCLUDED.organization_id)`,[u.id,u.name,u.email,orgResult.rows[0].id,role]);
       }
       await client.query('COMMIT'); res.status(201).json({user:{id:u.id,email:u.email,name:u.name,user_metadata:{name:u.name},role}});
     } catch(e){await client.query('ROLLBACK'); if(e.code==='23505')return res.status(409).json({error:'Ya existe una cuenta con ese correo.'}); throw e;} finally{client.release();}
@@ -174,8 +178,13 @@ app.post('/api/auth/signup', async (req,res,next)=>{
 app.post('/api/auth/login',async(req,res,next)=>{
   const email=String(req.body.email||'').trim().toLowerCase(), password=String(req.body.password||'');
   try {const {rows}=await pool.query('SELECT id,email,name,password_hash FROM auth_users WHERE email=$1',[email]); const u=rows[0]; if(!u||!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:'Correo o contraseña incorrectos.'});
-    const prof=await pool.query('SELECT organization_id FROM profiles WHERE id=$1',[u.id]);
-    if(prof.rows[0] && !prof.rows[0].organization_id){const org=await pool.query('INSERT INTO organizations(name,invite_code) VALUES($1,$2) RETURNING id',[`${u.name} - Organización`,require('crypto').randomBytes(5).toString('hex').toUpperCase()]);await pool.query("UPDATE profiles SET organization_id=$2, role=CASE WHEN role='user' THEN 'admin' ELSE 'admin' END, updated_at=now() WHERE id=$1",[u.id,org.rows[0].id]);}
+    const prof=await pool.query('SELECT organization_id,role FROM profiles WHERE id=$1',[u.id]);
+    if(!prof.rows[0]) return res.status(403).json({error:'Tu cuenta no tiene un perfil registrado en Neon. Contacta al administrador.'});
+    if(!prof.rows[0].organization_id){
+      const org=await pool.query('INSERT INTO organizations(name,invite_code) VALUES($1,$2) RETURNING id',[`${u.name} - Organización`,require('crypto').randomBytes(5).toString('hex').toUpperCase()]);
+      // Crear organización no debe cambiar el rol asignado en profiles.role.
+      await pool.query("UPDATE profiles SET organization_id=$2, role=CASE WHEN role='user' THEN 'employee' ELSE role END, updated_at=now() WHERE id=$1",[u.id,org.rows[0].id]);
+    }
     await new Promise((resolve,reject)=>req.session.regenerate(e=>e?reject(e):resolve())); req.session.userId=u.id;
     req.session.save(async err=>{if(err)return next(err);const {rows:p}=await pool.query('SELECT role,accent_color FROM profiles WHERE id=$1',[u.id]);res.json({user:{id:u.id,email:u.email,name:u.name,user_metadata:{name:u.name},role:p[0]?.role||'employee'}});});
   }catch(e){next(e);}
@@ -229,7 +238,7 @@ async function ensureOrganization(req) {
   } catch(e){await client.query('ROLLBACK');throw e;} finally{client.release();}
 }
 function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||''));}
-function normalizeRole(role, actorRole){const allowed=['employee','hr']; if(actorRole==='admin' && ['admin','hr','employee'].includes(role))return role; return allowed.includes(role)?role:'employee';}
+function normalizeRole(role, actorRole){const allowed=['employee','hr']; if(['superadmin','admin'].includes(actorRole) && ['admin','hr','employee'].includes(role))return role; return allowed.includes(role)?role:'employee';}
 // Llamadas Jitsi + procesamiento local opcional (Whisper + Ollama). Las grabaciones
 // solo se procesan cuando un usuario autorizado las carga; Jitsi público no expone el audio remoto al navegador.
 const callUpload = multer({
@@ -245,7 +254,7 @@ async function getCallForUser(id, user) {
   const org = await ensureOrganization({user});
   const {rows}=await pool.query(`SELECT c.*,p.name creator_name FROM meeting_call_sessions c JOIN profiles p ON p.id=c.created_by WHERE c.id=$1 AND c.organization_id=$2`,[id,org]);
   const call=rows[0]; if(!call)return null;
-  if(!['admin','hr'].includes(user.role) && call.created_by!==user.id) return null;
+  if(!['superadmin','admin','hr'].includes(user.role) && call.created_by!==user.id) return null;
   return call;
 }
 function callToClient(c){const saved=c.action_items||[];return {id:c.id,title:c.title,provider:c.provider,roomName:c.room_name,status:c.status,participants:c.participants||[],date:c.started_at||c.created_at,startedAt:c.started_at,endedAt:c.ended_at,transcript:c.transcript||'',summary:c.summary||'',actions:Array.isArray(saved)?saved:(saved.actions||[]),decisions:Array.isArray(saved.decisions)?saved.decisions:[],aiStatus:c.ai_status,createdBy:c.created_by,creatorName:c.creator_name};}
@@ -265,13 +274,13 @@ async function saveCallSummary(callId, transcript, result, status='completed') {
 }
 app.get('/api/meeting-directory',requireAuth,async(req,res,next)=>{try{const org=await ensureOrganization(req);const {rows}=await pool.query(`SELECT id,name,email,role FROM profiles WHERE organization_id=$1 AND employment_status IS DISTINCT FROM 'inactive' AND id<>$2 ORDER BY name NULLS LAST`,[org,req.user.id]);res.set('Cache-Control','no-store');res.json(rows);}catch(e){next(e);}});
 app.get('/api/meetings/invitations',requireAuth,async(req,res,next)=>{try{const org=await ensureOrganization(req);const {rows}=await pool.query(`SELECT c.*,p.name creator_name,i.status invitation_status FROM meeting_call_invitations i JOIN meeting_call_sessions c ON c.id=i.meeting_id JOIN profiles p ON p.id=c.created_by WHERE i.invited_user_id=$1 AND c.organization_id=$2 ORDER BY i.created_at DESC LIMIT 100`,[req.user.id,org]);res.set('Cache-Control','no-store');res.json(rows.map(c=>({...callToClient(c),invitationStatus:c.invitation_status})));}catch(e){next(e);}});
-app.post('/api/meetings/:id/respond',requireAuth,async(req,res,next)=>{try{const status=['accepted','declined'].includes(req.body.status)?req.body.status:null;if(!status)return res.status(400).json({error:'Respuesta de invitación no válida.'});const {rows}=await pool.query(`UPDATE meeting_call_invitations i SET status=$3,responded_at=now() FROM meeting_call_sessions c WHERE i.meeting_id=c.id AND i.meeting_id=$1 AND i.invited_user_id=$2 RETURNING c.room_name,c.title,i.status`,[req.params.id,req.user.id,status]);if(!rows[0])return res.status(404).json({error:'No se encontró una invitación para tu cuenta.'});res.json({ok:true,...rows[0],roomName:rows[0].room_name});}catch(e){next(e);}});
+app.post('/api/meetings/:id/respond',requireAuth,async(req,res,next)=>{try{const status=['accepted','declined'].includes(req.body.status)?req.body.status:null;if(!status)return res.status(400).json({error:'Respuesta de invitación no válida.'});const check=await pool.query('SELECT status FROM meeting_call_sessions WHERE id=$1',[req.params.id]);if(!check.rows[0])return res.status(404).json({error:'Reunión no encontrada.'});if(check.rows[0].status!=='in_progress')return res.status(410).json({error:'Esta reunión ya terminó. No es posible unirse.'});const {rows}=await pool.query(`UPDATE meeting_call_invitations i SET status=$3,responded_at=now() FROM meeting_call_sessions c WHERE i.meeting_id=c.id AND i.meeting_id=$1 AND i.invited_user_id=$2 AND c.status='in_progress' RETURNING c.room_name,c.title,i.status`,[req.params.id,req.user.id,status]);if(!rows[0])return res.status(404).json({error:'No se encontró una invitación activa para tu cuenta.'});res.json({ok:true,...rows[0],roomName:rows[0].room_name});}catch(e){next(e);}});
 app.get('/api/meetings',requireAuth,async(req,res,next)=>{try{const org=await ensureOrganization(req);const admin=['admin','hr'].includes(req.user.role);const {rows}=await pool.query(`SELECT DISTINCT c.*,p.name creator_name FROM meeting_call_sessions c JOIN profiles p ON p.id=c.created_by LEFT JOIN meeting_call_invitations i ON i.meeting_id=c.id AND i.invited_user_id=$3 WHERE c.organization_id=$1 AND ($2::boolean OR c.created_by=$3 OR i.invited_user_id=$3) ORDER BY c.created_at DESC LIMIT 100`,[org,admin,req.user.id]);res.json(rows.map(callToClient));}catch(e){next(e);}});
 app.post('/api/meetings',requireAuth,async(req,res,next)=>{const client=await pool.connect();try{const org=await ensureOrganization(req);const title=String(req.body.title||'').trim().slice(0,180);if(!title)return res.status(400).json({error:'Escribe un título para la reunión.'});const inviteIds=[...new Set((Array.isArray(req.body.invitedUserIds)?req.body.invitedUserIds:[]).filter(isUuid).filter(id=>id!==req.user.id))].slice(0,50);const roomName='focusai-'+require('crypto').randomBytes(12).toString('hex');await client.query('BEGIN');const {rows}=await client.query(`INSERT INTO meeting_call_sessions(organization_id,created_by,title,room_name,status,started_at,participants) VALUES($1,$2,$3,$4,'in_progress',now(),$5::jsonb) RETURNING *`,[org,req.user.id,title,roomName,JSON.stringify([{id:req.user.id,name:req.user.name}])]);if(inviteIds.length){const valid=await client.query('SELECT id,name,email FROM profiles WHERE id=ANY($1::uuid[]) AND organization_id=$2 AND employment_status IS DISTINCT FROM \'inactive\'', [inviteIds,org]);for(const person of valid.rows)await client.query('INSERT INTO meeting_call_invitations(meeting_id,invited_user_id,invited_by) VALUES($1,$2,$3) ON CONFLICT(meeting_id,invited_user_id) DO NOTHING',[rows[0].id,person.id,req.user.id]);rows[0].participants=[{id:req.user.id,name:req.user.name},...valid.rows.map(x=>({id:x.id,name:x.name,email:x.email,invited:true}))];}await client.query('COMMIT');res.status(201).json(callToClient(rows[0]));}catch(e){await client.query('ROLLBACK');next(e);}finally{client.release();}});
-app.post('/api/meetings/:id/finish',requireAuth,async(req,res,next)=>{try{const call=await getCallForUser(req.params.id,req.user);if(!call)return res.status(404).json({error:'Reunión no encontrada o sin permiso.'});await pool.query(`UPDATE meeting_call_sessions SET status='processing',ended_at=COALESCE(ended_at,now()),updated_at=now() WHERE id=$1`,[call.id]);res.json({ok:true,needsRecording:!call.transcript,transcription:'local-whisper',summary:'local-ollama'});}catch(e){next(e);}});
+app.post('/api/meetings/:id/finish',requireAuth,async(req,res,next)=>{try{const call=await getCallForUser(req.params.id,req.user);if(!call)return res.status(404).json({error:'Reunión no encontrada o sin permiso.'});if(call.created_by!==req.user.id)return res.status(403).json({error:'Solo quien inició la reunión puede finalizarla.'});if(call.status!=='in_progress')return res.status(409).json({error:'La reunión ya terminó.'});await pool.query(`UPDATE meeting_call_sessions SET status='completed',ended_at=COALESCE(ended_at,now()),updated_at=now() WHERE id=$1 AND status='in_progress'`,[call.id]);res.json({ok:true,status:'completed',needsRecording:!call.transcript,transcription:'local-whisper',summary:'local-ollama'});}catch(e){next(e);}});
 app.post('/api/meetings/:id/transcript',requireAuth,async(req,res,next)=>{try{const call=await getCallForUser(req.params.id,req.user);if(!call)return res.status(404).json({error:'Reunión no encontrada o sin permiso.'});const transcript=String(req.body.transcript||'').trim();if(transcript.length<20)return res.status(400).json({error:'La transcripción debe contener al menos 20 caracteres.'});const result=await summarizeWithOllama(transcript);await saveCallSummary(call.id,transcript,result);const {rows}=await pool.query('SELECT * FROM meeting_call_sessions WHERE id=$1',[call.id]);res.json(callToClient(rows[0]));}catch(e){next(e);}});
 app.post('/api/meetings/:id/recording',requireAuth,callUpload.single('recording'),async(req,res,next)=>{const file=req.file;try{const call=await getCallForUser(req.params.id,req.user);if(!call)return res.status(404).json({error:'Reunión no encontrada o sin permiso.'});if(!file)return res.status(400).json({error:'Adjunta el archivo de audio o video de la reunión.'});const outDir=fs.mkdtempSync(path.join(os.tmpdir(),'focusai-whisper-'));try{const model=String(process.env.WHISPER_MODEL||'base').replace(/[^a-z0-9.-]/gi,'');const python=process.env.PYTHON_BIN||'python';await execFileAsync(python,['-m','whisper',file.path,'--model',model,'--language','Spanish','--output_format','txt','--output_dir',outDir],{timeout:45*60*1000,maxBuffer:2*1024*1024});const txtPath=path.join(outDir,path.basename(file.path)+'.txt');let transcript='';if(fs.existsSync(txtPath))transcript=fs.readFileSync(txtPath,'utf8').trim();else{const txts=fs.readdirSync(outDir).filter(x=>x.endsWith('.txt'));if(txts.length)transcript=fs.readFileSync(path.join(outDir,txts[0]),'utf8').trim();}if(transcript.length<20)throw new Error('Whisper no generó una transcripción suficiente. Comprueba que el audio sea audible.');const result=await summarizeWithOllama(transcript);await saveCallSummary(call.id,transcript,result);const {rows}=await pool.query('SELECT * FROM meeting_call_sessions WHERE id=$1',[call.id]);res.json(callToClient(rows[0]));}finally{fs.rmSync(outDir,{recursive:true,force:true});}}catch(e){await pool.query("UPDATE meeting_call_sessions SET status='failed',ai_status='failed',updated_at=now() WHERE id=$1",[req.params.id]).catch(()=>{});next(e);}finally{if(file)fs.rmSync(file.path,{force:true});}});
-app.delete('/api/meetings/:id',requireAuth,async(req,res,next)=>{try{const call=await getCallForUser(req.params.id,req.user);if(!call)return res.status(404).json({error:'Reunión no encontrada o sin permiso.'});await pool.query('DELETE FROM meeting_call_sessions WHERE id=$1',[call.id]);res.json({ok:true});}catch(e){next(e);}});
+app.delete('/api/meetings/:id',requireAuth,async(req,res,next)=>{try{const call=await getCallForUser(req.params.id,req.user);if(!call)return res.status(404).json({error:'Reunión no encontrada o sin permiso.'});if(call.created_by!==req.user.id)return res.status(403).json({error:'Solo quien inició la reunión puede eliminarla del historial.'});if(call.status==='in_progress')return res.status(409).json({error:'Primero debes finalizar la reunión.'});await pool.query('DELETE FROM meeting_call_sessions WHERE id=$1',[call.id]);res.json({ok:true});}catch(e){next(e);}});
 
 app.get('/api/enterprise/state',requireAuth,requireRole,async(req,res,next)=>{
   try{
@@ -294,7 +303,7 @@ app.put('/api/enterprise/state',requireAuth,requireRole,async(req,res,next)=>{
   const client=await pool.connect();
   try{
     const org=await ensureOrganization(req); const d=req.body||{};
-    const employees=Array.isArray(d.employees)?d.employees:[], surveys=Array.isArray(d.surveys)?d.surveys:[], skills=Array.isArray(d.skills)?d.skills:[], meetings=Array.isArray(d.meetings)?d.meetings:[];
+    const employees=req.user.role==='hr'?[]:(Array.isArray(d.employees)?d.employees:[]), surveys=Array.isArray(d.surveys)?d.surveys:[], skills=Array.isArray(d.skills)?d.skills:[], meetings=Array.isArray(d.meetings)?d.meetings:[];
     await client.query('BEGIN');
     const employeeIds=[];
     for(const e of employees){

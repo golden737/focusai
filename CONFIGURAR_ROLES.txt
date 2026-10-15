@@ -1,0 +1,26 @@
+FOCUSAI — CONFIGURACIÓN DE ROLES Y LLAMADAS
+
+ROLES
+- superadmin: cuenta de plataforma identificada por SUPERADMIN_EMAIL en las variables de entorno de Render.
+- admin: administra empleados y permisos dentro de su organización.
+- hr: acceso a encuestas, competencias y métricas empresariales; no puede editar el directorio de usuarios mediante la API empresarial.
+- employee: funciones normales y llamadas/invitaciones propias.
+
+PASO OBLIGATORIO EN RENDER
+1. Abre el servicio FocusAI → Environment.
+2. Añade SUPERADMIN_EMAIL con el correo exacto de tu cuenta FocusAI.
+3. Guarda y espera el reinicio del servicio.
+4. Cierra sesión y vuelve a entrar con esa cuenta.
+La API reconoce esa cuenta como superadmin por correo. No compartas credenciales ni secretos.
+
+LLAMADAS
+- Solo quien crea una llamada puede finalizarla o eliminarla del historial.
+- La reunión pasa a completed al finalizar; las invitaciones muestran Terminada y no permiten aceptar si ya terminó.
+- Las salas activas solo muestran Abrir sala al creador.
+- Jitsi se carga dentro del módulo de FocusAI; se desactiva la pantalla previa de Jitsi para reducir el paso duplicado. El comportamiento de moderador de meet.jit.si depende del proveedor externo y no puede garantizarse desde FocusAI.
+
+IMPORTANTE
+Este cambio añade control de roles en autenticación y acciones de llamadas, y bloquea edición empresarial de empleados para RR. HH. No incluye todavía una consola global de administración de organizaciones para superadmin; esa interfaz necesita un módulo adicional. Revisa los roles actuales de los perfiles existentes desde la cuenta admin y cambia los que corresponda a employee/hr.
+
+
+VALIDACIÓN DE ROLES (actualización): FocusAI lee el rol de cada usuario desde public.profiles.role en Neon en cada solicitud autenticada. Para designar superadmin, actualiza ese campo en Neon y asegúrate de que la restricción CHECK permita el valor superadmin. No se utiliza SUPERADMIN_EMAIL para otorgar permisos. Las cuentas nuevas se registran como employee; los perfiles invitados conservan el rol previamente asignado en la base de datos.
