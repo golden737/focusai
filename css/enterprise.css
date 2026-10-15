@@ -190,3 +190,16 @@ body.focusai-call-open{overflow:hidden}
 .survey-question-card [data-question-options]{width:100%}
 #survey-target-people{width:100%;min-height:100px}
 @media(max-width:600px){.jitsi-call-container.call-fullscreen:not([hidden]){padding:6px;gap:5px}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar{align-items:center;flex-direction:row;flex-wrap:wrap;margin:0}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar b{font-size:.9rem;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.jitsi-call-container.call-fullscreen .meeting-list-actions{gap:5px;flex-wrap:nowrap}.jitsi-call-container.call-fullscreen .meeting-list-actions .eco-btn{padding:7px 9px;font-size:.78rem}.survey-role-options{grid-template-columns:1fr}}
+
+/* Overlay real de pantalla completa: el dashboard no se redimensiona ni se parte. */
+.jitsi-call-container.call-fullscreen:not([hidden]){position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;max-height:100dvh!important;z-index:2147483000!important;margin:0!important;padding:10px!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:#080d18!important}
+.jitsi-call-container.call-fullscreen .jitsi-embedded{flex:1 1 auto!important;min-height:0!important;height:auto!important;width:100%!important;overflow:hidden!important}
+.jitsi-call-container.call-fullscreen .jitsi-embedded iframe{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;border:0!important}
+.jitsi-call-container.call-fullscreen .eco-note{display:none!important}
+#meeting-history-show-all{margin-top:12px}
+#sidebar .nav-item[hidden],#sidebar .nav-section-label[hidden]{display:none!important}
+.sidebar,.sidebar-header,.sidebar-nav,.sidebar-footer,.nav-item,.sidebar-brand,.sidebar-toggle{transition:width .24s ease,min-width .24s ease,padding .2s ease,opacity .18s ease,transform .2s ease,background-color .2s ease!important}
+.sidebar.collapsed .sidebar-toggle{display:flex!important}
+.sidebar.collapsed .nav-item span:not(.nav-emoji):not(.nav-badge){width:0;max-width:0;overflow:hidden;opacity:0}
+.sidebar.collapsed .sidebar-brand{width:0;max-width:0;overflow:hidden;opacity:0;flex:0}
+@media(max-width:600px){.jitsi-call-container.call-fullscreen:not([hidden]){padding:5px!important}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar{flex-wrap:nowrap!important}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar b{max-width:42%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}

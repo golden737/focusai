@@ -100,7 +100,12 @@
       el('#meeting-actions').textContent=meetings.reduce((n,m)=>n+(Array.isArray(m.actions)?m.actions.length:(m.actions?.actions||[]).length),0);
       if (!meetings.length) { list.className='eco-empty'; list.textContent='Todavía no hay reuniones guardadas.'; return; }
       list.className='eco-list';
-      list.innerHTML=meetings.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(m.status||'')} · ${esc(m.creatorName||'')}</p>${m.summary?`<p class="eco-summary-text">${esc(m.summary)}</p>`:''}${m.actions?.length?`<ul>${m.actions.map(a=>`<li>${esc(typeof a==='string'?a:(a.task||JSON.stringify(a)))}${a.owner?` — ${esc(a.owner)}`:''}${a.dueDate?` · ${esc(a.dueDate)}`:''}</li>`).join('')}</ul>`:''}${m.transcript?`<details><summary>Ver transcripción</summary><p>${esc(m.transcript).replace(/\n/g,'<br>')}</p></details>`:''}</div><div class="meeting-list-actions">${m.status==='in_progress'&&m.createdBy===FlowState.get('user.id')?`<button class="eco-btn eco-btn-small" data-rejoin-meeting="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Abrir sala</button>`:''}${m.status!=='in_progress'?`<span class="eco-status is-inactive">Reunión terminada</span>`:''}<button class="eco-btn eco-btn-small" data-select-meeting="${esc(m.id)}">Procesar resumen</button>${m.createdBy===FlowState.get('user.id')?`<button class="eco-btn eco-btn-small" data-delete-meeting="${esc(m.id)}">Eliminar</button>`:''}</div></article>`).join('');
+      const showAll=el('#meeting-history-show-all')?.dataset.showAll==='true';
+      const visibleMeetings=showAll?meetings:meetings.slice(0,5);
+      list.innerHTML=visibleMeetings.map(m=>`<article class="eco-list-item"><div><b>${esc(m.title)}</b><p>${esc(m.date?new Date(m.date).toLocaleString():'')} · ${esc(m.status||'')} · ${esc(m.creatorName||'')}</p>${m.summary?`<p class="eco-summary-text">${esc(m.summary)}</p>`:''}${m.actions?.length?`<ul>${m.actions.map(a=>`<li>${esc(typeof a==='string'?a:(a.task||JSON.stringify(a)))}${a.owner?` — ${esc(a.owner)}`:''}${a.dueDate?` · ${esc(a.dueDate)}`:''}</li>`).join('')}</ul>`:''}${m.transcript?`<details><summary>Ver transcripción</summary><p>${esc(m.transcript).replace(/\n/g,'<br>')}</p></details>`:''}</div><div class="meeting-list-actions">${m.status==='in_progress'&&m.createdBy===FlowState.get('user.id')?`<button class="eco-btn eco-btn-small" data-rejoin-meeting="${esc(m.id)}" data-room-name="${esc(m.roomName)}" data-room-title="${esc(m.title)}">Abrir sala</button>`:''}${m.status!=='in_progress'?`<span class="eco-status is-inactive">Reunión terminada</span>`:''}<button class="eco-btn eco-btn-small" data-select-meeting="${esc(m.id)}">Procesar resumen</button>${m.createdBy===FlowState.get('user.id')?`<button class="eco-btn eco-btn-small" data-delete-meeting="${esc(m.id)}">Eliminar</button>`:''}</div></article>`).join('');
+      let historyToggle=el('#meeting-history-show-all');
+      if(!historyToggle){historyToggle=document.createElement('button');historyToggle.id='meeting-history-show-all';historyToggle.className='eco-btn';historyToggle.type='button';list.parentElement.appendChild(historyToggle);}
+      historyToggle.hidden=meetings.length<=5;historyToggle.dataset.showAll=String(showAll);historyToggle.textContent=showAll?'Mostrar solo las últimas 5':'Ver todo el historial ('+meetings.length+')';
     } catch(err) { list.className='eco-empty'; list.textContent=err.message; }
   }
   function showMeetingResult(m) {
@@ -123,9 +128,9 @@
     if(jitsiApi){try{jitsiApi.dispose()}catch{}jitsiApi=null;}
     const container=el('#jitsi-embedded');container.replaceChildren();
     el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;el('#stop-call-btn').hidden=!isCreator;el('#copy-call-link-btn').hidden=false;document.body.classList.add('focusai-call-open');
-    jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:520,parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:false,enableWelcomePage:false,disableDeepLinking:true,enableLobby:false},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
+    jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:'100%',parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:false,enableWelcomePage:false,disableDeepLinking:true,enableLobby:false},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
     jitsiApi.addEventListener('videoConferenceJoined',()=>{const st=el('#call-status');if(st)st.textContent='Conectado a la sala. Comparte el nombre/enlace de la sala con los participantes.';});
-    jitsiApi.addEventListener('readyToClose',()=>{const isHost=activeCall?.createdBy===FlowState.get('user.id');if(isHost)finishMeeting({fromJitsi:true});else closeCallWindow('La reunión se cerró.');});
+    jitsiApi.addEventListener('readyToClose',()=>{const call=activeCall;const isHost=call?.createdBy===FlowState.get('user.id');const frame=el('#jitsi-embedded');if(frame)frame.replaceChildren();if(isHost){finishMeeting({fromJitsi:true});}else{closeCallWindow('La reunión se cerró.');}});
     if(callStatusPoll)clearInterval(callStatusPoll);
     callStatusPoll=setInterval(async()=>{if(!activeCall)return;try{const rows=await apiMeeting('/api/meetings');const remote=rows.find(x=>x.id===activeCall.id);if(!remote||remote.status!=='in_progress')closeCallWindow('El anfitrión finalizó la llamada. Actualizando FocusAI…',true);}catch{}},3000);
   }
@@ -272,10 +277,24 @@
     catch(err){el('#organization-invite-code').textContent=err.message;}
   }
 
+  function applyRoleNavigation(){
+    const r=role();
+    const access={
+      superadmin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','join-organization','skills','timer','habits','goals','focus','personal','stats','gamification','admin','settings'],
+      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','admin','settings'],
+      hr:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      employee:['dashboard','tasks','calendar','projects','teams','meetings','my-surveys','join-organization','timer','habits','goals','focus','personal','stats','gamification','settings']
+    };
+    const allowed=new Set(access[r]||access.employee);
+    document.querySelectorAll('#sidebar .nav-item[data-view]').forEach(a=>{a.hidden=!allowed.has(a.dataset.view);});
+    document.querySelectorAll('#sidebar .nav-section-label').forEach(label=>{let next=label.nextElementSibling,has=false;while(next&&!next.classList.contains('nav-section-label')){if(next.matches('.nav-item')&&!next.hidden)has=true;next=next.nextElementSibling;}label.hidden=!has;});
+  }
+
   function renderCurrent() {
     renderMeetings(); loadMeetingDirectory(); renderInvitations(); renderSurveys(); renderEmployees(); renderHRMetrics(); renderSkills(); renderAdmin(); renderMySurveys(); renderOrganizationJoin(); if(el('#admin-page'))loadOrganizationInvite();
     const current=FlowRouter.getCurrentPath();
     document.querySelectorAll('.nav-section-label').forEach(x=>x.style.display='');
+    applyRoleNavigation();
     if(current==='meetings'&&el('#meetings-page')) renderMeetings();
     if(current==='my-surveys') renderMySurveys();
   }
@@ -311,6 +330,7 @@
     if(t.id==='stop-call-btn')finishMeeting();
     if(t.id==='summarize-meeting-btn')processMeetingContent();
     if(t.id==='refresh-meetings-btn')renderMeetings();
+    if(t.id==='meeting-history-show-all'){t.dataset.showAll=t.dataset.showAll==='true'?'false':'true';renderMeetings();}
     if(t.id==='copy-call-link-btn'&&activeCall){const link='https://meet.jit.si/'+activeCall.roomName;navigator.clipboard?.writeText(link).then(()=>toast('Enlace de la sala copiado.')).catch(()=>prompt('Copia este enlace para invitar a participantes:',link));}
     if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting&&meeting.status==='in_progress'&&meeting.createdBy===FlowState.get('user.id')){activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting,true).catch(err=>toast(err.message));}}
     if(t.dataset.selectMeeting){pendingCallId=t.dataset.selectMeeting;el('#meeting-transcript')?.focus();toast('Reunión seleccionada. Adjunta su grabación o pega la transcripción.');}

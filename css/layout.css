@@ -30,11 +30,11 @@ body { background: var(--bg-base); color: var(--text-primary); }
 }
 .sidebar.collapsed { width: var(--sidebar-collapsed); min-width: var(--sidebar-collapsed); }
 .sidebar.collapsed .sidebar-brand,
-.sidebar.collapsed .nav-item span:not(.nav-badge),
-.sidebar.collapsed .user-info { display: none; }
+.sidebar.collapsed .nav-item span:not(.nav-emoji):not(.nav-badge),
+.sidebar.collapsed .user-info { opacity: 0; width: 0; max-width: 0; overflow: hidden; }
 .sidebar.collapsed .nav-item { justify-content: center; padding: .75rem; }
 .sidebar.collapsed .sidebar-header { justify-content: center; }
-.sidebar.collapsed .sidebar-toggle { display: none; }
+.sidebar.collapsed .sidebar-toggle { display: flex; }
 
 .sidebar-header {
   display: flex; align-items: center; gap: .75rem;
