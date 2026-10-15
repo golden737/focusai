@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080d18">
+  <title>Llamada · FocusAI</title>
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d18;color:#f8fafc;font:14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .call-bar{height:56px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#111d32;border-bottom:1px solid rgba(255,255,255,.08)}
+    .call-bar strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.call-actions{display:flex;gap:8px;align-items:center}
+    .call-actions button{border:0;border-radius:9px;padding:10px 13px;background:#d92743;color:#fff;font-weight:700;cursor:pointer}
+    #jitsi-room{width:100%;height:calc(100dvh - 56px);overflow:hidden;background:#080d18}#jitsi-room iframe{width:100%!important;height:100%!important;border:0!important}
+    #call-message{position:fixed;inset:56px 0 0;display:grid;place-items:center;text-align:center;padding:24px;color:#dbe5f3;background:#080d18}#call-message[hidden]{display:none}
+    #call-message button{border:0;border-radius:9px;padding:11px 16px;background:#315cf5;color:white;font-weight:700;cursor:pointer}
+    @media(max-width:600px){.call-bar{height:52px;padding:6px 9px}.call-bar strong{max-width:48%;font-size:13px}.call-actions button{padding:9px 10px;font-size:12px}#jitsi-room{height:calc(100dvh - 52px)}#call-message{inset:52px 0 0}}
+  </style>
+  <script src="https://meet.jit.si/external_api.js" defer></script>
+  <script src="/js/call.js" defer></script>
+</head>
+<body>
+  <header class="call-bar"><strong id="call-title">Llamada FocusAI</strong><div class="call-actions"><button id="finish-call" hidden>Finalizar para todos</button></div></header>
+  <main id="jitsi-room"><div id="call-message">Preparando la sala…</div></main>
+</body>
+</html>

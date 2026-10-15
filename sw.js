@@ -1,6 +1,6 @@
 // ── FocusAI Service Worker ──────────────────────────────────────────────────
 // Versión: actualizar al desplegar nuevos assets para forzar recarga del caché
-const CACHE_VERSION   = 'focusai-v14-rrhh-global-user-accent';
+const CACHE_VERSION   = 'focusai-v15-popup-calls-sidebar-polish';
 const STATIC_CACHE    = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE   = `${CACHE_VERSION}-dynamic`;
 const API_CACHE       = `${CACHE_VERSION}-api`;
@@ -9,6 +9,8 @@ const API_CACHE       = `${CACHE_VERSION}-api`;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/call.html',
+  '/js/call.js',
   '/css/variables.css',
   '/css/auth.css',
   '/css/reset.css',

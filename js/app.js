@@ -159,11 +159,15 @@ window.FlowApp = (() => {
       mobileToggle.setAttribute('aria-label', isOpen ? 'Cerrar navegación' : 'Abrir navegación');
     });
 
-    sidebar.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', () => {
+    sidebar.querySelectorAll('.nav-item').forEach((item) => {
+      const label = item.querySelector('span:not(.nav-badge):not(.nav-emoji)')?.textContent?.trim();
+      if (label) item.setAttribute('title', label);
+      item.addEventListener('click', () => {
       sidebar.classList.remove('mobile-open');
       mobileToggle?.setAttribute('aria-expanded', 'false');
       mobileToggle?.setAttribute('aria-label', 'Abrir navegación');
-    }));
+      });
+    });
     document.getElementById('logout-btn')?.addEventListener('click', logout);
 
     // Actualizar nombre y avatar del usuario

@@ -123,23 +123,20 @@
       const script=document.createElement('script');script.src='https://meet.jit.si/external_api.js';script.async=true;script.dataset.jitsiExternal='true';script.onload=resolve;script.onerror=()=>reject(new Error('No se pudo cargar Jitsi. Comprueba tu conexión a Internet.'));document.head.appendChild(script);
     });
   }
-  async function launchJitsi(meeting, isCreator=false) {
-    await loadJitsiScript();
-    if(jitsiApi){try{jitsiApi.dispose()}catch{}jitsiApi=null;}
-    const container=el('#jitsi-embedded');container.replaceChildren();
-    el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;el('#stop-call-btn').hidden=!isCreator;el('#copy-call-link-btn').hidden=false;document.body.classList.add('focusai-call-open');
-    jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:'100%',parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:false,enableWelcomePage:false,disableDeepLinking:true,enableLobby:false},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
-    jitsiApi.addEventListener('videoConferenceJoined',()=>{const st=el('#call-status');if(st)st.textContent='Conectado a la sala. Comparte el nombre/enlace de la sala con los participantes.';});
-    jitsiApi.addEventListener('readyToClose',()=>{const call=activeCall;const isHost=call?.createdBy===FlowState.get('user.id');const frame=el('#jitsi-embedded');if(frame)frame.replaceChildren();if(isHost){finishMeeting({fromJitsi:true});}else{closeCallWindow('La reunión se cerró.');}});
-    if(callStatusPoll)clearInterval(callStatusPoll);
-    callStatusPoll=setInterval(async()=>{if(!activeCall)return;try{const rows=await apiMeeting('/api/meetings');const remote=rows.find(x=>x.id===activeCall.id);if(!remote||remote.status!=='in_progress')closeCallWindow('El anfitrión finalizó la llamada. Actualizando FocusAI…',true);}catch{}},3000);
+  function launchJitsiPopup(meeting, isCreator=false, popup=null) {
+    const win = popup || window.open('about:blank', 'focusai-call-'+String(meeting.id).replace(/[^a-zA-Z0-9_-]/g,''));
+    if (!win) { toast('El navegador bloqueó la ventana de la llamada. Permite ventanas emergentes para FocusAI.'); return; }
+    activeCall=meeting; pendingCallId=meeting.id;
+    const params=new URLSearchParams({meetingId:String(meeting.id),room:String(meeting.roomName||''),title:String(meeting.title||'Llamada FocusAI'),host:isCreator?'1':'0'});
+    win.location.href='/call.html?'+params.toString();
+    try{win.focus()}catch{}
   }
   async function startMeeting() {
     const title=el('#meeting-title')?.value.trim();if(!title){toast('Escribe un nombre para la reunión.');return;}
     if(!el('#meeting-consent')?.checked){toast('Confirma que informarás a los participantes si la reunión se procesa con IA.');return;}
-    const btn=el('#start-call-btn');btn.disabled=true;
-    try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();await launchJitsi(meeting,true);await renderMeetings();}
-    catch(err){toast('No se pudo iniciar la reunión: '+err.message);}finally{btn.disabled=false;}
+    const btn=el('#start-call-btn');btn.disabled=true;const callPopup=window.open('about:blank','focusai-call-new');if(callPopup){callPopup.document.write('<!doctype html><title>FocusAI · Llamada</title><body style="font:16px system-ui;background:#080d18;color:white;padding:24px">Preparando la sala…</body>');callPopup.document.close();}
+    try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();launchJitsiPopup(meeting,true,callPopup);await renderMeetings();}
+    catch(err){try{callPopup?.close()}catch{}toast('No se pudo iniciar la reunión: '+err.message);}finally{btn.disabled=false;}
   }
   function closeCallWindow(message='Llamada cerrada.', reloadAfterClose=false) {
     activeCall=null;if(callStatusPoll){clearInterval(callStatusPoll);callStatusPoll=null;}
@@ -326,13 +323,13 @@
     if(t.id==='refresh-hr-metrics')renderHRMetrics();
     if(t.dataset.meetingPerson){if(t.checked)selectedInvitees.add(t.dataset.meetingPerson);else selectedInvitees.delete(t.dataset.meetingPerson);renderMeetingDirectory();}
     if(t.dataset.acceptInvitation||t.dataset.declineInvitation){const mid=t.dataset.acceptInvitation||t.dataset.declineInvitation;apiMeeting(`/api/meetings/${encodeURIComponent(mid)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:t.dataset.acceptInvitation?'accepted':'declined'})}).then(async()=>{await renderInvitations();toast(t.dataset.acceptInvitation?'Invitación aceptada. Ya puedes unirte a la llamada.':'Invitación rechazada.');}).catch(err=>toast(err.message));}
-    if(t.dataset.joinInvitation){const meeting={id:t.dataset.joinInvitation,roomName:t.dataset.roomName,title:t.dataset.roomTitle};activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting,false).catch(err=>toast(err.message));}
+    if(t.dataset.joinInvitation){const meeting={id:t.dataset.joinInvitation,roomName:t.dataset.roomName,title:t.dataset.roomTitle};const popup=window.open('about:blank','focusai-call-'+String(meeting.id).replace(/[^a-zA-Z0-9_-]/g,''));launchJitsiPopup(meeting,false,popup);}
     if(t.id==='stop-call-btn')finishMeeting();
     if(t.id==='summarize-meeting-btn')processMeetingContent();
     if(t.id==='refresh-meetings-btn')renderMeetings();
     if(t.id==='meeting-history-show-all'){t.dataset.showAll=t.dataset.showAll==='true'?'false':'true';renderMeetings();}
     if(t.id==='copy-call-link-btn'&&activeCall){const link='https://meet.jit.si/'+activeCall.roomName;navigator.clipboard?.writeText(link).then(()=>toast('Enlace de la sala copiado.')).catch(()=>prompt('Copia este enlace para invitar a participantes:',link));}
-    if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting&&meeting.status==='in_progress'&&meeting.createdBy===FlowState.get('user.id')){activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting,true).catch(err=>toast(err.message));}}
+    if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting&&meeting.status==='in_progress'&&meeting.createdBy===FlowState.get('user.id')){activeCall=meeting;pendingCallId=meeting.id;const popup=window.open('about:blank','focusai-call-'+String(meeting.id).replace(/[^a-zA-Z0-9_-]/g,''));launchJitsiPopup(meeting,true,popup);}}
     if(t.dataset.selectMeeting){pendingCallId=t.dataset.selectMeeting;el('#meeting-transcript')?.focus();toast('Reunión seleccionada. Adjunta su grabación o pega la transcripción.');}
     if(t.id==='new-survey-btn') { el('#survey-title')?.focus(); el('#survey-title')?.scrollIntoView({behavior:'smooth',block:'center'}); }
     if(t.id==='add-survey-question'){addSurveyQuestion();}
