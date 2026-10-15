@@ -68,6 +68,8 @@
   let currentMeetingResults = null;
   let meetingDirectory = [];
   const selectedInvitees = new Set();
+  let callStatusPoll = null;
+  let surveyQuestionCounter = 0;
   async function apiMeeting(url, options={}) {
     const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});
     const b=await r.json().catch(()=>({})); if(!r.ok)throw new Error(b.error||`Error HTTP ${r.status}`); return b;
@@ -120,10 +122,12 @@
     await loadJitsiScript();
     if(jitsiApi){try{jitsiApi.dispose()}catch{}jitsiApi=null;}
     const container=el('#jitsi-embedded');container.replaceChildren();
-    el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;el('#stop-call-btn').hidden=!isCreator;el('#copy-call-link-btn').hidden=false;
+    el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;el('#stop-call-btn').hidden=!isCreator;el('#copy-call-link-btn').hidden=false;document.body.classList.add('focusai-call-open');
     jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:520,parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:false,enableWelcomePage:false,disableDeepLinking:true,enableLobby:false},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
     jitsiApi.addEventListener('videoConferenceJoined',()=>{const st=el('#call-status');if(st)st.textContent='Conectado a la sala. Comparte el nombre/enlace de la sala con los participantes.';});
-    jitsiApi.addEventListener('readyToClose',()=>{if(el('#call-status'))el('#call-status').textContent='La sala se cerró. Sube una grabación autorizada o pega la transcripción para generar el resumen.';});
+    jitsiApi.addEventListener('readyToClose',()=>{if(activeCall?.createdBy===FlowState.get('user.id'))finishMeeting();else closeCallWindow('La reunión se cerró.');});
+    if(callStatusPoll)clearInterval(callStatusPoll);
+    callStatusPoll=setInterval(async()=>{if(!activeCall)return;try{const rows=await apiMeeting('/api/meetings');const remote=rows.find(x=>x.id===activeCall.id);if(!remote||remote.status!=='in_progress')closeCallWindow('El anfitrión finalizó la llamada.');}catch{}},3000);
   }
   async function startMeeting() {
     const title=el('#meeting-title')?.value.trim();if(!title){toast('Escribe un nombre para la reunión.');return;}
@@ -132,14 +136,16 @@
     try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();await launchJitsi(meeting,true);await renderMeetings();}
     catch(err){toast('No se pudo iniciar la reunión: '+err.message);}finally{btn.disabled=false;}
   }
-  async function finishMeeting() {
-    if(!activeCall)return;
-    const call=activeCall;activeCall=null;
-    try{jitsiApi?.executeCommand('hangup');}catch{}
+  function closeCallWindow(message='Llamada cerrada.') {
+    activeCall=null;if(callStatusPoll){clearInterval(callStatusPoll);callStatusPoll=null;}
     try{jitsiApi?.dispose();}catch{}jitsiApi=null;
-    el('#jitsi-call-container').hidden=true;
-    try{await apiMeeting(`/api/meetings/${encodeURIComponent(call.id)}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});pendingCallId=call.id;toast('Llamada finalizada. Para generar el resumen, carga la grabación autorizada o pega la transcripción.');}
-    catch(err){toast('La llamada terminó, pero no se pudo actualizar Neon: '+err.message);}
+    const box=el('#jitsi-call-container');if(box)box.hidden=true;document.body.classList.remove('focusai-call-open');
+    const st=el('#call-status');if(st)st.textContent=message;renderMeetings();
+  }
+  async function finishMeeting() {
+    if(!activeCall)return;const call=activeCall;
+    try{await apiMeeting(`/api/meetings/${encodeURIComponent(call.id)}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});pendingCallId=call.id;try{jitsiApi?.executeCommand('hangup');}catch{}closeCallWindow('Llamada finalizada. Puedes cargar una grabación autorizada o pegar la transcripción para generar el resumen.');toast('Llamada finalizada para todos los participantes.');}
+    catch(err){toast('No se pudo finalizar la llamada en Neon: '+err.message);}
     await renderMeetings();
   }
   async function processMeetingContent() {
@@ -176,6 +182,9 @@
     } catch(err){list.className='eco-empty';list.textContent=err.message;}
   }
 
+  function addSurveyQuestion(){
+    const root=el('#survey-question-builder');if(!root)return;const n=++surveyQuestionCounter;const card=document.createElement('article');card.className='survey-question-card eco-card';card.innerHTML=`<div class="survey-q-top"><b>Pregunta ${n}</b><button type="button" class="eco-btn eco-btn-small" data-remove-survey-question>Quitar</button></div><label>Pregunta o interrogante</label><input data-question-text required placeholder="Escribe la pregunta…"><label>Tipo de respuesta</label><select data-question-type><option value="text">Texto corto</option><option value="textarea">Texto largo / párrafo</option><option value="single_choice">Selección única</option><option value="multiple_choice">Selección múltiple</option><option value="yes_no">Sí / No</option><option value="rating">Calificación de 1 a 5</option><option value="number">Número</option><option value="date">Fecha</option></select><div class="survey-options-field" hidden><label>Opciones (una por línea)</label><textarea data-question-options rows=3 placeholder="Opción 1\nOpción 2\nOpción 3"></textarea></div><label class="eco-check"><input type="checkbox" data-question-required checked> Respuesta obligatoria</label>`;root.appendChild(card);}
+  async function loadSurveyAudiencePeople(){const select=el('#survey-target-people');if(!select)return;try{const people=await apiMeeting('/api/meeting-directory');select.innerHTML=people.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.email)} · ${esc(({admin:'Administrador',hr:'RR. HH.',employee:'Empleado',superadmin:'Superadministrador'})[p.role]||p.role)}</option>`).join('');}catch{select.innerHTML='';}}
   function renderSurveys() {
     if (!el('#surveys-page')) return;
     const s=state();
@@ -274,13 +283,15 @@
       catch(err){toast(err.message);if(button)button.disabled=false;}
     }
     if(ev.target.id==='survey-form') {
-      ev.preventDefault(); const title=el('#survey-title').value.trim(), lines=el('#survey-questions').value.split('\n').map(x=>x.trim()).filter(Boolean);
-      const allowedTypes=new Set(['text','textarea','single_choice','multiple_choice','rating','yes_no','number','date']);
-      const questions=lines.map(line=>{const parts=line.split('|').map(x=>x.trim());let type=(parts[1]||'text').toLowerCase();const aliases={'texto':'text','párrafo':'textarea','parrafo':'textarea','opción única':'single_choice','opcion unica':'single_choice','opción múltiple':'multiple_choice','opcion multiple':'multiple_choice','calificación':'rating','calificacion':'rating','sí/no':'yes_no','si/no':'yes_no','fecha':'date','número':'number','numero':'number'};type=aliases[type]||type;if(!allowedTypes.has(type))type='text';return {text:parts[0],type,options:['single_choice','multiple_choice'].includes(type)?(parts[2]||'').split(';').map(x=>x.trim()).filter(Boolean):[],required:true};});
-      if(!title||!questions.length){toast('Añade un título y al menos una pregunta.');return;}
-      if(questions.some(q=>['single_choice','multiple_choice'].includes(q.type)&&!q.options.length)){toast('Las preguntas de opción única o múltiple necesitan opciones separadas por punto y coma.');return;}
-      const s=state();s.surveys.push({id:id(),title,category:el('#survey-category').value,questions,anonymous:el('#survey-anonymous').checked,responses:[],createdAt:new Date().toISOString()});write(s);ev.target.reset();renderSurveys();toast('Encuesta publicada en Neon.');
+      ev.preventDefault();const title=el('#survey-title').value.trim();
+      const questions=[...document.querySelectorAll('.survey-question-card')].map(card=>{const type=card.querySelector('[data-question-type]').value;return {text:card.querySelector('[data-question-text]').value.trim(),type,options:['single_choice','multiple_choice'].includes(type)?card.querySelector('[data-question-options]').value.split('\n').map(x=>x.trim()).filter(Boolean):[],required:card.querySelector('[data-question-required]').checked};});
+      if(!title||!questions.length||questions.some(q=>!q.text)){toast('Añade un título y escribe cada pregunta.');return;}
+      if(questions.some(q=>['single_choice','multiple_choice'].includes(q.type)&&q.options.length<2)){toast('Las preguntas de selección necesitan al menos dos opciones, una por línea.');return;}
+      const audienceRoles=[...document.querySelectorAll('input[name="survey-role"]:checked')].map(x=>x.value);const targetSelect=el('#survey-target-people');const audienceUserIds=targetSelect?[...targetSelect.selectedOptions].map(x=>x.value):[];
+      const s=state();s.surveys.push({id:id(),title,category:el('#survey-category').value,questions,anonymous:el('#survey-anonymous').checked,audienceRoles:(audienceRoles.length||audienceUserIds.length)?audienceRoles:['superadmin','admin','hr','employee'],audienceUserIds,responses:[],createdAt:new Date().toISOString()});
+      try{await write(s);ev.target.reset();el('#survey-question-builder').innerHTML='';surveyQuestionCounter=0;addSurveyQuestion();renderSurveys();toast('Encuesta guardada en Neon.');}catch(err){toast(err.message);}
     }
+
   });
   document.addEventListener('input',ev=>{if(ev.target.id==='meeting-people-search')renderMeetingDirectory();});
   document.addEventListener('change',ev=>{if(ev.target.matches('[data-meeting-person]')){if(ev.target.checked)selectedInvitees.add(ev.target.dataset.meetingPerson);else selectedInvitees.delete(ev.target.dataset.meetingPerson);renderMeetingDirectory();}});
@@ -301,6 +312,8 @@
     if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting&&meeting.status==='in_progress'&&meeting.createdBy===FlowState.get('user.id')){activeCall=meeting;pendingCallId=meeting.id;launchJitsi(meeting,true).catch(err=>toast(err.message));}}
     if(t.dataset.selectMeeting){pendingCallId=t.dataset.selectMeeting;el('#meeting-transcript')?.focus();toast('Reunión seleccionada. Adjunta su grabación o pega la transcripción.');}
     if(t.id==='new-survey-btn') { el('#survey-title')?.focus(); el('#survey-title')?.scrollIntoView({behavior:'smooth',block:'center'}); }
+    if(t.id==='add-survey-question'){addSurveyQuestion();}
+    if(t.hasAttribute('data-remove-survey-question')){t.closest('.survey-question-card')?.remove();}
     if((t.id==='new-employee-btn'||t.id==='admin-add-user-btn')&&['superadmin','admin'].includes(role()))showEmployeeForm();
     if(t.id==='new-skill-btn')showSkillForm();
     if(t.dataset.editEmployee&&['superadmin','admin'].includes(role())) {const e=state().employees.find(x=>x.id===t.dataset.editEmployee);if(e)showEmployeeForm(e);}
@@ -317,7 +330,7 @@
     if(ev.target.id==='employee-search')renderEmployees();
     if(ev.target.id==='skill-search')renderSkills();
   });
-  window.addEventListener('flowrouter:navigate',()=>{if(activeCall){try{jitsiApi?.dispose()}catch{}jitsiApi=null;activeCall=null;el('#jitsi-call-container').hidden=true;}renderCurrent();});
-  document.addEventListener('DOMContentLoaded',()=>{ loadRemoteState(); });
+  window.addEventListener('flowrouter:navigate',()=>{if(activeCall)closeCallWindow('Saliste de la sala.');renderCurrent();});
+  document.addEventListener('DOMContentLoaded',()=>{ loadRemoteState();loadSurveyAudiencePeople();if(el('#survey-question-builder'))addSurveyQuestion(); });
   window.addEventListener('focusai:authenticated',()=>loadRemoteState());
 })();
