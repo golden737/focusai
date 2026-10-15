@@ -174,12 +174,12 @@ body { background: var(--eco-canvas); }
 .meeting-person-option span{display:grid;gap:3px;min-width:0}.meeting-person-option small{color:var(--eco-muted);overflow-wrap:anywhere}
 
 /* Llamada inmersiva a pantalla completa */
-.jitsi-call-container.call-fullscreen:not([hidden]){position:fixed;inset:0;z-index:10000;margin:0;padding:12px;background:#080d18;border:0;border-radius:0;display:flex;flex-direction:column;gap:10px;overflow:auto;color:#f8fafc}
+.jitsi-call-container.call-fullscreen:not([hidden]){position:fixed;inset:0;z-index:10000;margin:0;padding:8px;background:#080d18;border:0;border-radius:0;display:flex;flex-direction:column;gap:6px;overflow:hidden;color:#f8fafc;height:100vh;height:100dvh;box-sizing:border-box}
 .jitsi-call-container.call-fullscreen .jitsi-call-toolbar{flex-shrink:0;margin:0;gap:10px}
 .jitsi-call-container.call-fullscreen .jitsi-call-toolbar b{font-size:1.05rem;color:#f8fafc}
-.jitsi-call-container.call-fullscreen .jitsi-embedded{flex:1;min-height:0;height:calc(100dvh - 100px);border-radius:14px;overflow:hidden}
-.jitsi-call-container.call-fullscreen .jitsi-embedded iframe{width:100%!important;height:100%!important;min-height:calc(100dvh - 100px)!important;border-radius:14px}
-.jitsi-call-container.call-fullscreen>.eco-note{flex-shrink:0;margin:0;color:#cbd5e1}
+.jitsi-call-container.call-fullscreen .jitsi-embedded{flex:1;min-height:0;height:0;width:100%;border-radius:10px;overflow:hidden}
+.jitsi-call-container.call-fullscreen .jitsi-embedded iframe{display:block;width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;border-radius:10px}
+.jitsi-call-container.call-fullscreen>.eco-note{display:none}
 body.focusai-call-open{overflow:hidden}
 .survey-audience,.survey-question-card{border:1px solid var(--eco-line);border-radius:14px;padding:14px;margin:12px 0}
 .survey-role-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 16px}
@@ -189,4 +189,4 @@ body.focusai-call-open{overflow:hidden}
 .survey-question-card .survey-q-top{margin:0 0 4px}
 .survey-question-card [data-question-options]{width:100%}
 #survey-target-people{width:100%;min-height:100px}
-@media(max-width:600px){.jitsi-call-container.call-fullscreen:not([hidden]){padding:8px}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar{align-items:flex-start;flex-direction:column}.jitsi-call-container.call-fullscreen .jitsi-embedded{height:calc(100dvh - 150px)}.jitsi-call-container.call-fullscreen .jitsi-embedded iframe{min-height:calc(100dvh - 150px)!important}.survey-role-options{grid-template-columns:1fr}}
+@media(max-width:600px){.jitsi-call-container.call-fullscreen:not([hidden]){padding:6px;gap:5px}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar{align-items:center;flex-direction:row;flex-wrap:wrap;margin:0}.jitsi-call-container.call-fullscreen .jitsi-call-toolbar b{font-size:.9rem;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.jitsi-call-container.call-fullscreen .meeting-list-actions{gap:5px;flex-wrap:nowrap}.jitsi-call-container.call-fullscreen .meeting-list-actions .eco-btn{padding:7px 9px;font-size:.78rem}.survey-role-options{grid-template-columns:1fr}}

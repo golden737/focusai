@@ -125,9 +125,9 @@
     el('#jitsi-call-container').hidden=false;el('#active-call-title').textContent=meeting.title;el('#stop-call-btn').hidden=!isCreator;el('#copy-call-link-btn').hidden=false;document.body.classList.add('focusai-call-open');
     jitsiApi=new window.JitsiMeetExternalAPI('meet.jit.si',{roomName:meeting.roomName,width:'100%',height:520,parentNode:container,lang:'es',configOverwrite:{prejoinPageEnabled:false,enableWelcomePage:false,disableDeepLinking:true,enableLobby:false},interfaceConfigOverwrite:{APP_NAME:'FocusAI',SHOW_JITSI_WATERMARK:true,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false}});
     jitsiApi.addEventListener('videoConferenceJoined',()=>{const st=el('#call-status');if(st)st.textContent='Conectado a la sala. Comparte el nombre/enlace de la sala con los participantes.';});
-    jitsiApi.addEventListener('readyToClose',()=>{if(activeCall?.createdBy===FlowState.get('user.id'))finishMeeting();else closeCallWindow('La reunión se cerró.');});
+    jitsiApi.addEventListener('readyToClose',()=>{const isHost=activeCall?.createdBy===FlowState.get('user.id');if(isHost)finishMeeting({fromJitsi:true});else closeCallWindow('La reunión se cerró.');});
     if(callStatusPoll)clearInterval(callStatusPoll);
-    callStatusPoll=setInterval(async()=>{if(!activeCall)return;try{const rows=await apiMeeting('/api/meetings');const remote=rows.find(x=>x.id===activeCall.id);if(!remote||remote.status!=='in_progress')closeCallWindow('El anfitrión finalizó la llamada.');}catch{}},3000);
+    callStatusPoll=setInterval(async()=>{if(!activeCall)return;try{const rows=await apiMeeting('/api/meetings');const remote=rows.find(x=>x.id===activeCall.id);if(!remote||remote.status!=='in_progress')closeCallWindow('El anfitrión finalizó la llamada. Actualizando FocusAI…',true);}catch{}},3000);
   }
   async function startMeeting() {
     const title=el('#meeting-title')?.value.trim();if(!title){toast('Escribe un nombre para la reunión.');return;}
@@ -136,15 +136,18 @@
     try {const meeting=await apiMeeting('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,invitedUserIds:[...selectedInvitees]})});activeCall=meeting;pendingCallId=meeting.id;selectedInvitees.clear();renderMeetingDirectory();await launchJitsi(meeting,true);await renderMeetings();}
     catch(err){toast('No se pudo iniciar la reunión: '+err.message);}finally{btn.disabled=false;}
   }
-  function closeCallWindow(message='Llamada cerrada.') {
+  function closeCallWindow(message='Llamada cerrada.', reloadAfterClose=false) {
     activeCall=null;if(callStatusPoll){clearInterval(callStatusPoll);callStatusPoll=null;}
-    try{jitsiApi?.dispose();}catch{}jitsiApi=null;
+    const api=jitsiApi;jitsiApi=null;try{api?.dispose();}catch{}
     const box=el('#jitsi-call-container');if(box)box.hidden=true;document.body.classList.remove('focusai-call-open');
     const st=el('#call-status');if(st)st.textContent=message;renderMeetings();
+    if(reloadAfterClose)window.setTimeout(()=>window.location.reload(),350);
   }
-  async function finishMeeting() {
+  async function finishMeeting(options={}) {
     if(!activeCall)return;const call=activeCall;
-    try{await apiMeeting(`/api/meetings/${encodeURIComponent(call.id)}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});pendingCallId=call.id;try{jitsiApi?.executeCommand('hangup');}catch{}closeCallWindow('Llamada finalizada. Puedes cargar una grabación autorizada o pegar la transcripción para generar el resumen.');toast('Llamada finalizada para todos los participantes.');}
+    try{await apiMeeting(`/api/meetings/${encodeURIComponent(call.id)}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});pendingCallId=call.id;
+      // No volver a ejecutar hangup cuando Jitsi ya está cerrándose: evita su pantalla externa de post-llamada.
+      closeCallWindow('Llamada finalizada. Puedes cargar una grabación autorizada o pegar la transcripción para generar el resumen.');toast('Llamada finalizada para todos los participantes.');}
     catch(err){toast('No se pudo finalizar la llamada en Neon: '+err.message);}
     await renderMeetings();
   }
