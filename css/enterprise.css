@@ -284,3 +284,15 @@ body.focusai-call-open{overflow:hidden}
 .survey-modal-footer{display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--eco-line);margin-top:20px}
 body.survey-modal-open{overflow:hidden}
 @media(max-width:600px){.survey-modal-backdrop{padding:0;align-items:stretch}.survey-modal{max-height:100dvh;border-radius:0;border-left:0;border-right:0;padding:16px}.survey-modal-footer{position:sticky;bottom:-16px;background:var(--eco-card);padding:12px 0 16px}.survey-modal .survey-role-options{grid-template-columns:1fr}}
+
+
+/* Modal de encuestas centrado en viewport, sin quedar recortado por el contenedor de la vista */
+body > .survey-modal-backdrop{position:fixed!important;inset:0!important;z-index:25000!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:clamp(12px,3vw,32px)!important;overflow:hidden!important;}
+body > .survey-modal-backdrop[hidden]{display:none!important;}
+body > .survey-modal-backdrop .survey-modal{position:relative!important;width:min(980px,100%)!important;height:auto!important;max-height:calc(100dvh - 48px)!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;margin:auto!important;}
+body > .survey-modal-backdrop .survey-modal-header{flex:none!important;}
+body > .survey-modal-backdrop #survey-form{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding:0 4px 8px 0!important;}
+.survey-add-question-bottom{display:flex;justify-content:center;padding:12px 0 4px;margin:8px 0 14px;border-bottom:1px solid var(--eco-line);}
+.survey-add-question-bottom .eco-btn{min-width:190px;border-style:dashed;border-color:var(--user-accent,var(--eco-blue));color:var(--user-accent,var(--eco-blue));background:transparent;}
+#survey-list .eco-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start;}
+@media(max-width:600px){body > .survey-modal-backdrop{padding:0!important;align-items:stretch!important;}body > .survey-modal-backdrop .survey-modal{width:100%!important;max-height:100dvh!important;height:100dvh!important;border-radius:0!important;padding:16px!important;}body > .survey-modal-backdrop #survey-form{padding-bottom:12px!important;}}

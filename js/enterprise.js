@@ -199,8 +199,19 @@
     box.innerHTML=term?(shown.length?shown.map(p=>`<label class="survey-person-result"><input type="checkbox" data-survey-person="${esc(p.id)}" ${selectedSurveyPeople.has(p.id)?'checked':''}><span><b>${esc(p.name||'Sin nombre')}</b><small>${esc(p.email||'Sin correo')} · ${esc(ROLE_LABELS[p.role]||p.role||'Empleado')}</small></span></label>`).join(''):'<p class="eco-note">No se encontraron personas.</p>'):'<p class="eco-note">Escribe parte de un nombre para buscar. Se muestran hasta 5 resultados.</p>';
     selected.innerHTML=selectedSurveyPeople.size?`<b>Personas seleccionadas (${selectedSurveyPeople.size})</b><div class="survey-selected-chips">${[...selectedSurveyPeople].map(pid=>{const p=surveyAudiencePeople.find(x=>x.id===pid);return p?`<span class="survey-person-chip">${esc(p.name||p.email)} <button type="button" data-remove-survey-person="${esc(pid)}" aria-label="Quitar persona">×</button></span>`:''}).join('')}</div>`:'';
   }
-  function openSurveyModal(){const modal=el('#survey-modal');if(!modal)return;modal.hidden=false;document.body.classList.add('survey-modal-open');if(!el('.survey-question-card')){surveyQuestionCounter=0;addSurveyQuestion();}loadSurveyAudiencePeople();setTimeout(()=>el('#survey-title')?.focus(),40);}
+  function openSurveyModal(){const modal=el('#survey-modal');if(!modal)return; if(modal.parentElement!==document.body)document.body.appendChild(modal); modal.hidden=false;document.body.classList.add('survey-modal-open');if(!el('.survey-question-card')){surveyQuestionCounter=0;addSurveyQuestion();}loadSurveyAudiencePeople();setTimeout(()=>{el('#survey-modal .survey-modal')?.scrollTo({top:0,behavior:'instant'});el('#survey-title')?.focus();},40);}
   function closeSurveyModal(){const modal=el('#survey-modal');if(modal)modal.hidden=true;document.body.classList.remove('survey-modal-open');}
+  function exportSurveyExcel(surveyId){
+    if(!['admin','hr','superadmin'].includes(role())){toast('Solo RR. HH. y administradores pueden exportar respuestas.');return;}
+    const survey=state().surveys.find(x=>String(x.id)===String(surveyId));if(!survey){toast('No se encontró la encuesta.');return;}
+    const questions=(survey.questions||[]).map(q=>typeof q==='string'?q:q.text||'Pregunta');
+    const rows=[['Encuesta',survey.title||''],['Categoría',survey.category||'General'],['Fecha de respuesta','Identidad',...questions]];
+    (survey.responses||[]).forEach(r=>rows.push([r.date?new Date(r.date).toLocaleString('es-SV'):'', (survey.anonymous||r.anonymous)?'Anónima':(r.respondentName||'Identidad no disponible'),...(r.answers||[])]));
+    const cell=v=>`<td style="border:1px solid #b7c3d0;padding:6px;mso-number-format:'\\@'">${esc(v).replace(/\r?\n/g,'<br>')}</td>`;
+    const table=`<table><thead>${rows.slice(0,3).map(row=>`<tr>${row.map(v=>`<th style="border:1px solid #8294a8;background:#e7edf5;padding:6px">${esc(v)}</th>`).join('')}</tr>`).join('')}</thead><tbody>${rows.slice(3).map(row=>`<tr>${row.map(cell).join('')}</tr>`).join('')}</tbody></table>`;
+    const blob=new Blob(['\ufeff<html><head><meta charset="utf-8"></head><body>'+table+'</body></html>'],{type:'application/vnd.ms-excel;charset=utf-8;'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`FocusAI_Encuesta_${String(survey.title||'resultados').replace(/[^a-z0-9_-]+/gi,'_')}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);toast('Archivo de Excel descargado.');
+  }
   function renderSurveys() {
     if (!el('#surveys-page')) return;
     const s=state();
@@ -209,7 +220,7 @@
     const list=el('#survey-list');
     if (!s.surveys.length) {list.className='eco-empty';list.textContent='Aún no has creado encuestas.';return;}
     list.className='eco-list';
-    list.innerHTML=s.surveys.slice().reverse().map(x=>`<article class="eco-list-item"><div><span class="eco-mini-tag">${esc(x.category)}</span><b>${esc(x.title)}</b><p>${x.questions.length} preguntas · ${x.anonymous?'Anónima':'No anónima'} · ${(x.responses||[]).length} respuestas</p><details><summary>Ver preguntas y resultados</summary><ol>${x.questions.map(q=>`<li>${esc(typeof q==='string'?q:q.text)}${typeof q==='object'&&q.type?' · '+esc(q.type):''}</li>`).join('')}</ol>${(x.responses||[]).length?`<p>${x.responses.length} respuesta(s) almacenadas en Neon.</p><ul>${x.responses.map((r,ri)=>`<li><b>Respuesta ${ri+1}${r.anonymous?' · anónima':r.respondentName?' · '+esc(r.respondentName):''}</b><ol>${(r.answers||[]).map(a=>`<li>${esc(a)}</li>`).join('')}</ol></li>`).join('')}</ul>`:'<p>Aún no hay respuestas.</p>'}</details></div><div class="eco-actions"><button class="eco-btn eco-btn-small" data-delete-survey="${esc(x.id)}">Eliminar</button></div></article>`).join('');
+    list.innerHTML=s.surveys.slice().reverse().map(x=>`<article class="eco-list-item"><div><span class="eco-mini-tag">${esc(x.category)}</span><b>${esc(x.title)}</b><p>${(x.questions||[]).length} preguntas · ${x.anonymous?'Anónima':'No anónima'} · ${(x.responses||[]).length} respuestas</p><details><summary>Ver preguntas y resultados</summary><ol>${(x.questions||[]).map(q=>`<li>${esc(typeof q==='string'?q:q.text)}${typeof q==='object'&&q.type?' · '+esc(q.type):''}</li>`).join('')}</ol>${(x.responses||[]).length?`<p>${x.responses.length} respuesta(s) almacenadas en Neon.</p><ul>${x.responses.map((r,ri)=>`<li><b>Respuesta ${ri+1}${(x.anonymous||r.anonymous)?' · anónima':r.respondentName?' · '+esc(r.respondentName):' · Identidad no disponible'}</b><ol>${(r.answers||[]).map(a=>`<li>${esc(a)}</li>`).join('')}</ol></li>`).join('')}</ul>`:'<p>Aún no hay respuestas.</p>'}</details></div><div class="eco-actions"><button class="eco-btn eco-btn-small" data-export-survey="${esc(x.id)}">Descargar Excel</button><button class="eco-btn eco-btn-small" data-delete-survey="${esc(x.id)}">Eliminar</button></div></article>`).join('');
   }
   function answerSurvey(surveyId) {
     const s=state(), survey=s.surveys.find(x=>x.id===surveyId); if(!survey)return;
@@ -357,7 +368,8 @@
     if(t.dataset.removeEmployee) {const s=state(),e=s.employees.find(x=>x.id===t.dataset.removeEmployee);if(!e)return;const next=e.status==='Inactivo'?'Activo':'Inactivo';if(!confirm(`${next==='Inactivo'?'¿Desactivar':'¿Reactivar'} este perfil? Se conservarán la cuenta y el historial.`))return;e.status=next;write(s);renderEmployees();renderAdmin();renderSkills();}
     if(t.dataset.toggleEmployee) {const s=state(),e=s.employees.find(x=>x.id===t.dataset.toggleEmployee);if(e){e.status=e.status==='Inactivo'?'Activo':'Inactivo';write(s);renderAdmin();renderEmployees();}}
     if(t.dataset.deleteMeeting) {if(!confirm('¿Eliminar esta reunión y su transcripción/resumen?'))return;apiMeeting(`/api/meetings/${encodeURIComponent(t.dataset.deleteMeeting)}`,{method:'DELETE'}).then(renderMeetings).catch(err=>toast(err.message));}
-    if(t.dataset.deleteSurvey) {const s=state();s.surveys=s.surveys.filter(x=>x.id!==t.dataset.deleteSurvey);write(s);renderSurveys();}
+    if(t.dataset.exportSurvey)exportSurveyExcel(t.dataset.exportSurvey);
+    if(t.dataset.deleteSurvey) {if(!['admin','hr','superadmin'].includes(role())){toast('No tienes permiso para eliminar encuestas.');return;}const s=state();s.surveys=s.surveys.filter(x=>x.id!==t.dataset.deleteSurvey);write(s);renderSurveys();}
     if(t.dataset.answerSurvey)answerSurvey(t.dataset.answerSurvey);
   });
   document.addEventListener('change',ev=>{
