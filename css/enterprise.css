@@ -262,3 +262,25 @@ body.focusai-call-open{overflow:hidden}
 #sidebar.collapsed .nav-item[title]:hover::before { left:calc(100% + 1px)!important; top:50%!important; transform:translateY(-50%)!important; }
 #sidebar .sidebar-header, #sidebar .nav-item, #sidebar .nav-emoji, #sidebar .user-avatar { transition:width .22s ease,min-width .22s ease,padding .22s ease,margin .22s ease,background-color .18s ease,color .18s ease,opacity .18s ease,transform .22s ease!important; }
 @media (prefers-reduced-motion: reduce) { #sidebar, #sidebar * { transition:none!important; } }
+
+/* Constructor de encuestas en modal, con experiencia tipo Forms */
+.survey-modal-backdrop[hidden]{display:none!important}
+.survey-modal-backdrop{position:fixed;inset:0;z-index:12000;background:rgba(3,8,18,.78);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,28px);box-sizing:border-box}
+.survey-modal{width:min(900px,100%);max-height:min(92dvh,1000px);overflow:auto;background:var(--eco-card,var(--eco-surface));color:var(--eco-text);border:1px solid var(--eco-line);border-radius:20px;box-shadow:0 28px 90px rgba(0,0,0,.45);padding:clamp(16px,2.4vw,28px);box-sizing:border-box}
+.survey-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;border-bottom:1px solid var(--eco-line);padding-bottom:16px;margin-bottom:18px}
+.survey-modal-header h2{margin:4px 0;font-size:1.5rem}.survey-modal-header p{margin:0;color:var(--eco-muted)}
+.survey-modal-close{width:38px;height:38px;flex:none;border:1px solid var(--eco-line);border-radius:50%;background:var(--eco-surface);color:var(--eco-text);font-size:25px;line-height:1;cursor:pointer}
+.survey-modal .survey-audience{margin:16px 0;background:var(--eco-surface);padding:16px}
+.survey-modal .survey-question-card{padding:16px;margin:12px 0}
+.survey-options-field[hidden]{display:none!important}
+.survey-people-results{display:grid;gap:6px;max-height:220px;overflow:auto;margin-top:8px}
+.survey-person-result{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--eco-line);border-radius:10px;cursor:pointer;background:var(--eco-card)}
+.survey-person-result:hover{border-color:var(--user-accent,var(--eco-blue))}
+.survey-person-result input{accent-color:var(--user-accent,var(--eco-blue));width:17px;height:17px;flex:none}
+.survey-person-result span{display:grid;gap:3px;min-width:0}.survey-person-result small{color:var(--eco-muted);overflow-wrap:anywhere}
+.survey-selected-people{margin-top:12px}.survey-selected-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.survey-person-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--eco-line);border-radius:999px;padding:5px 10px;background:var(--eco-surface);font-size:.86rem}
+.survey-person-chip button{border:0;background:transparent;color:var(--eco-muted);font-size:18px;cursor:pointer}
+.survey-modal-footer{display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--eco-line);margin-top:20px}
+body.survey-modal-open{overflow:hidden}
+@media(max-width:600px){.survey-modal-backdrop{padding:0;align-items:stretch}.survey-modal{max-height:100dvh;border-radius:0;border-left:0;border-right:0;padding:16px}.survey-modal-footer{position:sticky;bottom:-16px;background:var(--eco-card);padding:12px 0 16px}.survey-modal .survey-role-options{grid-template-columns:1fr}}

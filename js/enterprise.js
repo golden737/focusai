@@ -70,6 +70,8 @@
   const selectedInvitees = new Set();
   let callStatusPoll = null;
   let surveyQuestionCounter = 0;
+  let surveyAudiencePeople = [];
+  const selectedSurveyPeople = new Set();
   async function apiMeeting(url, options={}) {
     const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});
     const b=await r.json().catch(()=>({})); if(!r.ok)throw new Error(b.error||`Error HTTP ${r.status}`); return b;
@@ -188,8 +190,17 @@
   }
 
   function addSurveyQuestion(){
-    const root=el('#survey-question-builder');if(!root)return;const n=++surveyQuestionCounter;const card=document.createElement('article');card.className='survey-question-card eco-card';card.innerHTML=`<div class="survey-q-top"><b>Pregunta ${n}</b><button type="button" class="eco-btn eco-btn-small" data-remove-survey-question>Quitar</button></div><label>Pregunta o interrogante</label><input data-question-text required placeholder="Escribe la pregunta…"><label>Tipo de respuesta</label><select data-question-type><option value="text">Texto corto</option><option value="textarea">Texto largo / párrafo</option><option value="single_choice">Selección única</option><option value="multiple_choice">Selección múltiple</option><option value="yes_no">Sí / No</option><option value="rating">Calificación de 1 a 5</option><option value="number">Número</option><option value="date">Fecha</option></select><div class="survey-options-field" hidden><label>Opciones (una por línea)</label><textarea data-question-options rows=3 placeholder="Opción 1\nOpción 2\nOpción 3"></textarea></div><label class="eco-check"><input type="checkbox" data-question-required checked> Respuesta obligatoria</label>`;root.appendChild(card);}
-  async function loadSurveyAudiencePeople(){const select=el('#survey-target-people');if(!select)return;try{const people=await apiMeeting('/api/meeting-directory');select.innerHTML=people.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.email)} · ${esc(({admin:'Administrador',hr:'RR. HH.',employee:'Empleado',superadmin:'Superadministrador'})[p.role]||p.role)}</option>`).join('');}catch{select.innerHTML='';}}
+    const root=el('#survey-question-builder');if(!root)return;const n=++surveyQuestionCounter;const card=document.createElement('article');card.className='survey-question-card eco-card';card.innerHTML=`<div class="survey-q-top"><b>Pregunta ${n}</b><button type="button" class="eco-btn eco-btn-small" data-remove-survey-question>Quitar</button></div><label>Pregunta o interrogante</label><input data-question-text required placeholder="Escribe la pregunta…"><label>Tipo de respuesta</label><select data-question-type><option value="text">Respuesta corta</option><option value="textarea">Párrafo</option><option value="single_choice">Opción múltiple (una respuesta)</option><option value="multiple_choice">Casillas (varias respuestas)</option><option value="yes_no">Sí / No</option><option value="rating">Escala de 1 a 5</option><option value="number">Número</option><option value="date">Fecha</option></select><div class="survey-options-field" hidden><label>Opciones de respuesta</label><p class="eco-note">Escribe una opción por línea. Los encuestados verán estas opciones.</p><textarea data-question-options rows="3" placeholder="Opción 1&#10;Opción 2&#10;Opción 3"></textarea><button type="button" class="eco-btn eco-btn-small" data-add-survey-option>＋ Añadir opción</button></div><label class="eco-check"><input type="checkbox" data-question-required checked> Respuesta obligatoria</label>`;root.appendChild(card);}
+  async function loadSurveyAudiencePeople(){try{surveyAudiencePeople=await apiMeeting('/api/meeting-directory');renderSurveyAudiencePeople();}catch{const box=el('#survey-people-results');if(box)box.innerHTML='<p class="eco-note">No se pudo cargar el directorio de personas.</p>';}}
+  function renderSurveyAudiencePeople(){
+    const box=el('#survey-people-results'),selected=el('#survey-selected-people');if(!box||!selected)return;
+    const term=(el('#survey-people-search')?.value||'').trim().toLowerCase();
+    const matches=surveyAudiencePeople.filter(p=>`${p.name||''} ${p.email||''} ${p.role||''}`.toLowerCase().includes(term));const shown=matches.slice(0,5);
+    box.innerHTML=term?(shown.length?shown.map(p=>`<label class="survey-person-result"><input type="checkbox" data-survey-person="${esc(p.id)}" ${selectedSurveyPeople.has(p.id)?'checked':''}><span><b>${esc(p.name||'Sin nombre')}</b><small>${esc(p.email||'Sin correo')} · ${esc(ROLE_LABELS[p.role]||p.role||'Empleado')}</small></span></label>`).join(''):'<p class="eco-note">No se encontraron personas.</p>'):'<p class="eco-note">Escribe parte de un nombre para buscar. Se muestran hasta 5 resultados.</p>';
+    selected.innerHTML=selectedSurveyPeople.size?`<b>Personas seleccionadas (${selectedSurveyPeople.size})</b><div class="survey-selected-chips">${[...selectedSurveyPeople].map(pid=>{const p=surveyAudiencePeople.find(x=>x.id===pid);return p?`<span class="survey-person-chip">${esc(p.name||p.email)} <button type="button" data-remove-survey-person="${esc(pid)}" aria-label="Quitar persona">×</button></span>`:''}).join('')}</div>`:'';
+  }
+  function openSurveyModal(){const modal=el('#survey-modal');if(!modal)return;modal.hidden=false;document.body.classList.add('survey-modal-open');if(!el('.survey-question-card')){surveyQuestionCounter=0;addSurveyQuestion();}loadSurveyAudiencePeople();setTimeout(()=>el('#survey-title')?.focus(),40);}
+  function closeSurveyModal(){const modal=el('#survey-modal');if(modal)modal.hidden=true;document.body.classList.remove('survey-modal-open');}
   function renderSurveys() {
     if (!el('#surveys-page')) return;
     const s=state();
@@ -306,15 +317,17 @@
       const questions=[...document.querySelectorAll('.survey-question-card')].map(card=>{const type=card.querySelector('[data-question-type]').value;return {text:card.querySelector('[data-question-text]').value.trim(),type,options:['single_choice','multiple_choice'].includes(type)?card.querySelector('[data-question-options]').value.split('\n').map(x=>x.trim()).filter(Boolean):[],required:card.querySelector('[data-question-required]').checked};});
       if(!title||!questions.length||questions.some(q=>!q.text)){toast('Añade un título y escribe cada pregunta.');return;}
       if(questions.some(q=>['single_choice','multiple_choice'].includes(q.type)&&q.options.length<2)){toast('Las preguntas de selección necesitan al menos dos opciones, una por línea.');return;}
-      const audienceRoles=[...document.querySelectorAll('input[name="survey-role"]:checked')].map(x=>x.value);const targetSelect=el('#survey-target-people');const audienceUserIds=targetSelect?[...targetSelect.selectedOptions].map(x=>x.value):[];
+      const audienceRoles=[...document.querySelectorAll('input[name="survey-role"]:checked')].map(x=>x.value);const audienceUserIds=[...selectedSurveyPeople];
       const s=state();s.surveys.push({id:id(),title,category:el('#survey-category').value,questions,anonymous:el('#survey-anonymous').checked,audienceRoles:(audienceRoles.length||audienceUserIds.length)?audienceRoles:['superadmin','admin','hr','employee'],audienceUserIds,responses:[],createdAt:new Date().toISOString()});
-      try{await write(s);ev.target.reset();el('#survey-question-builder').innerHTML='';surveyQuestionCounter=0;addSurveyQuestion();renderSurveys();toast('Encuesta guardada en Neon.');}catch(err){toast(err.message);}
+      try{await write(s);ev.target.reset();el('#survey-question-builder').innerHTML='';surveyQuestionCounter=0;selectedSurveyPeople.clear();addSurveyQuestion();renderSurveyAudiencePeople();closeSurveyModal();renderSurveys();toast('Encuesta guardada en Neon.');}catch(err){toast(err.message);}
     }
 
   });
   document.addEventListener('input',ev=>{if(ev.target.id==='meeting-people-search')renderMeetingDirectory();});
   document.addEventListener('change',ev=>{if(ev.target.matches('[data-meeting-person]')){if(ev.target.checked)selectedInvitees.add(ev.target.dataset.meetingPerson);else selectedInvitees.delete(ev.target.dataset.meetingPerson);renderMeetingDirectory();}});
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!el('#survey-modal')?.hidden)closeSurveyModal();});
   document.addEventListener('click',ev=>{
+    if(ev.target?.id==='survey-modal'){closeSurveyModal();return;}
     const t=ev.target.closest('button'); if(!t)return;
     if(t.dataset.skillHistory){fetch(`/api/enterprise/skills/${encodeURIComponent(t.dataset.skillHistory)}/history`,{credentials:'same-origin',cache:'no-store'}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.error||'No se pudo cargar el historial.');const content=b.length?`<ol>${b.map(x=>`<li><b>${esc(x.skill)}</b>: ${x.previous_level==null?'Sin nivel previo':x.previous_level+'/5'} → <b>${x.assessed_level}/5</b> · ${esc(x.assessment_date)}${x.assessed_by?' · '+esc(x.assessed_by):''}</li>`).join('')}</ol>`:'<p>Aún no hay evaluaciones históricas para este empleado.</p>';showGlobalModal({title:'Historial de competencias',content,size:'md'});}).catch(err=>toast(err.message));}
     if(t.id==='copy-organization-code'){const code=el('#organization-invite-code')?.textContent||'';if(code&&code!=='Cargando código…')navigator.clipboard?.writeText(code).then(()=>toast('Código copiado.')).catch(()=>toast('No se pudo copiar automáticamente.'));}
@@ -331,7 +344,11 @@
     if(t.id==='copy-call-link-btn'&&activeCall){const link='https://meet.jit.si/'+activeCall.roomName;navigator.clipboard?.writeText(link).then(()=>toast('Enlace de la sala copiado.')).catch(()=>prompt('Copia este enlace para invitar a participantes:',link));}
     if(t.dataset.rejoinMeeting){const meeting=state().meetings.find(m=>m.id===t.dataset.rejoinMeeting);if(meeting&&meeting.status==='in_progress'&&meeting.createdBy===FlowState.get('user.id')){activeCall=meeting;pendingCallId=meeting.id;const popup=window.open('about:blank','focusai-call-'+String(meeting.id).replace(/[^a-zA-Z0-9_-]/g,''));launchJitsiPopup(meeting,true,popup);}}
     if(t.dataset.selectMeeting){pendingCallId=t.dataset.selectMeeting;el('#meeting-transcript')?.focus();toast('Reunión seleccionada. Adjunta su grabación o pega la transcripción.');}
-    if(t.id==='new-survey-btn') { el('#survey-title')?.focus(); el('#survey-title')?.scrollIntoView({behavior:'smooth',block:'center'}); }
+    if(t.id==='new-survey-btn') openSurveyModal();
+    if(t.id==='close-survey-modal'||t.id==='cancel-survey-modal')closeSurveyModal();
+    if(t.id==='survey-modal'&&ev.target===t)closeSurveyModal();
+    if(t.dataset.removeSurveyPerson){selectedSurveyPeople.delete(t.dataset.removeSurveyPerson);renderSurveyAudiencePeople();}
+    if(t.hasAttribute('data-add-survey-option')){const ta=t.closest('.survey-options-field')?.querySelector('[data-question-options]');if(ta){const lines=ta.value.trimEnd();ta.value=(lines?lines+'\n':'')+`Opción ${ta.value.split('\n').filter(Boolean).length+1}`;ta.focus();}}
     if(t.id==='add-survey-question'){addSurveyQuestion();}
     if(t.hasAttribute('data-remove-survey-question')){t.closest('.survey-question-card')?.remove();}
     if((t.id==='new-employee-btn'||t.id==='admin-add-user-btn')&&['superadmin','admin'].includes(role()))showEmployeeForm();
@@ -344,13 +361,16 @@
     if(t.dataset.answerSurvey)answerSurvey(t.dataset.answerSurvey);
   });
   document.addEventListener('change',ev=>{
+    if(ev.target.matches('[data-question-type]')){const field=ev.target.closest('.survey-question-card')?.querySelector('.survey-options-field');if(field){const needs=['single_choice','multiple_choice'].includes(ev.target.value);field.hidden=!needs;const textarea=field.querySelector('[data-question-options]');if(textarea)textarea.required=needs;}}
+    if(ev.target.matches('[data-survey-person]')){if(ev.target.checked)selectedSurveyPeople.add(ev.target.dataset.surveyPerson);else selectedSurveyPeople.delete(ev.target.dataset.surveyPerson);renderSurveyAudiencePeople();}
     if(ev.target.matches('[data-role-user]')) {const s=state(),e=s.employees.find(x=>x.id===ev.target.dataset.roleUser);if(e){e.role=ev.target.value;write(s);renderAdmin();toast('Rol actualizado en la organización.');}}
   });
   document.addEventListener('input',ev=>{
+    if(ev.target.id==='survey-people-search')renderSurveyAudiencePeople();
     if(ev.target.id==='employee-search')renderEmployees();
     if(ev.target.id==='skill-search')renderSkills();
   });
   window.addEventListener('flowrouter:navigate',()=>{if(activeCall)closeCallWindow('Saliste de la sala.');renderCurrent();});
-  document.addEventListener('DOMContentLoaded',()=>{ loadRemoteState();loadSurveyAudiencePeople();if(el('#survey-question-builder'))addSurveyQuestion(); });
+  document.addEventListener('DOMContentLoaded',()=>{ loadRemoteState(); });
   window.addEventListener('focusai:authenticated',()=>loadRemoteState());
 })();
