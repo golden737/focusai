@@ -57,15 +57,30 @@
       configOverwrite: { prejoinPageEnabled: false, enableWelcomePage: false, disableDeepLinking: true, enableLobby: false },
       interfaceConfigOverwrite: { APP_NAME: 'FocusAI', SHOW_JITSI_WATERMARK: true, SHOW_BRAND_WATERMARK: false, SHOW_POWERED_BY: false }
     });
-    api.addEventListener('readyToClose', () => {
-      // Responder al botón rojo de Jitsi sin esperar la llamada al backend antes de retirar el iframe.
-      if (isHost) {
-        if (finishing || ended) return;
-        finishing = true; finishButton.disabled = true;
-        closeCallWindow('Llamada cerrada.');
-        request(`/api/meetings/${encodeURIComponent(meetingId)}/finish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
-      } else closeCallWindow('La llamada se ha cerrado.');
-    });
+    // Colgar con el botón rojo de Jitsi solo abandona esta llamada en este dispositivo.
+    // No debe llamar al endpoint /finish: ese endpoint está reservado para el botón
+    // explícito 'Finalizar para todos' del anfitrión.
+    const handleLocalHangup = () => {
+      if (ended) return;
+      ended = true;
+      if (poll) clearInterval(poll);
+      try { room.replaceChildren(); } catch {}
+      try { api?.dispose(); } catch {}
+      api = null;
+      // Esta página se abre desde FocusAI con window.open, así que normalmente puede
+      // cerrarse programáticamente. Eso evita dejar visible la pantalla promocional
+      // que Jitsi puede mostrar tras abandonar la conferencia.
+      try { window.close(); } catch {}
+      // Fallback si el navegador impide cerrar la pestaña: dejar una pantalla neutra.
+      setTimeout(() => {
+        if (!window.closed) {
+          document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;background:#080d18;color:#f8fafc;font:16px system-ui;text-align:center;padding:24px"><div>Has salido de la llamada.<br><button id="back-focusai" style="margin-top:16px;padding:10px 16px;border:0;border-radius:9px;background:#315cf5;color:white;font-weight:700">Volver a FocusAI</button></div></main>';
+          document.getElementById('back-focusai')?.addEventListener('click', () => { location.href = '/'; });
+        }
+      }, 150);
+    };
+    api.addEventListener('readyToClose', handleLocalHangup);
+    api.addEventListener('videoConferenceLeft', handleLocalHangup);
     finishButton.addEventListener('click', finishForEveryone);
     poll = setInterval(async () => {
       if (ended) return;
