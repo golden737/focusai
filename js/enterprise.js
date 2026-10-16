@@ -313,10 +313,12 @@
 
   function applyRoleNavigation(){
     const r=role();
+    // Los roles administrativos conservan los módulos generales de trabajo y comunicación.
+    // Lo que se restringe por rol son las áreas sensibles, no el acceso a toda la aplicación.
     const access={
-      superadmin:['dashboard','employees','surveys','my-surveys','skills','admin','settings'],
-      admin:['employees','settings'],
-      hr:['dashboard','employees','surveys','my-surveys','skills','settings'],
+      superadmin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','admin','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      hr:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','settings'],
       employee:['dashboard','tasks','calendar','projects','teams','meetings','my-surveys','join-organization','timer','habits','goals','focus','personal','stats','gamification','settings']
     };
     const allowed=new Set(access[r]||access.employee);
