@@ -42,7 +42,7 @@ window.FlowNotifications = (() => {
  // ── Programar recordatorios de tareas ────────────────────────────────────
 
  function schedule(task) {
- if (!task.reminder) return;
+ if (!task.reminder || FlowState.get('notifications.settings.taskReminders') === false) return;
  const ms = new Date(task.reminder) - Date.now();
  if (ms <= 0) return;
 
@@ -66,7 +66,7 @@ window.FlowNotifications = (() => {
  }
 
  function scheduleHabit(habit) {
- if (!habit.reminderTime) return;
+ if (!habit.reminderTime || FlowState.get('notifications.settings.habitReminders') === false) return;
  cancel(`habit_${habit.id}`);
 
  // Calcular ms hasta la hora del recordatorio de hoy
@@ -128,11 +128,16 @@ window.FlowNotifications = (() => {
  // ── Notificación local inmediata ──────────────────────────────────────────
 
  async function pushLocal(title, body, options = {}) {
+ if (options.category === 'focus' && FlowState.get('notifications.settings.focusAlerts') === false) return;
  await _send({ title, body, tag: options.tag || 'local', ...options });
  }
 
- async function _send({ title, body, tag, data = {}, actions = [], requireInteraction = false }) {
+ async function _send({ title, body, tag, data = {}, actions = [], requireInteraction = false, category = '' }) {
  if (FlowState.get('notifications.permission') !== 'granted') return;
+ const prefs=FlowState.get('notifications.settings')||{};
+ if ((category==='focus'||tag==='focus') && prefs.focusAlerts===false) return;
+ if (String(tag||'').startsWith('task_') && prefs.taskReminders===false) return;
+ if (String(tag||'').startsWith('habit_') && prefs.habitReminders===false) return;
 
  const payload = {
  body, tag, data,
@@ -161,7 +166,7 @@ window.FlowNotifications = (() => {
  if (action === 'snooze' && taskId) snooze(taskId, 15);
  }
 
- // ── Reporte semanal por email (simulado / webhook) ────────────────────────
+ // ── Reporte semanal (solo preparación; no se envía automáticamente) ───────
 
  async function sendWeeklyReport() {
  const settings = FlowState.get('notifications.settings');

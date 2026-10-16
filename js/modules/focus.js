@@ -19,7 +19,7 @@ window.FlowFocus = (() => {
  });
 
  // Notificación de inicio
- FlowNotifications.pushLocal(' Modo Enfoque activado', _modeLabel(mode));
+ FlowNotifications.pushLocal(' Modo Enfoque activado', _modeLabel(mode), { category: 'focus' });
  FlowApp.toast(` Sesión de ${_modeLabel(mode)} iniciada`, 'success');
 
  // Temporizador automático si se indica duración
@@ -73,7 +73,7 @@ window.FlowFocus = (() => {
  _sessionStart = null;
 
  if (auto) {
- FlowNotifications.pushLocal(' Sesión de enfoque completada', `${durationMin} minutos de trabajo profundo`);
+ FlowNotifications.pushLocal(' Sesión de enfoque completada', `${durationMin} minutos de trabajo profundo`, { category: 'focus' });
  FlowApp.toast(` Sesión completada · ${durationMin} min`, 'success', { duration: 5000 });
  } else {
  FlowApp.toast(`Sesión terminada · ${durationMin} min`, 'info');

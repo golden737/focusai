@@ -121,7 +121,7 @@ window.FlowTimer = (() => {
  const breakPhase = isLong ? 'long-break' : 'short-break';
 
  FlowApp.toast(` ¡Pomodoro ${newCount} completado! Tómate un ${isLong ? 'descanso largo' : 'descanso corto'}.`, 'success', { duration: 5000 });
- FlowNotifications.pushLocal('FocusAI', `¡Pomodoro completado! Tiempo de descanso.`);
+ FlowNotifications.pushLocal('FocusAI', `¡Pomodoro completado! Tiempo de descanso.`, { category: 'focus' });
 
  if (settings.autoStartBreaks) {
  FlowState.batch(() => {
@@ -138,7 +138,7 @@ window.FlowTimer = (() => {
  } else {
  // Fin del descanso
  FlowApp.toast('⏰ Descanso terminado. ¡A trabajar!', 'info', { duration: 4000 });
- FlowNotifications.pushLocal('FocusAI', 'Descanso terminado. ¡Vamos!');
+ FlowNotifications.pushLocal('FocusAI', 'Descanso terminado. ¡Vamos!', { category: 'focus' });
 
  if (settings.autoStartWork) {
  FlowState.batch(() => {

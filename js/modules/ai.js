@@ -94,108 +94,31 @@ window.FlowAI = (() => {
 
  // ── Test de conexión ──────────────────────────────────────────────────────
 
+ async function _apiRequest(url, options = {}) {
+ const response = await fetch(url, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+ const data = await response.json().catch(() => ({}));
+ if (!response.ok) throw new Error(data.error || `Error del servidor (${response.status})`);
+ return data;
+ }
  async function testConnection() {
- const cfg = _getConfig();
- const provider = _getProvider();
- try {
- const ctrl = new AbortController();
- const tid = setTimeout(() => ctrl.abort(), 12000);
- const res = await fetch(`${cfg.baseUrl}${provider.modelsPath}`, {
- signal: ctrl.signal,
- headers: _requestHeaders(cfg.baseUrl),
- });
- clearTimeout(tid);
- if (!res.ok) {
- const detail = await res.text().catch(() => '');
- throw new Error(_friendlyHttpError(res.status, detail));
+ try { return await _apiRequest('/api/ai/test', { method: 'POST', body: '{}' }); }
+ catch (e) { return { ok: false, error: e.message }; }
  }
- const data = await res.json();
- // Extraer lista de modelos según formato
- const models = provider.format === 'ollama'
- ? (data.models || []).map((m) => m.name)
- : (data.data || []).map((m) => m.id);
- return { ok: true, models };
- } catch (e) {
- return { ok: false, error: _friendlyConnectionError(e, cfg.baseUrl) };
- }
- }
-
  async function listModels() {
- const result = await testConnection();
- return result.ok ? result.models : [];
+ try { const result = await _apiRequest('/api/ai/models'); return result.models || []; }
+ catch (_) { return []; }
  }
 
  // ── Llamada principal ─────────────────────────────────────────────────────
 
  async function _call(messages, systemText, maxTokens = null) {
- const cfg = _getConfig();
- const provider = _getProvider();
- const url = `${cfg.baseUrl}${provider.chatPath}`;
-
  FlowState.set('ai.isThinking', true);
-
- const ctrl = new AbortController();
- const tid = setTimeout(() => ctrl.abort(), cfg.timeout);
-
  try {
- let body;
-
- if (provider.format === 'ollama') {
- // Formato nativo de Ollama
- body = JSON.stringify({
- model: cfg.model,
- stream: false,
- options: {
- temperature: cfg.temperature,
- num_predict: maxTokens || cfg.maxTokens,
- },
- messages: [
- { role: 'system', content: systemText },
- ...messages,
- ],
- });
- } else {
- // Formato OpenAI compatible (LM Studio, Jan, LocalAI…)
- body = JSON.stringify({
- model: cfg.model,
- stream: false,
- temperature: cfg.temperature,
- max_tokens: maxTokens || cfg.maxTokens,
- messages: [
- { role: 'system', content: systemText },
- ...messages,
- ],
- });
- }
-
- const res = await fetch(url, {
- method: 'POST',
- headers: _requestHeaders(cfg.baseUrl, true),
- body,
- signal: ctrl.signal,
- });
-
- clearTimeout(tid);
-
- if (!res.ok) {
- const txt = await res.text().catch(() => '');
- throw new Error(_friendlyHttpError(res.status, txt));
- }
-
- const data = await res.json();
-
- // Extraer texto según formato
- if (provider.format === 'ollama') {
- return data.message?.content || data.response || '';
- } else {
- return data.choices?.[0]?.message?.content || '';
- }
-
+  const result = await _apiRequest('/api/ai/chat', { method: 'POST', body: JSON.stringify({ messages, systemText, maxTokens }) });
+  return String(result.text || '');
  } catch (e) {
- throw new Error(_friendlyConnectionError(e, cfg.baseUrl));
- } finally {
- FlowState.set('ai.isThinking', false);
- }
+  throw new Error(e.message || 'No se pudo conectar con el proveedor de IA configurado por el superadministrador.');
+ } finally { FlowState.set('ai.isThinking', false); }
  }
 
  // ── Contexto del día ──────────────────────────────────────────────────────
@@ -562,8 +485,7 @@ SHOW_TOAST → { message, type }`;
 
  /** Devuelve true si hay una URL de servidor configurada y un modelo seleccionado */
  function isConfigured() {
- const cfg = _getConfig();
- return !!(cfg.baseUrl && cfg.model);
+ return !!FlowState.get('user.id') || !!FlowState.get('user.email');
  }
 
  /** Guardar configuración del servidor local */

@@ -49,6 +49,10 @@ async function bootstrap() {
     password_hash text NOT NULL, name text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS platform_ai_settings (id integer PRIMARY KEY DEFAULT 1 CHECK(id=1), provider text NOT NULL DEFAULT 'ollama', base_url text NOT NULL DEFAULT '', model text NOT NULL DEFAULT 'llama3.2', temperature numeric NOT NULL DEFAULT 0.7, max_tokens integer NOT NULL DEFAULT 1024, api_key_cipher text, api_key_iv text, api_key_tag text, updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid REFERENCES profiles(id) ON DELETE SET NULL)`);
+  await pool.query(`INSERT INTO platform_ai_settings(id,provider,base_url,model) VALUES(1,'ollama',$1,$2) ON CONFLICT(id) DO NOTHING`,[process.env.FOCUSAI_AI_URL||'',process.env.OLLAMA_MODEL||'llama3.2']);
+  // Migra la configuración local guardada anteriormente en las preferencias del superadministrador, si existe.
+  await pool.query(`UPDATE platform_ai_settings SET provider=COALESCE(NULLIF((SELECT ar.data #>> '{ai,provider}' FROM app_records ar JOIN profiles p ON p.id=ar.user_id WHERE p.role='superadmin' AND ar.store_name='preferences' AND ar.record_id='main' LIMIT 1),''),provider), base_url=COALESCE(NULLIF((SELECT ar.data #>> '{ai,baseUrl}' FROM app_records ar JOIN profiles p ON p.id=ar.user_id WHERE p.role='superadmin' AND ar.store_name='preferences' AND ar.record_id='main' LIMIT 1),''),base_url), model=COALESCE(NULLIF((SELECT ar.data #>> '{ai,model}' FROM app_records ar JOIN profiles p ON p.id=ar.user_id WHERE p.role='superadmin' AND ar.store_name='preferences' AND ar.record_id='main' LIMIT 1),''),model) WHERE id=1 AND base_url=''`);
   await pool.query(`CREATE TABLE IF NOT EXISTS app_records (
     user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     store_name text NOT NULL, record_id text NOT NULL, data jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -261,14 +265,11 @@ async function getCallForUser(id, user) {
 }
 function callToClient(c){const saved=c.action_items||[];return {id:c.id,title:c.title,provider:c.provider,roomName:c.room_name,status:c.status,participants:c.participants||[],date:c.started_at||c.created_at,startedAt:c.started_at,endedAt:c.ended_at,transcript:c.transcript||'',summary:c.summary||'',actions:Array.isArray(saved)?saved:(saved.actions||[]),decisions:Array.isArray(saved.decisions)?saved.decisions:[],aiStatus:c.ai_status,createdBy:c.created_by,creatorName:c.creator_name};}
 async function summarizeWithOllama(transcript) {
-  const base=String(process.env.OLLAMA_URL||'http://127.0.0.1:11434').replace(/\/$/,'');
-  const model=process.env.OLLAMA_MODEL||'llama3.2:3b';
-  const prompt=`Analiza esta transcripción de una reunión de trabajo en español. No inventes nombres, fechas, responsables ni decisiones. Devuelve SOLO JSON válido con las claves "summary" (resumen breve en español), "decisions" (arreglo de decisiones explícitas) y "actions" (arreglo de objetos con "task", "owner" y "dueDate"; usa null si no consta).\n\nTRANSCRIPCIÓN:\n${transcript.slice(0,80000)}`;
-  const response=await fetch(`${base}/api/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,prompt,stream:false,format:'json',options:{temperature:0.2}}),signal:AbortSignal.timeout(180000)});
-  if(!response.ok)throw new Error(`Ollama respondió ${response.status}. Verifica que esté iniciado y que el modelo ${model} esté descargado.`);
-  const body=await response.json();
-  let result; try{result=JSON.parse(body.response||'{}')}catch{throw new Error('El modelo local no devolvió un JSON válido. Intenta otra vez.');}
-  if(!result.summary)throw new Error('El modelo no generó un resumen válido.');
+  const prompt=`Analiza esta transcripción de una reunión de trabajo en español. No inventes nombres, fechas, responsables ni decisiones. Devuelve SOLO JSON válido con las claves "summary" (resumen breve en español), "decisions" (arreglo de decisiones explícitas) y "actions" (arreglo de objetos con "task", "owner" y "dueDate"; usa null si no consta). No agregues Markdown ni texto fuera del JSON.\n\nTRANSCRIPCIÓN:\n${String(transcript||'').slice(0,80000)}`;
+  const config=await getPlatformAIConfig();
+  const raw=await aiGenerate(config,[],prompt,1800);
+  let result;try{const clean=String(raw).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();result=JSON.parse(clean);}catch{throw new Error('La IA configurada no devolvió un JSON válido para el resumen. Intenta nuevamente.');}
+  if(!result.summary)throw new Error('La IA no generó un resumen válido.');
   return {summary:String(result.summary),actions:Array.isArray(result.actions)?result.actions:[],decisions:Array.isArray(result.decisions)?result.decisions:[]};
 }
 async function saveCallSummary(callId, transcript, result, status='completed') {
@@ -385,6 +386,37 @@ app.get('/api/enterprise/overview',requireAuth,requireRole,async(req,res,next)=>
 
 // Administración global: únicamente superadmin puede gestionar organizaciones y cuentas de acceso.
 function requireSuperadmin(req,res,next){if(req.user?.role!=='superadmin')return res.status(403).json({error:'Solo el superadministrador puede realizar esta acción.'});next();}
+
+const crypto = require('crypto');
+function aiEncryptionKey(){return crypto.createHash('sha256').update(String(process.env.SESSION_SECRET||'')).digest();}
+function encryptAIKey(value){const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',aiEncryptionKey(),iv);const enc=Buffer.concat([cipher.update(String(value),'utf8'),cipher.final()]);return {cipher:enc.toString('base64'),iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64')};}
+function decryptAIKey(row){if(!row?.api_key_cipher||!row?.api_key_iv||!row?.api_key_tag)return '';try{const decipher=crypto.createDecipheriv('aes-256-gcm',aiEncryptionKey(),Buffer.from(row.api_key_iv,'base64'));decipher.setAuthTag(Buffer.from(row.api_key_tag,'base64'));return Buffer.concat([decipher.update(Buffer.from(row.api_key_cipher,'base64')),decipher.final()]).toString('utf8');}catch{return '';}}
+async function getPlatformAIConfig(){const {rows}=await pool.query('SELECT * FROM platform_ai_settings WHERE id=1');const r=rows[0]||{};return {...r,provider:['ollama','gemini'].includes(r.provider)?r.provider:'ollama',base_url:String(r.base_url||''),model:String(r.model||(r.provider==='openai'?'gpt-4o-mini':'llama3.2')),temperature:Number(r.temperature??0.7),max_tokens:Number(r.max_tokens||1024),apiKey:decryptAIKey(r)};}
+function aiProviderInfo(c){return c.provider==='ollama'?{chat:'/api/chat',models:'/api/tags',format:'ollama'}:c.provider==='gemini'?{format:'gemini'}:{chat:'/api/chat',models:'/api/tags',format:'ollama'};}
+async function aiFetch(url,options={}){const response=await fetch(url,{...options,signal:AbortSignal.timeout(60000)});const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}if(!response.ok)throw new Error(data.error?.message||data.error||data.message||`El proveedor de IA respondió ${response.status}: ${raw.slice(0,180)}`);return data;}
+function aiBaseUrl(c){if(c.provider==='gemini')return 'https://generativelanguage.googleapis.com';const url=String(c.base_url||'').trim().replace(/\/+$/,'');if(!url)throw new Error('El superadministrador aún no ha configurado la URL de Ollama.');if(!/^https?:\/\//i.test(url))throw new Error('La URL debe comenzar con http:// o https://.');return url;}
+async function aiListModels(c){if(c.provider==='gemini'){if(!c.apiKey)throw new Error('Configura tu clave de Gemini API en Ajustes de superadministrador.');const data=await aiFetch(`${aiBaseUrl(c)}/v1beta/models?key=${encodeURIComponent(c.apiKey)}`);return (data.models||[]).filter(m=>Array.isArray(m.supportedGenerationMethods)&&m.supportedGenerationMethods.includes('generateContent')).map(m=>String(m.name||'').replace(/^models\//,'')).filter(Boolean);}const data=await aiFetch(`${aiBaseUrl(c)}/api/tags`);return (data.models||[]).map(x=>x.name).filter(Boolean);}
+async function aiGenerate(c,messages,systemText,maxTokens){
+ const all=(Array.isArray(messages)?messages:[]).slice(-30).map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:String(m.content||'').slice(0,30000)}]}));
+ if(c.provider==='gemini'){
+  if(!c.apiKey)throw new Error('Configura tu clave de Gemini API en Ajustes de superadministrador.');
+  const model=String(c.model||'gemini-2.5-flash').replace(/^models\//,'');
+  const body={contents:all,generationConfig:{temperature:c.temperature,maxOutputTokens:Number(maxTokens)||c.max_tokens}};
+  if(systemText||true)body.systemInstruction={parts:[{text:String(systemText||'Eres el asistente de FocusAI. Responde en español.').slice(0,10000)}]};
+  const data=await aiFetch(`${aiBaseUrl(c)}/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(c.apiKey)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return (data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
+ }
+ const body={model:c.model,stream:false,options:{temperature:c.temperature,num_predict:Number(maxTokens)||c.max_tokens},messages:[{role:'system',content:String(systemText||'Eres el asistente de FocusAI. Responde en español.')},...(Array.isArray(messages)?messages:[]).map(m=>({role:['system','assistant','user'].includes(m.role)?m.role:'user',content:String(m.content||'').slice(0,30000)}))]};
+ const data=await aiFetch(`${aiBaseUrl(c)}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return data.message?.content||data.response||'';
+}
+
+app.get('/api/superadmin/ai-config',requireAuth,requireSuperadmin,async(req,res,next)=>{try{const c=await getPlatformAIConfig();res.json({provider:c.provider,baseUrl:c.base_url,model:c.model,temperature:c.temperature,maxTokens:c.max_tokens,apiKeyConfigured:!!c.apiKey});}catch(e){next(e);}});
+app.put('/api/superadmin/ai-config',requireAuth,requireSuperadmin,async(req,res,next)=>{try{const provider=['ollama','gemini'].includes(req.body.provider)?req.body.provider:'ollama';const baseUrl=String(req.body.baseUrl||'').trim().replace(/\/+$/,'').slice(0,2000);const model=String(req.body.model||(provider==='gemini'?'gemini-2.5-flash':'llama3.2')).trim().slice(0,200);const apiKey=String(req.body.apiKey||'').trim();if(baseUrl&&!/^https?:\/\//i.test(baseUrl))return res.status(400).json({error:'La URL debe comenzar con http:// o https://.'});if(provider==='gemini'&&apiKey.length<10)return res.status(400).json({error:'Pega una clave válida de Gemini API.'});let encrypted={};if(apiKey)encrypted=encryptAIKey(apiKey);await pool.query(`INSERT INTO platform_ai_settings(id,provider,base_url,model,temperature,max_tokens,api_key_cipher,api_key_iv,api_key_tag,updated_by,updated_at) VALUES(1,$1,$2,$3,0.7,1024,$4,$5,$6,$7,now()) ON CONFLICT(id) DO UPDATE SET provider=EXCLUDED.provider,base_url=EXCLUDED.base_url,model=EXCLUDED.model,api_key_cipher=COALESCE(EXCLUDED.api_key_cipher,platform_ai_settings.api_key_cipher),api_key_iv=COALESCE(EXCLUDED.api_key_iv,platform_ai_settings.api_key_iv),api_key_tag=COALESCE(EXCLUDED.api_key_tag,platform_ai_settings.api_key_tag),updated_by=EXCLUDED.updated_by,updated_at=now()`,[provider,baseUrl,model,encrypted.cipher||null,encrypted.iv||null,encrypted.tag||null,req.user.id]);res.json({ok:true,provider,model,apiKeyConfigured:!!apiKey||!!(await getPlatformAIConfig()).apiKey});}catch(e){next(e);}});
+app.post('/api/superadmin/ai-config/test',requireAuth,requireSuperadmin,async(req,res,next)=>{try{const c=await getPlatformAIConfig();const models=await aiListModels(c);res.json({ok:true,models});}catch(e){res.status(400).json({ok:false,error:e.message});}});
+app.get('/api/ai/models',requireAuth,async(req,res,next)=>{try{const c=await getPlatformAIConfig();res.json({models:await aiListModels(c)});}catch(e){res.status(400).json({error:e.message});}});
+app.post('/api/ai/test',requireAuth,async(req,res,next)=>{try{const c=await getPlatformAIConfig();const models=await aiListModels(c);res.json({ok:true,models});}catch(e){res.json({ok:false,error:e.message});}});
+app.post('/api/ai/chat',requireAuth,async(req,res,next)=>{try{const c=await getPlatformAIConfig();const messages=Array.isArray(req.body.messages)?req.body.messages.slice(-30):[];if(!messages.length)return res.status(400).json({error:'No se recibió un mensaje para la IA.'});const text=await aiGenerate(c,messages,req.body.systemText,req.body.maxTokens);res.json({text});}catch(e){res.status(502).json({error:e.message||'No se pudo consultar el proveedor de IA.'});}});
+
 app.get('/api/superadmin/overview',requireAuth,requireSuperadmin,async(req,res,next)=>{try{
  const orgs=await pool.query(`SELECT o.id,o.name,o.slug,o.invite_code,o.status,o.created_at,COUNT(p.id)::int user_count,COUNT(p.id) FILTER(WHERE p.role='admin')::int admin_count FROM organizations o LEFT JOIN profiles p ON p.organization_id=o.id GROUP BY o.id ORDER BY o.created_at DESC`);
  const users=await pool.query(`SELECT p.id,p.name,COALESCE(p.email,a.email) email,p.role,p.organization_id,o.name organization_name,p.employment_status,p.created_at FROM profiles p LEFT JOIN auth_users a ON a.id=p.id LEFT JOIN organizations o ON o.id=p.organization_id ORDER BY p.created_at DESC`);
