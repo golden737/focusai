@@ -17,35 +17,40 @@
     if (!response.ok) throw new Error(data.error || `Error HTTP ${response.status}`);
     return data;
   }
-  function showEnded(text) {
+  function closeCallWindow(text = 'La llamada ha terminado.') {
     if (ended) return;
     ended = true;
     if (poll) clearInterval(poll);
+    // Quitar el iframe inmediatamente: Jitsi puede mostrar una pantalla promocional
+    // después del botón rojo. No dejar que esa pantalla quede visible en la ventana.
+    try { room.replaceChildren(); } catch {}
     try { api?.dispose(); } catch {}
-    room.innerHTML = '';
+    api = null;
     message.hidden = false;
-    message.innerHTML = '';
+    message.replaceChildren();
     const content = document.createElement('div');
-    const heading = document.createElement('h2'); heading.textContent = 'Reunión finalizada';
+    content.style.cssText = 'display:grid;gap:12px;justify-items:center;text-align:center;max-width:420px';
     const paragraph = document.createElement('p'); paragraph.textContent = text;
-    const close = document.createElement('button'); close.textContent = 'Cerrar ventana'; close.addEventListener('click', () => window.close());
-    content.append(heading, paragraph, close); message.append(content);
-    setTimeout(() => { try { window.close(); } catch {} }, 1200);
+    const close = document.createElement('button'); close.textContent = 'Cerrar ventana';
+    close.addEventListener('click', () => window.close());
+    content.append(paragraph, close); message.append(content);
+    // La ventana fue abierta por FocusAI, por lo que el navegador normalmente permite cerrarla.
+    setTimeout(() => { try { window.close(); } catch {} }, 250);
   }
   async function finishForEveryone() {
     if (finishing || ended) return;
     finishing = true; finishButton.disabled = true; finishButton.textContent = 'Finalizando…';
     try {
       await request(`/api/meetings/${encodeURIComponent(meetingId)}/finish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      showEnded('El anfitrión ha finalizado la llamada.');
+      closeCallWindow('El anfitrión ha finalizado la llamada.');
     } catch (error) {
       finishing = false; finishButton.disabled = false; finishButton.textContent = 'Finalizar para todos';
       alert(`No se pudo finalizar la reunión: ${error.message}`);
     }
   }
   function start() {
-    if (!meetingId || !roomName) { showEnded('El enlace de la llamada no es válido.'); return; }
-    if (!window.JitsiMeetExternalAPI) { showEnded('No se pudo cargar Jitsi. Comprueba la conexión e inténtalo de nuevo.'); return; }
+    if (!meetingId || !roomName) { closeCallWindow('El enlace de la llamada no es válido.'); return; }
+    if (!window.JitsiMeetExternalAPI) { closeCallWindow('No se pudo cargar Jitsi. Comprueba la conexión e inténtalo de nuevo.'); return; }
     message.hidden = true;
     api = new window.JitsiMeetExternalAPI('meet.jit.si', {
       roomName, width: '100%', height: '100%', parentNode: room, lang: 'es',
@@ -53,8 +58,13 @@
       interfaceConfigOverwrite: { APP_NAME: 'FocusAI', SHOW_JITSI_WATERMARK: true, SHOW_BRAND_WATERMARK: false, SHOW_POWERED_BY: false }
     });
     api.addEventListener('readyToClose', () => {
-      if (isHost) finishForEveryone();
-      else showEnded('La llamada se ha cerrado.');
+      // Responder al botón rojo de Jitsi sin esperar la llamada al backend antes de retirar el iframe.
+      if (isHost) {
+        if (finishing || ended) return;
+        finishing = true; finishButton.disabled = true;
+        closeCallWindow('Llamada cerrada.');
+        request(`/api/meetings/${encodeURIComponent(meetingId)}/finish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+      } else closeCallWindow('La llamada se ha cerrado.');
     });
     finishButton.addEventListener('click', finishForEveryone);
     poll = setInterval(async () => {
@@ -62,7 +72,7 @@
       try {
         const meetings = await request('/api/meetings');
         const meeting = meetings.find(item => String(item.id) === String(meetingId));
-        if (!meeting || meeting.status !== 'in_progress') showEnded('El anfitrión finalizó la llamada.');
+        if (!meeting || meeting.status !== 'in_progress') closeCallWindow('El anfitrión finalizó la llamada.');
       } catch {}
     }, 1500);
   }
