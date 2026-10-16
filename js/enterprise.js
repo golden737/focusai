@@ -42,7 +42,7 @@
   const role = () => window.FlowState?.get('user.role') || state().role || 'employee';
   const canPeople = () => ['superadmin','admin','hr'].includes(role());
   const guardAdmin = () => {
-    if (['superadmin','admin'].includes(role())) return true;
+    if (role()==='superadmin') return true;
     toast('Esta sección requiere el rol de administrador.');
     setTimeout(() => FlowRouter.navigate('dashboard'), 0); return false;
   };
@@ -58,7 +58,7 @@
     ['surveys','views/surveys.html','Encuestas de RR. HH.',guardPeople],
     ['employees','views/employees.html','Directorio de empleados',guardPeople],
     ['skills','views/skills.html','Competencias y crecimiento',guardPeople],
-    ['admin','views/admin.html','Usuarios y permisos',guardAdmin]
+    ['admin','views/admin.html','Administración global',guardAdmin]
   ];
   routes.forEach(([path,view,title,guard]) => FlowRouter.register(path,{view,title,icon:'',guards:guard?[guard]:[],cache:false}));
 
@@ -233,7 +233,7 @@
   }
   function showEmployeeForm(existing) {
     const e=existing||{};
-    const content=`<form id="employee-edit-form" class="eco-form"><label>Nombre completo</label><input name="name" required value="${esc(e.name||'')}" placeholder="Nombre del empleado"><label>Correo</label><input name="email" type="email" required value="${esc(e.email||'')}" placeholder="nombre@empresa.com"><label>Puesto</label><input name="job" required value="${esc(e.job||'')}" placeholder="Puesto"><label>Departamento</label><input name="department" required value="${esc(e.department||'')}" placeholder="Departamento"><label>Rol de acceso</label><select name="role">${Object.entries(ROLE_LABELS).filter(([k])=>k!=='superadmin').map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v}</option>`).join('')}</select><label>Estado</label><select name="status"><option ${!e.status||e.status==='Activo'?'selected':''}>Activo</option><option ${e.status==='Inactivo'?'selected':''}>Inactivo</option></select><div class="eco-actions"><button class="eco-btn eco-btn-primary" type="submit">Guardar perfil</button></div></form>`;
+    const content=`<form id="employee-edit-form" class="eco-form"><label>Nombre completo</label><input name="name" required value="${esc(e.name||'')}" placeholder="Nombre del empleado"><label>Correo</label><input name="email" type="email" required value="${esc(e.email||'')}" placeholder="nombre@empresa.com" ${role()==='admin'&&e.id?'readonly':''}><label>Puesto</label><input name="job" required value="${esc(e.job||'')}" placeholder="Puesto"><label>Departamento</label><input name="department" required value="${esc(e.department||'')}" placeholder="Departamento"><label>Rol de acceso</label><input value="${esc(ROLE_LABELS[e.role||(role()==='admin'?'employee':'employee')]||'Empleado')}" disabled><small>Los roles y cuentas solo los administra el superadministrador.</small><label>Estado</label><select name="status"><option ${!e.status||e.status==='Activo'?'selected':''}>Activo</option><option ${e.status==='Inactivo'?'selected':''}>Inactivo</option></select><div class="eco-actions"><button class="eco-btn eco-btn-primary" type="submit">Guardar perfil</button></div></form>`;
     if(window.showGlobalModal) {
       showGlobalModal({title:e.id?'Editar empleado':'Añadir empleado',content,size:'md'});
       const form=el('#global-dialog #employee-edit-form');
@@ -255,7 +255,7 @@
     el('#employee-count').textContent=s.employees.length;
     el('#department-count').textContent=new Set(s.employees.map(e=>e.department).filter(Boolean)).size;
     el('#development-count').textContent=s.skills.length?new Set(s.skills.map(x=>x.employeeId)).size:0;
-    el('#employee-table').innerHTML=people.map(e=>`<tr><td><div class="eco-person"><span class="eco-avatar">${esc(e.name.split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span><b>${esc(e.name)}</b><small>${esc(e.email||'Sin correo')}</small></span></div></td><td>${esc(e.job||'Sin puesto')}</td><td>${esc(e.department||'Sin departamento')}</td><td><span class="eco-status ${e.status==='Activo'?'is-active':'is-inactive'}">${esc(e.status||'Activo')}</span></td><td><div class="eco-actions"><button class="eco-btn eco-btn-small" data-edit-employee="${esc(e.id)}">Editar</button><button class="eco-btn eco-btn-small" data-remove-employee="${esc(e.id)}">${e.status==='Inactivo'?'Activar':'Desactivar'}</button></div></td></tr>`).join('');
+    el('#employee-table').innerHTML=people.map(e=>`<tr><td><div class="eco-person"><span class="eco-avatar">${esc(e.name.split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span><b>${esc(e.name)}</b><small>${esc(e.email||'Sin correo')}</small></span></div></td><td>${esc(e.job||'Sin puesto')}</td><td>${esc(e.department||'Sin departamento')}</td><td><span class="eco-status ${e.status==='Activo'?'is-active':'is-inactive'}">${esc(e.status||'Activo')}</span></td><td><div class="eco-actions">${['admin','superadmin'].includes(role())?`<button class="eco-btn eco-btn-small" data-edit-employee="${esc(e.id)}">Editar datos laborales</button><button class="eco-btn eco-btn-small" data-remove-employee="${esc(e.id)}">${e.status==='Inactivo'?'Activar':'Desactivar'}</button>`:'—'}</div></td></tr>`).join('');
     el('#employee-empty').hidden=people.length>0;
   }
   function showSkillForm() {
@@ -275,13 +275,28 @@
     el('#skills-table').innerHTML=rows.map(x=>{const e=s.employees.find(y=>y.id===x.employeeId);const gap=x.required-x.current;return `<tr><td>${esc(e?.name||'Perfil eliminado')}</td><td><b>${esc(x.name)}</b></td><td><span class="eco-level">${x.current}/5</span></td><td><span class="eco-level">${x.required}/5</span></td><td><span class="eco-status ${gap>0?'is-inactive':'is-active'}">${gap>0?'−'+gap:'Al día'}</span></td><td>${esc(x.review||'Sin fecha')}</td><td><button class="eco-btn eco-btn-small" data-skill-history="${esc(e?.id||'')}">Historial</button></td></tr>`;}).join('');
     el('#skills-empty').hidden=rows.length>0;
   }
-  function renderAdmin() {
+  let globalAdminData={organizations:[],users:[]};
+  async function renderAdmin() {
     if(!el('#admin-page'))return;
-    if(!['superadmin','admin'].includes(role())){el('#admin-page').innerHTML='<article class="eco-card"><h2>Acceso restringido</h2><p>Solo administración puede gestionar usuarios y permisos.</p></article>';return;}
-    const s=state();
-    el('#admin-user-count').textContent=s.employees.length;
-    el('#admin-admin-count').textContent=s.employees.filter(e=>e.role==='admin'&&e.status!=='Inactivo').length;
-    el('#admin-user-table').innerHTML=s.employees.map(e=>`<tr><td><b>${esc(e.name)}</b></td><td>${esc(e.email||'—')}</td><td><select class="eco-role-select" data-role-user="${esc(e.id)}">${Object.entries(ROLE_LABELS).filter(([k])=>k!=='superadmin').map(([k,v])=>`<option value="${k}" ${e.role===k?'selected':''}>${v}</option>`).join('')}</select></td><td><span class="eco-status ${e.status==='Activo'?'is-active':'is-inactive'}">${esc(e.status||'Activo')}</span></td><td><div class="eco-actions"><button class="eco-btn eco-btn-small" data-edit-employee="${esc(e.id)}">Editar</button><button class="eco-btn eco-btn-small" data-toggle-employee="${esc(e.id)}">${e.status==='Inactivo'?'Activar':'Desactivar'}</button></div></td></tr>`).join('');
+    if(role()!=='superadmin'){el('#admin-page').innerHTML='<article class="eco-card"><h2>Acceso restringido</h2><p>Solo el superadministrador puede gestionar cuentas y organizaciones globalmente.</p></article>';return;}
+    const orgBody=el('#global-org-table'), userBody=el('#global-user-table');
+    if(orgBody)orgBody.innerHTML='<tr><td colspan="6">Cargando organizaciones…</td></tr>';
+    try{
+      globalAdminData=await apiMeeting('/api/superadmin/overview');
+      const orgs=globalAdminData.organizations||[],users=globalAdminData.users||[];
+      if(el('#global-org-count'))el('#global-org-count').textContent=orgs.length;
+      if(el('#global-user-count'))el('#global-user-count').textContent=users.length;
+      if(el('#global-admin-count'))el('#global-admin-count').textContent=users.filter(u=>u.role==='admin').length;
+      if(el('#global-user-org'))el('#global-user-org').innerHTML='<option value="">Selecciona una organización</option>'+orgs.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+      if(orgBody)orgBody.innerHTML=orgs.length?orgs.map(o=>`<tr><td><b>${esc(o.name)}</b><small>${esc(o.slug||'')}</small></td><td>${o.user_count||0}</td><td>${o.admin_count||0}</td><td><code>${esc(o.invite_code||'—')}</code></td><td><span class="eco-status ${o.status==='inactive'?'is-inactive':'is-active'}">${o.status==='inactive'?'Inactiva':'Activa'}</span></td><td><div class="eco-actions"><button class="eco-btn eco-btn-small" data-copy-org-code="${esc(o.id)}">Copiar código</button><button class="eco-btn eco-btn-small" data-toggle-org="${esc(o.id)}" data-status="${o.status==='inactive'?'active':'inactive'}">${o.status==='inactive'?'Activar':'Desactivar'}</button><button class="eco-btn eco-btn-small" data-rename-org="${esc(o.id)}">Renombrar</button></div></td></tr>`).join(''):'<tr><td colspan="6">Todavía no hay organizaciones.</td></tr>';
+      renderGlobalUsers();
+    }catch(err){if(orgBody)orgBody.innerHTML=`<tr><td colspan="6">${esc(err.message)}</td></tr>`;if(userBody)userBody.innerHTML=`<tr><td colspan="6">${esc(err.message)}</td></tr>`;}
+  }
+  function renderGlobalUsers(){
+    const body=el('#global-user-table');if(!body)return;
+    const term=(el('#global-user-search')?.value||'').trim().toLowerCase();
+    const users=(globalAdminData.users||[]).filter(u=>`${u.name||''} ${u.email||''} ${u.organization_name||''}`.toLowerCase().includes(term));
+    body.innerHTML=users.length?users.map(u=>`<tr><td><b>${esc(u.name||'Sin nombre')}</b><small>${esc(u.id)}</small></td><td>${esc(u.email||'—')}</td><td>${esc(ROLE_LABELS[u.role]||u.role)}</td><td>${esc(u.organization_name||'Sin organización')}</td><td><span class="eco-status ${u.employment_status==='inactive'?'is-inactive':'is-active'}">${u.employment_status==='inactive'?'Inactivo':'Activo'}</span></td><td><div class="eco-actions"><button class="eco-btn eco-btn-small" data-edit-global-user="${esc(u.id)}">Editar cuenta</button></div></td></tr>`).join(''):'<tr><td colspan="6">No hay usuarios para esta búsqueda.</td></tr>';
   }
   async function renderOrganizationJoin(){
     const form=el('#join-organization-form');if(!form||form.dataset.bound)return;form.dataset.bound='1';
@@ -299,9 +314,9 @@
   function applyRoleNavigation(){
     const r=role();
     const access={
-      superadmin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','join-organization','skills','timer','habits','goals','focus','personal','stats','gamification','admin','settings'],
-      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','admin','settings'],
-      hr:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      superadmin:['dashboard','employees','surveys','my-surveys','skills','admin','settings'],
+      admin:['employees','settings'],
+      hr:['dashboard','employees','surveys','my-surveys','skills','settings'],
       employee:['dashboard','tasks','calendar','projects','teams','meetings','my-surveys','join-organization','timer','habits','goals','focus','personal','stats','gamification','settings']
     };
     const allowed=new Set(access[r]||access.employee);
@@ -310,7 +325,7 @@
   }
 
   function renderCurrent() {
-    renderMeetings(); loadMeetingDirectory(); renderInvitations(); renderSurveys(); renderEmployees(); renderHRMetrics(); renderSkills(); renderAdmin(); renderMySurveys(); renderOrganizationJoin(); if(el('#admin-page'))loadOrganizationInvite();
+    renderMeetings(); loadMeetingDirectory(); renderInvitations(); renderSurveys(); renderEmployees(); renderHRMetrics(); renderSkills(); renderAdmin(); renderMySurveys(); renderOrganizationJoin();
     const current=FlowRouter.getCurrentPath();
     document.querySelectorAll('.nav-section-label').forEach(x=>x.style.display='');
     applyRoleNavigation();
@@ -318,6 +333,8 @@
     if(current==='my-surveys') renderMySurveys();
   }
   document.addEventListener('submit',async ev=>{
+    if(ev.target.id==='global-org-form'){ev.preventDefault();const name=el('#global-org-name').value.trim();try{await apiMeeting('/api/superadmin/organizations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});ev.target.reset();toast('Organización creada.');await renderAdmin();}catch(err){toast(err.message);}return;}
+    if(ev.target.id==='global-user-form'){ev.preventDefault();const data=Object.fromEntries(new FormData(ev.target));try{await apiMeeting('/api/superadmin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});ev.target.reset();toast('Cuenta creada correctamente.');await renderAdmin();}catch(err){toast(err.message);}return;}
     if(ev.target.matches('.my-survey-form')) {
       ev.preventDefault();const form=ev.target;const answers=[...form.querySelectorAll('[data-answer-index]')].sort((a,b)=>Number(a.dataset.answerIndex)-Number(b.dataset.answerIndex)).map(x=>x instanceof HTMLSelectElement&&x.multiple?[...x.selectedOptions].map(o=>o.value).join(', '):x.value.trim());const button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
       try{const r=await fetch(`/api/my-surveys/${encodeURIComponent(form.dataset.surveyId)}/responses`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({answers})});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'No se pudo enviar la respuesta.');toast(b.message||'Respuesta enviada.');await renderMySurveys();}
@@ -329,7 +346,7 @@
       if(!title||!questions.length||questions.some(q=>!q.text)){toast('Añade un título y escribe cada pregunta.');return;}
       if(questions.some(q=>['single_choice','multiple_choice'].includes(q.type)&&q.options.length<2)){toast('Las preguntas de selección necesitan al menos dos opciones, una por línea.');return;}
       const audienceRoles=[...document.querySelectorAll('input[name="survey-role"]:checked')].map(x=>x.value);const audienceUserIds=[...selectedSurveyPeople];
-      const s=state();s.surveys.push({id:id(),title,category:el('#survey-category').value,questions,anonymous:el('#survey-anonymous').checked,audienceRoles:(audienceRoles.length||audienceUserIds.length)?audienceRoles:['superadmin','admin','hr','employee'],audienceUserIds,responses:[],createdAt:new Date().toISOString()});
+      const s=state();s.surveys.push({id:id(),title,category:el('#survey-category').value,questions,anonymous:el('#survey-anonymous').checked,audienceRoles:(audienceRoles.length||audienceUserIds.length)?audienceRoles:['admin','hr','employee'],audienceUserIds,responses:[],createdAt:new Date().toISOString()});
       try{await write(s);ev.target.reset();el('#survey-question-builder').innerHTML='';surveyQuestionCounter=0;selectedSurveyPeople.clear();addSurveyQuestion();renderSurveyAudiencePeople();closeSurveyModal();renderSurveys();toast('Encuesta guardada en Neon.');}catch(err){toast(err.message);}
     }
 
@@ -342,6 +359,11 @@
     const t=ev.target.closest('button'); if(!t)return;
     if(t.dataset.skillHistory){fetch(`/api/enterprise/skills/${encodeURIComponent(t.dataset.skillHistory)}/history`,{credentials:'same-origin',cache:'no-store'}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.error||'No se pudo cargar el historial.');const content=b.length?`<ol>${b.map(x=>`<li><b>${esc(x.skill)}</b>: ${x.previous_level==null?'Sin nivel previo':x.previous_level+'/5'} → <b>${x.assessed_level}/5</b> · ${esc(x.assessment_date)}${x.assessed_by?' · '+esc(x.assessed_by):''}</li>`).join('')}</ol>`:'<p>Aún no hay evaluaciones históricas para este empleado.</p>';showGlobalModal({title:'Historial de competencias',content,size:'md'});}).catch(err=>toast(err.message));}
     if(t.id==='copy-organization-code'){const code=el('#organization-invite-code')?.textContent||'';if(code&&code!=='Cargando código…')navigator.clipboard?.writeText(code).then(()=>toast('Código copiado.')).catch(()=>toast('No se pudo copiar automáticamente.'));}
+    if(t.id==='global-refresh')renderAdmin();
+    if(t.dataset.copyOrgCode){const org=globalAdminData.organizations.find(o=>o.id===t.dataset.copyOrgCode);if(org?.invite_code)navigator.clipboard?.writeText(org.invite_code).then(()=>toast('Código copiado.')).catch(()=>prompt('Copia el código:',org.invite_code));}
+    if(t.dataset.toggleOrg){const org=globalAdminData.organizations.find(o=>o.id===t.dataset.toggleOrg);if(org)apiMeeting(`/api/superadmin/organizations/${encodeURIComponent(org.id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:t.dataset.status})}).then(renderAdmin).catch(err=>toast(err.message));}
+    if(t.dataset.renameOrg){const org=globalAdminData.organizations.find(o=>o.id===t.dataset.renameOrg);if(org){const name=prompt('Nombre de la organización:',org.name);if(name&&name.trim())apiMeeting(`/api/superadmin/organizations/${encodeURIComponent(org.id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),status:org.status})}).then(renderAdmin).catch(err=>toast(err.message));}}
+    if(t.dataset.editGlobalUser){const u=globalAdminData.users.find(x=>x.id===t.dataset.editGlobalUser);if(u){const name=prompt('Nombre completo:',u.name||'');if(name===null)return;const email=prompt('Correo electrónico:',u.email||'');if(email===null)return;const roleOptions='superadmin, admin, hr, employee';const newRole=prompt(`Rol (${roleOptions}):`,u.role||'employee');if(newRole===null)return;const orgOptions=(globalAdminData.organizations||[]).map(o=>`${o.id} = ${o.name}`).join('\n');const orgId=prompt('ID de organización (vacío = sin organización):\n'+orgOptions,u.organization_id||'');if(orgId===null)return;const status=prompt('Estado (active/inactive):',u.employment_status||'active');if(status===null)return;const password=prompt('Nueva contraseña (deja vacío para conservar la actual):','');if(password===null)return;apiMeeting(`/api/superadmin/users/${encodeURIComponent(u.id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,role:newRole,organizationId:orgId.trim()||null,status:status==='inactive'?'inactive':'active',password})}).then(()=>{toast('Cuenta actualizada.');renderAdmin();}).catch(err=>toast(err.message));}}
     if(t.id==='start-call-btn')startMeeting();
     if(t.id==='refresh-invitations-btn')renderInvitations();
     if(t.id==='refresh-hr-metrics')renderHRMetrics();
@@ -362,7 +384,7 @@
     if(t.hasAttribute('data-add-survey-option')){const ta=t.closest('.survey-options-field')?.querySelector('[data-question-options]');if(ta){const lines=ta.value.trimEnd();ta.value=(lines?lines+'\n':'')+`Opción ${ta.value.split('\n').filter(Boolean).length+1}`;ta.focus();}}
     if(t.id==='add-survey-question'){addSurveyQuestion();}
     if(t.hasAttribute('data-remove-survey-question')){t.closest('.survey-question-card')?.remove();}
-    if((t.id==='new-employee-btn'||t.id==='admin-add-user-btn')&&['superadmin','admin'].includes(role()))showEmployeeForm();
+    if(t.id==='new-employee-btn'&&['superadmin','admin'].includes(role()))showEmployeeForm();
     if(t.id==='new-skill-btn')showSkillForm();
     if(t.dataset.editEmployee&&['superadmin','admin'].includes(role())) {const e=state().employees.find(x=>x.id===t.dataset.editEmployee);if(e)showEmployeeForm(e);}
     if(t.dataset.removeEmployee) {const s=state(),e=s.employees.find(x=>x.id===t.dataset.removeEmployee);if(!e)return;const next=e.status==='Inactivo'?'Activo':'Inactivo';if(!confirm(`${next==='Inactivo'?'¿Desactivar':'¿Reactivar'} este perfil? Se conservarán la cuenta y el historial.`))return;e.status=next;write(s);renderEmployees();renderAdmin();renderSkills();}
@@ -375,10 +397,11 @@
   document.addEventListener('change',ev=>{
     if(ev.target.matches('[data-question-type]')){const field=ev.target.closest('.survey-question-card')?.querySelector('.survey-options-field');if(field){const needs=['single_choice','multiple_choice'].includes(ev.target.value);field.hidden=!needs;const textarea=field.querySelector('[data-question-options]');if(textarea)textarea.required=needs;}}
     if(ev.target.matches('[data-survey-person]')){if(ev.target.checked)selectedSurveyPeople.add(ev.target.dataset.surveyPerson);else selectedSurveyPeople.delete(ev.target.dataset.surveyPerson);renderSurveyAudiencePeople();}
-    if(ev.target.matches('[data-role-user]')) {const s=state(),e=s.employees.find(x=>x.id===ev.target.dataset.roleUser);if(e){e.role=ev.target.value;write(s);renderAdmin();toast('Rol actualizado en la organización.');}}
+    if(ev.target.matches('[data-role-user]')) {if(role()!=='superadmin'){toast('Los roles solo se modifican desde Administración global.');renderAdmin();return;}const s=state(),e=s.employees.find(x=>x.id===ev.target.dataset.roleUser);if(e){e.role=ev.target.value;write(s);renderAdmin();toast('Rol actualizado.');}}
   });
   document.addEventListener('input',ev=>{
     if(ev.target.id==='survey-people-search')renderSurveyAudiencePeople();
+    if(ev.target.id==='global-user-search')renderGlobalUsers();
     if(ev.target.id==='employee-search')renderEmployees();
     if(ev.target.id==='skill-search')renderSkills();
   });
