@@ -24,4 +24,4 @@ Si se cambia `SESSION_SECRET`, las claves cifradas previamente guardadas podría
 Los recordatorios de tareas, hábitos y alertas de enfoque usan las APIs de notificación del navegador y requieren permiso. Los temporizadores del navegador no son un sistema de notificaciones garantizado cuando la aplicación está cerrada. El reporte semanal no se envía automáticamente; por eso se retiró su interruptor de los ajustes.
 
 
-Configuración actualizada: el superadmin puede elegir globalmente Ollama local o Gemini API. En Gemini, configura una clave de Google AI Studio y un modelo compatible, por ejemplo gemini-2.5-flash. El nivel gratuito está sujeto a cuotas, disponibilidad y condiciones de Google.
+Configuración actualizada: el superadmin puede elegir globalmente Ollama local o Gemini API. En Gemini, configura una clave de Google AI Studio y un modelo compatible, por defecto gemini-3.8-flash mediante la Interactions API. No asumas que gemini-3.8-flash es gratuito: comprueba precios, cuotas y disponibilidad en Google AI Studio.
