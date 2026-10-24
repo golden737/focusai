@@ -58,6 +58,7 @@
     ['surveys','views/surveys.html','Encuestas de RR. HH.',guardPeople],
     ['employees','views/employees.html','Directorio de empleados',guardPeople],
     ['skills','views/skills.html','Competencias y crecimiento',guardPeople],
+    ['people-development','views/people-development.html','Desarrollo del talento',null],
     ['admin','views/admin.html','Administración global',guardAdmin]
   ];
   routes.forEach(([path,view,title,guard]) => FlowRouter.register(path,{view,title,icon:'',guards:guard?[guard]:[],cache:false}));
@@ -245,7 +246,7 @@
   }
   async function renderHRMetrics(){
     if(!el('#hr-performance-table'))return;
-    try{const data=await apiMeeting('/api/enterprise/overview');el('#hr-completion-rate').textContent=`${data.completionRate}%`;el('#hr-completion-detail').textContent=`${data.completed} de ${data.tasks} tareas completadas`;el('#hr-overdue-count').textContent=data.overdue;el('#hr-skill-gaps').textContent=data.skillGaps;el('#hr-skill-detail').textContent=`${data.assessedSkills} competencias evaluadas`;el('#hr-performance-table').innerHTML=data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.tasks}</td><td>${p.completed}</td><td>${p.overdue}</td><td><span class="eco-status ${p.completionRate>=80?'is-active':'is-inactive'}">${p.completionRate}%</span></td></tr>`).join('');if(!data.people.length)el('#hr-performance-table').innerHTML='<tr><td colspan="5">Aún no hay tareas disponibles para calcular métricas.</td></tr>';}
+    try{const data=await apiMeeting('/api/enterprise/overview');el('#hr-completion-rate').textContent=`${data.completionRate}%`;el('#hr-completion-detail').textContent=`${data.completed} de ${data.tasks} tareas completadas`;el('#hr-overdue-count').textContent=data.overdue;el('#hr-skill-gaps').textContent=data.skillGaps;el('#hr-skill-detail').textContent=`${data.assessedSkills} competencias evaluadas`;if(el('#hr-assessed-skills'))el('#hr-assessed-skills').textContent=data.assessedSkills??0;if(el('#hr-critical-gaps'))el('#hr-critical-gaps').textContent=data.criticalSkillGaps??0;if(el('#hr-review-due'))el('#hr-review-due').textContent=data.reviewDue??0;el('#hr-performance-table').innerHTML=data.people.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.tasks}</td><td>${p.completed}</td><td>${p.overdue}</td><td><span class="eco-status ${p.completionRate>=80?'is-active':'is-inactive'}">${p.completionRate}%</span></td><td>${p.tasks===0?'Sin datos':p.overdue>0?'Revisar bloqueos y carga':'Seguimiento habitual'}</td></tr>`).join('');if(!data.people.length)el('#hr-performance-table').innerHTML='<tr><td colspan="6">Aún no hay tareas disponibles para calcular métricas.</td></tr>';}
     catch(err){el('#hr-performance-table').innerHTML=`<tr><td colspan="5">${esc(err.message)}</td></tr>`;}
   }
   function renderEmployees() {
@@ -261,18 +262,21 @@
   function showSkillForm() {
     const s=state();
     if(!s.employees.length){toast('Primero añade un empleado.');return;}
-    const content=`<form id="skill-edit-form" class="eco-form"><label>Empleado</label><select name="employeeId">${s.employees.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('')}</select><label>Competencia</label><input name="name" required placeholder="Ej. Comunicación, SQL, liderazgo"><label>Nivel actual (1–5)</label><select name="current"><option value="1">1 · Inicial</option><option value="2">2 · Básico</option><option value="3" selected>3 · Autónomo</option><option value="4">4 · Avanzado</option><option value="5">5 · Referente</option></select><label>Nivel requerido para el puesto (1–5)</label><select name="required"><option value="1">1 · Inicial</option><option value="2">2 · Básico</option><option value="3">3 · Autónomo</option><option value="4" selected>4 · Avanzado</option><option value="5">5 · Referente</option></select><label>Próxima revisión</label><input name="review" type="date"><button class="eco-btn eco-btn-primary" type="submit">Guardar competencia</button></form>`;
-    showGlobalModal({title:'Registrar competencia',content});
-    el('#global-dialog #skill-edit-form')?.addEventListener('submit',ev=>{ev.preventDefault();const d=Object.fromEntries(new FormData(ev.currentTarget));s.skills.push({id:id(),...d,current:Number(d.current),required:Number(d.required)});write(s);closeGlobalModal();renderSkills();renderEmployees();toast('Competencia registrada.');});
+    const levelOptions=(selected)=>[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(selected||3)===n?'selected':''}>${n} · ${['','Inicial','Básico','Autónomo','Avanzado','Referente'][n]}</option>`).join('');
+    const content=`<form id="skill-edit-form" class="eco-form"><label>Empleado</label><select name="employeeId" required>${s.employees.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('')}</select><label>Competencia o conocimiento</label><input name="name" required maxlength="120" placeholder="Ej. SQL, comunicación, gestión de proyectos"><label>Categoría</label><select name="category"><option>Técnica</option><option>Funcional</option><option>Transversal</option><option>Conocimiento del puesto</option><option>Seguridad y cumplimiento</option><option selected>General</option></select><label>Nivel demostrado (1–5)</label><select name="current">${levelOptions(3)}</select><label>Nivel requerido para el puesto (1–5)</label><select name="required">${levelOptions(4)}</select><label>Próxima revisión</label><input name="review" type="date"><label>Evidencia que respalda el nivel</label><textarea name="evidence" rows="3" maxlength="3000" placeholder="Ej. evaluación práctica, proyecto, certificación o resultado observado"></textarea><label>Notas de evaluación y próximos pasos</label><textarea name="notes" rows="3" maxlength="3000" placeholder="Contexto, fortalezas, brecha observada y acción recomendada"></textarea><p class="eco-note">Registra únicamente niveles respaldados por evidencia. Los cambios quedarán asociados a una evaluación.</p><button class="eco-btn eco-btn-primary" type="submit">Guardar evaluación</button></form>`;
+    showGlobalModal({title:'Registrar competencia y evaluación',content,size:'md'});
+    el('#global-dialog #skill-edit-form')?.addEventListener('submit',ev=>{ev.preventDefault();const d=Object.fromEntries(new FormData(ev.currentTarget));const currentLevel=Number(d.current),requiredLevel=Number(d.required);s.skills.push({id:id(),employeeId:d.employeeId,name:d.name.trim(),category:d.category,current:currentLevel,required:requiredLevel,review:d.review,evidence:d.evidence.trim(),notes:d.notes.trim(),assessedAt:new Date().toISOString()});write(s);closeGlobalModal();renderSkills();renderEmployees();toast('Evaluación registrada.');});
   }
   function renderSkills() {
     if(!el('#skills-page'))return;
-    const s=state(), term=(el('#skill-search')?.value||'').toLowerCase();
-    const rows=s.skills.filter(x=>{const e=s.employees.find(y=>y.id===x.employeeId);return (x.name+' '+(e?.name||'')).toLowerCase().includes(term);});
-    el('#skill-count').textContent=s.skills.length;
-    el('#skill-gaps').textContent=s.skills.filter(x=>x.current<x.required).length;
-    el('#skill-learning').textContent=s.skills.filter(x=>x.current<=2).length;
-    el('#skills-table').innerHTML=rows.map(x=>{const e=s.employees.find(y=>y.id===x.employeeId);const gap=x.required-x.current;return `<tr><td>${esc(e?.name||'Perfil eliminado')}</td><td><b>${esc(x.name)}</b></td><td><span class="eco-level">${x.current}/5</span></td><td><span class="eco-level">${x.required}/5</span></td><td><span class="eco-status ${gap>0?'is-inactive':'is-active'}">${gap>0?'−'+gap:'Al día'}</span></td><td>${esc(x.review||'Sin fecha')}</td><td><button class="eco-btn eco-btn-small" data-skill-history="${esc(e?.id||'')}">Historial</button></td></tr>`;}).join('');
+    const s=state(), term=(el('#skill-search')?.value||'').toLowerCase(), filter=el('#skill-gap-filter')?.value||'all';
+    const today=new Date();today.setHours(0,0,0,0);
+    const isDue=x=>x.review&&new Date(`${x.review}T00:00:00`)<today;
+    const gap=x=>Number(x.required)-Number(x.current);
+    const rows=s.skills.filter(x=>{const e=s.employees.find(y=>String(y.id)===String(x.employeeId));const match=(x.name+' '+(x.category||'')+' '+(e?.name||'')).toLowerCase().includes(term);if(!match)return false;if(filter==='gap')return gap(x)>0;if(filter==='critical')return gap(x)>=2;if(filter==='due')return isDue(x);if(filter==='met')return gap(x)<=0;return true;});
+    const gaps=s.skills.filter(x=>gap(x)>0),critical=s.skills.filter(x=>gap(x)>=2),due=s.skills.filter(isDue),met=s.skills.filter(x=>gap(x)<=0),avg=s.skills.length?s.skills.reduce((n,x)=>n+Number(x.current||0),0)/s.skills.length:0;
+    el('#skill-count').textContent=s.skills.length;el('#skill-gaps').textContent=gaps.length;el('#skill-critical').textContent=critical.length;el('#skill-average').textContent=s.skills.length?avg.toFixed(1)+'/5':'—';el('#skill-review-due').textContent=due.length;el('#skill-attainment').textContent=s.skills.length?Math.round(met.length/s.skills.length*100)+'%':'—';el('#skill-learning').textContent=s.skills.filter(x=>Number(x.current)<=2).length;
+    el('#skills-table').innerHTML=rows.map(x=>{const e=s.employees.find(y=>String(y.id)===String(x.employeeId));const g=gap(x),priority=g>=2?'Crítica':g===1?'Media':'Cubierta',dueReview=isDue(x);return `<tr><td>${esc(e?.name||'Perfil eliminado')}</td><td><b>${esc(x.name)}</b><small class="eco-note" style="display:block">${esc(x.category||'General')}</small></td><td><span class="eco-level">${Number(x.current)}/5</span></td><td><span class="eco-level">${Number(x.required)}/5</span></td><td><span class="eco-status ${g>0?'is-inactive':'is-active'}">${g>0?'−'+g:'Al día'}</span></td><td><span class="eco-status ${g>=2?'is-inactive':g===1?'':'is-active'}">${priority}</span></td><td>${esc(x.review||'Sin fecha')}${dueReview?'<small style="display:block;color:#b45309">Vencida</small>':''}</td><td>${x.evidence?`<button class="eco-btn eco-btn-small" data-skill-evidence="${esc(x.id)}">Ver evidencia</button>`:'<span class="eco-note">Sin evidencia</span>'}</td><td><button class="eco-btn eco-btn-small" data-skill-history="${esc(e?.id||'')}">Historial</button></td></tr>`;}).join('');
     el('#skills-empty').hidden=rows.length>0;
   }
   let globalAdminData={organizations:[],users:[]};
@@ -316,18 +320,51 @@
     // Los roles administrativos conservan los módulos generales de trabajo y comunicación.
     // Lo que se restringe por rol son las áreas sensibles, no el acceso a toda la aplicación.
     const access={
-      superadmin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','admin','timer','habits','goals','focus','personal','stats','gamification','settings'],
-      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','timer','habits','goals','focus','personal','stats','gamification','settings'],
-      hr:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','settings'],
-      employee:['dashboard','tasks','calendar','projects','teams','meetings','my-surveys','join-organization','timer','habits','goals','focus','personal','stats','gamification','settings']
+      superadmin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','people-development','admin','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','people-development','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      hr:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','people-development','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      employee:['dashboard','tasks','calendar','projects','teams','meetings','people-development','my-surveys','join-organization','timer','habits','goals','focus','personal','stats','gamification','settings']
     };
     const allowed=new Set(access[r]||access.employee);
     document.querySelectorAll('#sidebar .nav-item[data-view]').forEach(a=>{a.hidden=!allowed.has(a.dataset.view);});
     document.querySelectorAll('#sidebar .nav-section-label').forEach(label=>{let next=label.nextElementSibling,has=false;while(next&&!next.classList.contains('nav-section-label')){if(next.matches('.nav-item')&&!next.hidden)has=true;next=next.nextElementSibling;}label.hidden=!has;});
   }
 
+  async function pdApi(url,options={}){return apiMeeting(url,options);}
+  let pdData={trainings:[],plans:[],actions:[]};
+  async function renderPeopleDevelopment(){
+    const page=el('#people-development-page');if(!page)return;
+    try{
+      const [ov,tr,pl]=await Promise.all([pdApi('/api/people-development/overview'),pdApi('/api/people-development/trainings'),pdApi('/api/people-development/plans')]);
+      pdData.trainings=tr;pdData.plans=pl;
+      if(canPeople())pdData.actions=await pdApi('/api/people-development/analytics-actions');
+      ['pd-new-training','pd-new-plan','pd-new-action'].forEach(id=>{const b=el('#'+id);if(b)b.hidden=!canPeople();});
+      el('#pd-training-count').textContent=ov.training.total;el('#pd-training-detail').textContent=`${ov.training.active} activas · ${ov.training.completed} finalizadas`;
+      el('#pd-plan-count').textContent=ov.plans.active;el('#pd-plan-detail').textContent=`${ov.plans.total} planes registrados`;
+      el('#pd-action-count').textContent=ov.actions.open;el('#pd-action-detail').textContent=`${ov.actions.total} acciones registradas`;
+      el('#pd-gap-count').textContent=ov.skills.gaps;el('#pd-gap-detail').textContent=`${ov.skills.critical} brechas críticas · ${ov.skills.assessed} evaluaciones`;
+      el('#pd-trainings-table').innerHTML=tr.map(t=>`<tr><td><b>${esc(t.title)}</b><small class="eco-note" style="display:block">${esc(t.description||'')}</small></td><td>${esc(t.provider||'—')}</td><td>${esc(({online:'En línea',in_person:'Presencial',hybrid:'Híbrida',self_paced:'Autoguiada'})[t.format]||'—')}</td><td>${esc(t.status)}</td><td>${t.enrolled}</td><td>${t.completed}</td><td>${t.status!=='cancelled'?`<button class="eco-btn eco-btn-small" data-pd-enroll="${esc(t.id)}">${canPeople()?'Inscribir empleado':'Inscribirme'}</button>${canPeople()?` <button class="eco-btn eco-btn-small" data-pd-assess-training="${esc(t.id)}">Evaluar</button>`:''}`:'—'}</td></tr>`).join('')||'<tr><td colspan="7">No hay formaciones registradas.</td></tr>';
+      el('#pd-plans-table').innerHTML=pl.map(p=>`<tr><td>${esc(p.employee_name)}</td><td><b>${esc(p.title)}</b><small class="eco-note" style="display:block">${esc(p.description||'')}</small></td><td>${esc(p.status)}</td><td>${esc(p.start_date||'—')}</td><td>${esc(p.target_date||'—')}</td><td>${(p.actions||[]).length} ${canPeople()?`<button class="eco-btn eco-btn-small" data-pd-add-action="${esc(p.id)}">Añadir acción</button>`:''} ${p.actions?.map(a=>`<div class="eco-note">${esc(a.title)} · ${esc(a.status)} ${!canPeople()?`<button class="eco-btn eco-btn-small" data-pd-own-action-status="${esc(a.id)}">Actualizar</button>`:''}</div>`).join('')||''}</td></tr>`).join('')||'<tr><td colspan="6">No hay planes registrados.</td></tr>';
+      el('#pd-actions-table').innerHTML=pdData.actions.map(a=>`<tr><td><b>${esc(a.title)}</b><small class="eco-note" style="display:block">${esc(a.finding)}</small></td><td>${esc(a.priority)}</td><td>${esc(a.status)}</td><td>${esc(a.owner_name||'Sin asignar')}</td><td>${esc(a.target_date||'—')}</td><td><button class="eco-btn eco-btn-small" data-pd-action-status="${esc(a.id)}">Cambiar estado</button></td></tr>`).join('')||'<tr><td colspan="6">No hay acciones registradas.</td></tr>';
+    }catch(err){toast('No se pudo cargar Desarrollo del talento: '+err.message);}
+  }
+  document.addEventListener('click',async ev=>{
+    const t=ev.target.closest('button');if(!t)return;
+    try{
+      if(t.dataset.pdTab){document.querySelectorAll('[data-pd-panel]').forEach(x=>x.hidden=x.dataset.pdPanel!==t.dataset.pdTab);return;}
+      if(t.id==='pd-refresh'){await renderPeopleDevelopment();return;}
+      if(t.id==='pd-new-training'){if(!canPeople())return;const title=prompt('Nombre de la formación:');if(!title?.trim())return;const description=prompt('Descripción / objetivo:')||'';const provider=prompt('Proveedor o facilitador:')||'';const format=prompt('Modalidad: online, in_person, hybrid o self_paced','online')||'online';await pdApi('/api/people-development/trainings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,provider,format,status:'open'})});toast('Formación creada.');await renderPeopleDevelopment();return;}
+      if(t.dataset.pdAssessTraining){const participants=await pdApi(`/api/people-development/trainings/${t.dataset.pdAssessTraining}/participants`);if(!participants.length){toast('Esta formación todavía no tiene participantes.');return;}const enrollmentId=prompt('ID de inscripción a evaluar:\n'+participants.map(x=>`${x.employee_name} · ${x.status} · ${x.enrollment_id}`).join('\n'));if(!enrollmentId)return;const assessmentType=prompt('Tipo: pre, post, practical o follow_up','post');if(!assessmentType)return;const score=prompt('Puntuación de 0 a 100 (opcional):','');const evidence=prompt('Evidencia observada:')||'';await pdApi(`/api/people-development/enrollments/${enrollmentId.trim()}/assessments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assessmentType,score,evidence})});toast('Evaluación de formación registrada.');return;}
+      if(t.dataset.pdEnroll){const ids=state().employees.filter(e=>e.status!=='Inactivo').map(e=>e.id).filter(x=>/^[0-9a-f-]{36}$/i.test(x));let employeeIds=[];if(canPeople()){if(!ids.length){toast('No hay empleados disponibles en el directorio.');return;}const chosen=prompt('ID del empleado a inscribir:\n'+state().employees.filter(e=>ids.includes(e.id)).map(e=>`${e.name}: ${e.id}`).join('\n'));if(!chosen)return;employeeIds=[chosen.trim()];}await pdApi(`/api/people-development/trainings/${t.dataset.pdEnroll}/enroll`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeIds})});toast('Inscripción registrada.');await renderPeopleDevelopment();return;}
+      if(t.id==='pd-new-plan'){if(!canPeople())return;const employees=state().employees.filter(e=>e.status!=='Inactivo');const employeeId=prompt('ID del empleado:\n'+employees.map(e=>`${e.name}: ${e.id}`).join('\n'));if(!employeeId)return;const title=prompt('Título del plan:');if(!title?.trim())return;const description=prompt('Objetivo del plan:')||'';const targetDate=prompt('Fecha objetivo (AAAA-MM-DD), opcional:')||null;await pdApi('/api/people-development/plans',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeId:employeeId.trim(),title,description,targetDate})});toast('Plan de desarrollo creado.');await renderPeopleDevelopment();return;}
+      if(t.dataset.pdAddAction){const title=prompt('Acción concreta a realizar:');if(!title?.trim())return;const dueDate=prompt('Fecha límite (AAAA-MM-DD), opcional:')||null;await pdApi(`/api/people-development/plans/${t.dataset.pdAddAction}/actions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,dueDate})});toast('Acción añadida al plan.');await renderPeopleDevelopment();return;}
+      if(t.id==='pd-new-action'){const title=prompt('Acción de mejora:');if(!title?.trim())return;const finding=prompt('Hallazgo observado y evidencia:');if(!finding?.trim())return;const priority=prompt('Prioridad: low, medium, high o critical','medium')||'medium';await pdApi('/api/people-development/analytics-actions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,finding,priority})});toast('Acción de mejora registrada.');await renderPeopleDevelopment();return;}
+      if(t.dataset.pdOwnActionStatus){const status=prompt('Estado: pending, in_progress, completed o blocked','in_progress');if(!status)return;const evidence=prompt('Evidencia o avance realizado:')||'';await pdApi(`/api/people-development/actions/${t.dataset.pdOwnActionStatus}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,evidence})});toast('Avance actualizado.');await renderPeopleDevelopment();return;}
+      if(t.dataset.pdActionStatus){const item=pdData.actions.find(a=>a.id===t.dataset.pdActionStatus);const status=prompt('Estado: proposed, accepted, in_progress, completed o dismissed',item?.status||'proposed');if(!status)return;const outcome=prompt('Resultado / notas (opcional):')||'';await pdApi(`/api/people-development/analytics-actions/${t.dataset.pdActionStatus}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,outcome})});toast('Estado actualizado.');await renderPeopleDevelopment();}
+    }catch(err){toast(err.message);}
+  });
   function renderCurrent() {
-    renderMeetings(); loadMeetingDirectory(); renderInvitations(); renderSurveys(); renderEmployees(); renderHRMetrics(); renderSkills(); renderAdmin(); renderMySurveys(); renderOrganizationJoin();
+    renderMeetings(); loadMeetingDirectory(); renderInvitations(); renderSurveys(); renderEmployees(); renderHRMetrics(); renderSkills(); renderPeopleDevelopment(); renderAdmin(); renderMySurveys(); renderOrganizationJoin();
     const current=FlowRouter.getCurrentPath();
     document.querySelectorAll('.nav-section-label').forEach(x=>x.style.display='');
     applyRoleNavigation();
@@ -359,6 +396,7 @@
   document.addEventListener('click',ev=>{
     if(ev.target?.id==='survey-modal'){closeSurveyModal();return;}
     const t=ev.target.closest('button'); if(!t)return;
+    if(t.dataset.skillEvidence){const sk=state().skills.find(x=>String(x.id)===String(t.dataset.skillEvidence));if(sk)showGlobalModal({title:'Evidencia de competencia',content:`<h3>${esc(sk.name)}</h3><p><b>Categoría:</b> ${esc(sk.category||'General')}</p><p><b>Evidencia registrada</b></p><p>${esc(sk.evidence||'Sin evidencia').replace(/\n/g,'<br>')}</p><p><b>Notas de evaluación</b></p><p>${esc(sk.notes||'Sin notas').replace(/\n/g,'<br>')}</p><p class="eco-note">Nivel demostrado: ${Number(sk.current)}/5 · Nivel requerido: ${Number(sk.required)}/5 · Revisión: ${esc(sk.review||'Sin fecha')}</p>`,size:'md'});}
     if(t.dataset.skillHistory){fetch(`/api/enterprise/skills/${encodeURIComponent(t.dataset.skillHistory)}/history`,{credentials:'same-origin',cache:'no-store'}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.error||'No se pudo cargar el historial.');const content=b.length?`<ol>${b.map(x=>`<li><b>${esc(x.skill)}</b>: ${x.previous_level==null?'Sin nivel previo':x.previous_level+'/5'} → <b>${x.assessed_level}/5</b> · ${esc(x.assessment_date)}${x.assessed_by?' · '+esc(x.assessed_by):''}</li>`).join('')}</ol>`:'<p>Aún no hay evaluaciones históricas para este empleado.</p>';showGlobalModal({title:'Historial de competencias',content,size:'md'});}).catch(err=>toast(err.message));}
     if(t.id==='copy-organization-code'){const code=el('#organization-invite-code')?.textContent||'';if(code&&code!=='Cargando código…')navigator.clipboard?.writeText(code).then(()=>toast('Código copiado.')).catch(()=>toast('No se pudo copiar automáticamente.'));}
     if(t.id==='global-refresh')renderAdmin();
@@ -405,7 +443,7 @@
     if(ev.target.id==='survey-people-search')renderSurveyAudiencePeople();
     if(ev.target.id==='global-user-search')renderGlobalUsers();
     if(ev.target.id==='employee-search')renderEmployees();
-    if(ev.target.id==='skill-search')renderSkills();
+    if(ev.target.id==='skill-search'||ev.target.id==='skill-gap-filter')renderSkills();
   });
   window.addEventListener('flowrouter:navigate',()=>{if(activeCall)closeCallWindow('Saliste de la sala.');renderCurrent();});
   document.addEventListener('DOMContentLoaded',()=>{ loadRemoteState(); });
