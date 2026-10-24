@@ -11,7 +11,11 @@ El proyecto es una aplicación existente con frontend HTML/CSS/JavaScript, backe
 - La respuesta incluye fecha de actualización y metadatos de cada indicador: descripción, fórmula, unidad, fuente y disponibilidad.
 - El panel muestra explícitamente «Sin datos» cuando falta denominador y aclara qué miden las cifras.
 - Se conserva el aviso de que tareas vencidas no constituyen medida de productividad o diagnóstico de procrastinación.
-- Se añadió un seed idempotente de demostración con organización, personas, competencias, formación, encuesta y tareas ficticias, más un usuario de acceso demo.
+- El área de empleados pasó a un espacio de equipo con búsqueda/filtro y ficha individual: datos laborales, tareas, competencias con evidencia, formación y actividad reciente.
+- RR. HH. y administradores pueden invitar un perfil laboral por correo; la persona activa su cuenta después con ese correo.
+- RR. HH. y administradores pueden asignar tareas con contexto, prioridad y fecha límite. Se escriben en el almacén de la persona y aparecen en su módulo de tareas.
+- Las métricas globales solo cuentan tareas asignadas a través de una tabla de atribución escrita por el servidor, para no tratar las tareas personales auto-reportadas como compromisos asignados.
+- Se añadió un seed repetible de demostración con organización, personas, competencias, formación, encuesta y tareas ficticias, más un usuario de acceso demo.
 - Se añadió `npm run test:demo-analytics`, que valida localmente los resultados esperados sin conectarse a Neon.
 
 ## Archivos modificados
@@ -19,6 +23,7 @@ El proyecto es una aplicación existente con frontend HTML/CSS/JavaScript, backe
 - `server.js`
 - `js/enterprise.js`
 - `views/employees.html`
+- `css/enterprise.css`
 - `database/DEMO_FOCUSIA_SEED.sql`
 - `database/README_DEMO_FOCUSIA.md`
 - `scripts/test-demo-analytics.js`
@@ -26,7 +31,7 @@ El proyecto es una aplicación existente con frontend HTML/CSS/JavaScript, backe
 
 ## Base de datos y despliegue
 
-Esta mejora no crea tablas ni migraciones; utiliza el esquema existente. Para instalar la aplicación completa, sigue `README_NEON.md` y aplica el esquema existente `database/focusai_neon_schema_completo.sql` únicamente si aún no está instalado. Variables requeridas: `DATABASE_URL` (Neon), `SESSION_SECRET` (32 caracteres o más), `NODE_ENV=production` y `PORT` según el proveedor. En Render, despliega como servicio Node desde esta carpeta y sirve frontend y API desde el mismo origen para mantener la sesión.
+El backend crea la tabla incremental `employee_task_assignments` de forma idempotente al iniciar; el seed demo también la crea si hace falta. No se elimina ni reemplaza ninguna tabla existente. Para instalar la aplicación completa, sigue `README_NEON.md` y aplica `database/focusai_neon_schema_completo.sql` únicamente si aún no está instalado. Variables requeridas: `DATABASE_URL` (Neon), `SESSION_SECRET` (32 caracteres o más), `NODE_ENV=production` y `PORT` según el proveedor.
 
 ## Verificación realizada
 

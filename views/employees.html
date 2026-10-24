@@ -1,7 +1,28 @@
-<section class="eco-page" id="employees-page">
- <div class="eco-heading"><div><span class="eyebrow">PERSONAS · DIRECTORIO</span><h1>Directorio de empleados</h1><p>Una vista clara de los equipos, sus roles y el desarrollo de cada persona.</p></div><button class="eco-btn eco-btn-primary" id="new-employee-btn">＋ Añadir empleado</button></div>
- <div class="eco-grid eco-grid-3"><article class="eco-card metric-card"><span class="metric-label">Personas registradas</span><strong id="employee-count">0</strong><small>Directorio de la organización</small></article><article class="eco-card metric-card"><span class="metric-label">Departamentos</span><strong id="department-count">0</strong><small>Áreas representadas</small></article><article class="eco-card metric-card"><span class="metric-label">Planes de desarrollo</span><strong id="development-count">0</strong><small>Perfiles con competencias</small></article></div>
- <article class="eco-card"><div class="card-heading"><div><h2>Indicadores de cumplimiento</h2><p>Resumen de tareas y evaluaciones registradas en FocusAI para personas activas.</p><small id="hr-metrics-updated">Cargando datos</small></div><button class="eco-btn" id="refresh-hr-metrics">Actualizar métricas</button></div><div class="eco-grid eco-grid-3"><article class="eco-card metric-card"><span class="metric-label">Tareas completadas</span><strong id="hr-completion-rate">—</strong><small id="hr-completion-detail">Cargando datos</small><small>Fórmula: completadas ÷ tareas registradas. Sin tareas, no se calcula.</small></article><article class="eco-card metric-card"><span class="metric-label">Tareas vencidas sin completar</span><strong id="hr-overdue-count">—</strong><small>Conteo actual de tareas incompletas con fecha límite vencida</small></article><article class="eco-card metric-card"><span class="metric-label">Brechas de competencias</span><strong id="hr-skill-gaps">—</strong><small id="hr-skill-detail">Competencias por desarrollar</small><small>Solo compara competencias evaluadas con requisitos definidos para el puesto.</small></article></div><div class="eco-table-wrap"><table class="eco-table"><thead><tr><th>Empleado</th><th>Tareas</th><th>Completadas</th><th>Vencidas</th><th>Cumplimiento</th></tr></thead><tbody id="hr-performance-table"></tbody></table></div><p class="eco-note">Las tareas atrasadas son una señal de seguimiento, no una medida individual de productividad ni un diagnóstico de procrastinación. Estas métricas reflejan los registros actuales; el repositorio no conserva snapshots históricos para comparaciones por periodo.</p></article>
- <article class="eco-card"><div class="card-heading"><div><h2>Equipo de la organización</h2><p>Busca por nombre, puesto o departamento.</p></div><input id="employee-search" class="eco-search" placeholder="Buscar empleado…"></div><div class="eco-table-wrap"><table class="eco-table"><thead><tr><th>Empleado</th><th>Puesto</th><th>Departamento</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="employee-table"></tbody></table></div><div id="employee-empty" class="eco-empty" hidden>No hay empleados que coincidan con la búsqueda.</div></article>
- <p class="eco-note">Los perfiles se comparten dentro de la organización y se almacenan en Neon. Si añades un correo, esa persona puede registrarse con ese mismo correo para vincular su cuenta al perfil existente. También puede unirse usando el código de invitación de la organización.</p>
+<section class="eco-page people-page" id="employees-page">
+  <header class="people-heading">
+    <div><span class="eyebrow">PERSONAS · ESPACIO DE EQUIPO</span><h1>Personas</h1><p>Conoce el contexto de cada integrante, revisa sus compromisos y acompaña su desarrollo.</p></div>
+    <button class="eco-btn eco-btn-primary" id="new-employee-btn" type="button">＋ Invitar persona</button>
+  </header>
+
+  <section class="people-overview" aria-label="Resumen de equipo">
+    <article><span>Personas activas</span><strong id="employee-count">—</strong><small id="department-count">— departamentos</small></article>
+    <article><span>Compromisos del equipo</span><strong id="hr-completion-rate">—</strong><small id="hr-completion-detail">Tareas asignadas desde FocusIA</small></article>
+    <article><span>Necesitan seguimiento</span><strong id="hr-overdue-count">—</strong><small>Tareas asignadas vencidas y pendientes</small></article>
+    <article><span>Brechas evaluadas</span><strong id="hr-skill-gaps">—</strong><small id="hr-skill-detail">Competencias frente al puesto</small></article>
+  </section>
+
+  <div class="people-workspace">
+    <aside class="people-roster eco-card" aria-label="Directorio de personas">
+      <div class="people-roster-head"><div><h2>Tu equipo</h2><p id="people-roster-count">Personas de tu organización</p></div><button class="eco-icon-btn" id="refresh-hr-metrics" type="button" title="Actualizar datos" aria-label="Actualizar datos">↻</button></div>
+      <label class="people-search"><span aria-hidden="true">⌕</span><input id="employee-search" type="search" placeholder="Buscar persona, área o puesto…"></label>
+      <label class="people-filter-label" for="employee-department-filter">Área</label><select id="employee-department-filter" class="people-filter"><option value="">Todas las áreas</option></select>
+      <div id="employee-table" class="people-roster-list" role="list"></div>
+      <div id="employee-empty" class="eco-empty" hidden>No hay personas que coincidan con esos filtros.</div>
+    </aside>
+
+    <main id="employee-profile" class="people-profile eco-card" aria-live="polite">
+      <div class="people-profile-loading"><span class="people-loading-dot"></span> Selecciona una persona para ver su perfil.</div>
+    </main>
+  </div>
+  <p id="hr-metrics-updated" class="people-updated">Los datos se cargan desde la organización.</p>
 </section>

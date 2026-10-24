@@ -5,6 +5,17 @@
 -- No usar esta contraseña en producción. Para borrar la demo, ver documentación.
 BEGIN;
 
+-- Tabla de atribución: el dashboard cuenta solo asignaciones verificadas por backend.
+CREATE TABLE IF NOT EXISTS employee_task_assignments (
+  task_id text PRIMARY KEY,
+  organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  employee_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  assigned_by uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS employee_task_assignments_employee_idx
+  ON employee_task_assignments(organization_id,employee_id,created_at DESC);
+
 INSERT INTO organizations(id,name,slug,status)
 VALUES ('a1000000-0000-4000-8000-000000000001','FocusIA Demo','focusia-demo','active')
 ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,slug=EXCLUDED.slug,status='active';
@@ -128,7 +139,12 @@ WITH demo_tasks(id,user_id,title,status,completed,due_date,priority,created_at) 
  ('demo-t12','a4000000-0000-4000-8000-000000000002'::uuid,'Publicar calendario de desarrollo','completed',true,CURRENT_DATE-2,'medium',now()-interval '6 days')
 )
 INSERT INTO app_records(user_id,store_name,record_id,data,created_at,updated_at)
-SELECT user_id,'tasks',id,jsonb_build_object('id',id,'title',title,'status',status,'completed',completed,'dueDate',due_date,'priority',priority,'createdAt',created_at),created_at,now() FROM demo_tasks
+SELECT user_id,'tasks',id,jsonb_build_object('id',id,'title',title,'status',status,'completed',completed,'dueDate',due_date,'priority',priority,'createdAt',created_at,'assignedTo',user_id,'assignedBy','a4000000-0000-4000-8000-000000000001','assignedByName','Alex Demo','managedTask',true),created_at,now() FROM demo_tasks
 ON CONFLICT(user_id,store_name,record_id) DO UPDATE SET data=EXCLUDED.data,updated_at=now();
+
+INSERT INTO employee_task_assignments(task_id,organization_id,employee_id,assigned_by,created_at)
+SELECT ar.record_id,'a1000000-0000-4000-8000-000000000001',ar.user_id,'a4000000-0000-4000-8000-000000000001',ar.created_at
+FROM app_records ar WHERE ar.store_name='tasks' AND ar.record_id LIKE 'demo-t%'
+ON CONFLICT(task_id) DO UPDATE SET organization_id=EXCLUDED.organization_id,employee_id=EXCLUDED.employee_id,assigned_by=EXCLUDED.assigned_by;
 
 COMMIT;

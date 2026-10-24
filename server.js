@@ -59,6 +59,13 @@ async function bootstrap() {
     created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY(user_id, store_name, record_id)
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS employee_task_assignments (
+    task_id text PRIMARY KEY, organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    employee_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    assigned_by uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS employee_task_assignments_employee_idx ON employee_task_assignments(organization_id,employee_id,created_at DESC)');
   await pool.query(`CREATE TABLE IF NOT EXISTS events (
     id text PRIMARY KEY, user_id uuid REFERENCES profiles(id) ON DELETE CASCADE, title text,
     description text, start_date timestamptz, end_date timestamptz, type text, project_id text,
@@ -378,12 +385,61 @@ app.post('/api/teams/:id/messages',requireAuth,async(req,res,next)=>{try{if(!(aw
 app.delete('/api/teams/:id/members/me',requireAuth,async(req,res,next)=>{try{await pool.query('DELETE FROM team_members WHERE team_id=$1 AND user_id=$2',[req.params.id,req.user.id]);res.json({ok:true});}catch(e){next(e);}});
 app.delete('/api/teams/:id',requireAuth,async(req,res,next)=>{try{const {rows}=await pool.query('SELECT owner_id FROM teams WHERE id=$1',[req.params.id]);if(!rows[0])return res.status(404).json({error:'Equipo no encontrado.'});if(rows[0].owner_id!==req.user.id)return res.status(403).json({error:'Solo el propietario del equipo puede eliminarlo.'});await pool.query('DELETE FROM teams WHERE id=$1',[req.params.id]);res.json({ok:true});}catch(e){next(e);}});
 
+app.post('/api/enterprise/employees',requireAuth,requireRole,async(req,res,next)=>{const client=await pool.connect();try{
+  const org=await ensureOrganization(req),name=String(req.body.name||'').trim().slice(0,120),email=String(req.body.email||'').trim().toLowerCase(),department=String(req.body.department||'').trim().slice(0,120),position=String(req.body.job||'').trim().slice(0,120);
+  if(name.length<2)return res.status(400).json({error:'Escribe el nombre completo de la persona.'});
+  if(!/^\S+@\S+\.\S+$/.test(email))return res.status(400).json({error:'Escribe un correo válido para que la persona pueda activar su cuenta.'});
+  const exists=await pool.query('SELECT 1 FROM profiles WHERE lower(email)=lower($1) UNION ALL SELECT 1 FROM auth_users WHERE lower(email)=lower($1) LIMIT 1',[email]);
+  if(exists.rowCount)return res.status(409).json({error:'Ya existe un perfil o una cuenta con ese correo.'});
+  await client.query('BEGIN');let departmentId=null,positionId=null;
+  if(department){const d=await client.query('INSERT INTO departments(organization_id,name) VALUES($1,$2) ON CONFLICT(organization_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id',[org,department]);departmentId=d.rows[0].id;}
+  if(position){const j=await client.query('INSERT INTO job_positions(organization_id,department_id,title) VALUES($1,$2,$3) ON CONFLICT(organization_id,title) DO UPDATE SET department_id=EXCLUDED.department_id RETURNING id',[org,departmentId,position]);positionId=j.rows[0].id;}
+  const personId=require('crypto').randomUUID(),created=await client.query(`INSERT INTO profiles(id,name,email,role,organization_id,department_id,position_id,employment_status,created_at,updated_at) VALUES($1,$2,$3,'employee',$4,$5,$6,'active',now(),now()) RETURNING id,name,email,role,organization_id,department_id,position_id,employment_status`,[personId,name,email,org,departmentId,positionId]);
+  await client.query('COMMIT');res.status(201).json(created.rows[0]);
+}catch(e){await client.query('ROLLBACK');if(e.code==='23505')return res.status(409).json({error:'Ya existe un registro con esos datos.'});next(e);}finally{client.release();}});
+
+app.get('/api/enterprise/employees/:employeeId/profile',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),employeeId=req.params.employeeId;
+  if(!isUuid(employeeId))return res.status(400).json({error:'ID de empleado inválido.'});
+  const person=await pool.query(`SELECT p.id,p.name,COALESCE(p.email,a.email) email,p.role,p.employee_number,p.hire_date,p.employment_status,p.created_at,p.last_seen_at,d.name department,j.title position,m.name manager
+    FROM profiles p LEFT JOIN auth_users a ON a.id=p.id LEFT JOIN departments d ON d.id=p.department_id LEFT JOIN job_positions j ON j.id=p.position_id LEFT JOIN profiles m ON m.id=p.manager_id AND m.organization_id=p.organization_id
+    WHERE p.id=$1 AND p.organization_id=$2`,[employeeId,org]);
+  if(!person.rowCount)return res.status(404).json({error:'No se encontró este perfil en tu organización.'});
+  const [taskRows,skillRows,trainingRows]=await Promise.all([
+    pool.query(`SELECT ar.data,eta.task_id IS NOT NULL AS managed_task,eta.assigned_by,assigner.name assigned_by_name FROM app_records ar LEFT JOIN employee_task_assignments eta ON eta.task_id=ar.record_id AND eta.employee_id=ar.user_id AND eta.organization_id=$2 LEFT JOIN profiles assigner ON assigner.id=eta.assigned_by WHERE ar.user_id=$1 AND ar.store_name='tasks' ORDER BY ar.updated_at DESC LIMIT 100`,[employeeId,org]),
+    pool.query(`SELECT sk.name,es.current_level,COALESCE(psr.required_level,0) required_level,es.assessed_at,es.evidence,es.notes,assessor.name assessor
+      FROM employee_skills es JOIN skills sk ON sk.id=es.skill_id LEFT JOIN profiles p ON p.id=es.employee_id LEFT JOIN position_skill_requirements psr ON psr.position_id=p.position_id AND psr.skill_id=es.skill_id LEFT JOIN profiles assessor ON assessor.id=es.assessed_by
+      WHERE es.employee_id=$1 AND sk.organization_id=$2 ORDER BY sk.name`,[employeeId,org]),
+    pool.query(`SELECT t.title,t.format,t.status training_status,e.status enrollment_status,e.progress,e.score,e.enrolled_at,e.completed_at
+      FROM training_enrollments e JOIN trainings t ON t.id=e.training_id WHERE e.employee_id=$1 AND t.organization_id=$2 ORDER BY e.enrolled_at DESC`,[employeeId,org])
+  ]);
+  const tasks=taskRows.rows.map(r=>({...r.data,managedTask:r.managed_task,assignedBy:r.assigned_by,assignedByName:r.assigned_by_name})).filter(x=>x&&typeof x==='object');
+  const done=tasks.filter(x=>x.completed===true||['completed','done'].includes(x.status)).length;
+  const overdue=tasks.filter(x=>!(x.completed===true||['completed','done'].includes(x.status))&&(x.dueDate||x.due_date||x.deadline)&&Date.parse(x.dueDate||x.due_date||x.deadline)<Date.now()).length;
+  res.set('Cache-Control','no-store');res.json({person:person.rows[0],tasks,summary:{taskCount:tasks.length,completed:done,overdue,completionRate:tasks.length?Math.round(done/tasks.length*100):null},skills:skillRows.rows.map(x=>({...x,currentLevel:Number(x.current_level),requiredLevel:Number(x.required_level)})),training:trainingRows.rows});
+}catch(e){next(e);}});
+
+app.post('/api/enterprise/employees/:employeeId/tasks',requireAuth,requireRole,async(req,res,next)=>{const client=await pool.connect();try{
+  const org=await ensureOrganization(req),employeeId=req.params.employeeId,title=String(req.body.title||'').trim().slice(0,180),description=String(req.body.description||'').trim().slice(0,2000),priority=['high','medium','low','none'].includes(req.body.priority)?req.body.priority:'medium',dueDate=req.body.dueDate||null;
+  if(!isUuid(employeeId))return res.status(400).json({error:'ID de empleado inválido.'});
+  if(title.length<2)return res.status(400).json({error:'Escribe un título de al menos 2 caracteres.'});
+  if(dueDate&&(!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)||Number.isNaN(Date.parse(`${dueDate}T00:00:00Z`))||new Date(`${dueDate}T00:00:00Z`).toISOString().slice(0,10)!==dueDate))return res.status(400).json({error:'La fecha límite no es válida.'});
+  const target=await pool.query(`SELECT id FROM profiles WHERE id=$1 AND organization_id=$2 AND employment_status='active'`,[employeeId,org]);
+  if(!target.rowCount)return res.status(404).json({error:'No se encontró un empleado activo en tu organización.'});
+  const now=new Date().toISOString(),task={id:`task_${require('crypto').randomUUID()}`,title,description,priority,status:'pending',completed:false,completedAt:null,dueDate,dueTime:null,projectId:null,goalId:null,labels:['Asignada por organización'],subtasks:[],comments:[],attachments:[],recurrence:null,parentId:null,estimatedMin:null,actualMin:null,assignedTo:employeeId,assignedBy:req.user.id,assignedByName:req.user.name,managedTask:true,order:Date.now(),archived:false,createdAt:now,updatedAt:now};
+  await client.query('BEGIN');
+  await client.query(`INSERT INTO app_records(user_id,store_name,record_id,data) VALUES($1,'tasks',$2,$3::jsonb)`,[employeeId,task.id,JSON.stringify(task)]);
+  await client.query(`INSERT INTO tasks(id,user_id,title,description,priority,status,completed,due_date,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'pending',false,$6,$7,now()) ON CONFLICT(id) DO NOTHING`,[task.id,employeeId,title,description,priority,dueDate,now]);
+  await client.query(`INSERT INTO employee_task_assignments(task_id,organization_id,employee_id,assigned_by,created_at) VALUES($1,$2,$3,$4,$5)`,[task.id,org,employeeId,req.user.id,now]);
+  await client.query('COMMIT');res.status(201).json(task);
+}catch(e){await client.query('ROLLBACK');next(e);}finally{client.release();}});
+
 app.get('/api/enterprise/skills/:employeeId/history',requireAuth,requireRole,async(req,res,next)=>{try{const org=await ensureOrganization(req);if(!isUuid(req.params.employeeId))return res.status(400).json({error:'ID de empleado inválido.'});const exists=await pool.query('SELECT id FROM profiles WHERE id=$1 AND organization_id=$2',[req.params.employeeId,org]);if(!exists.rowCount)return res.status(404).json({error:'Empleado no encontrado en esta organización.'});const {rows}=await pool.query(`SELECT sa.id,sk.name skill,sa.previous_level,sa.assessed_level,sa.assessment_date,sa.method,sa.notes,assessor.name assessed_by FROM skill_assessments sa JOIN skills sk ON sk.id=sa.skill_id LEFT JOIN profiles assessor ON assessor.id=sa.assessed_by WHERE sa.employee_id=$1 ORDER BY sa.assessment_date DESC,sa.created_at DESC`,[req.params.employeeId]);res.set('Cache-Control','no-store');res.json(rows);}catch(e){next(e);}});
 
 // Resumen agregado de cumplimiento y carga de trabajo para RR. HH. y administración.
 app.get('/api/enterprise/overview',requireAuth,requireRole,async(req,res,next)=>{try{
   const org=await ensureOrganization(req);
-  const {rows}=await pool.query(`SELECT p.id,p.name,p.role,p.position_id,ar.data,ar.updated_at FROM profiles p LEFT JOIN app_records ar ON ar.user_id=p.id AND ar.store_name='tasks' WHERE p.organization_id=$1 AND p.employment_status IS DISTINCT FROM 'inactive'`,[org]);
+  const {rows}=await pool.query(`SELECT p.id,p.name,p.role,p.position_id,ar.data,ar.updated_at FROM profiles p LEFT JOIN app_records ar ON ar.user_id=p.id AND ar.store_name='tasks' AND EXISTS(SELECT 1 FROM employee_task_assignments eta WHERE eta.task_id=ar.record_id AND eta.employee_id=p.id AND eta.organization_id=p.organization_id) WHERE p.organization_id=$1 AND p.employment_status IS DISTINCT FROM 'inactive'`,[org]);
   const byEmployee=new Map();
   for(const r of rows){
     if(!byEmployee.has(r.id))byEmployee.set(r.id,{id:r.id,name:r.name,role:r.role,tasks:0,completed:0,overdue:0});
@@ -403,7 +459,7 @@ app.get('/api/enterprise/overview',requireAuth,requireRole,async(req,res,next)=>
     completionRate:total?Math.round(completed/total*100):null,
     skillGaps:assessed?skill.rows[0].gaps:null,assessedSkills:assessed,
     updatedAt:new Date().toISOString(),
-    definitions:{completionRate:{description:'Tareas completadas entre tareas registradas para empleados activos.',formula:'completadas / tareas registradas × 100',unit:'%',source:'app_records (store_name=tasks)',availability:total?'available':'insufficient_data'},overdue:{description:'Tareas incompletas con fecha límite anterior al momento de consulta.',formula:'conteo de tareas incompletas vencidas',unit:'tareas',source:'app_records (store_name=tasks)',availability:total?'available':'insufficient_data'},skillGaps:{description:'Evaluaciones de competencias por debajo del nivel requerido por el puesto.',formula:'conteo de current_level < required_level',unit:'brechas',source:'employee_skills + position_skill_requirements',availability:assessed?'available':'insufficient_data'}},
+    definitions:{completionRate:{description:'Tareas asignadas por administración o RR. HH. que constan como completadas.',formula:'asignadas completadas / tareas asignadas × 100',unit:'%',source:'employee_task_assignments + app_records',availability:total?'available':'insufficient_data'},overdue:{description:'Tareas asignadas por administración o RR. HH. incompletas y con fecha límite vencida.',formula:'conteo de tareas asignadas incompletas vencidas',unit:'tareas',source:'employee_task_assignments + app_records',availability:total?'available':'insufficient_data'},skillGaps:{description:'Evaluaciones de competencias por debajo del nivel requerido por el puesto.',formula:'conteo de current_level < required_level',unit:'brechas',source:'employee_skills + position_skill_requirements',availability:assessed?'available':'insufficient_data'}},
     people:people.map(x=>({...x,completionRate:x.tasks?Math.round(x.completed/x.tasks*100):null}))
   });
 }catch(e){next(e);}});
