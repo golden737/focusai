@@ -296,5 +296,3 @@ body > .survey-modal-backdrop #survey-form{min-height:0!important;overflow-y:aut
 .survey-add-question-bottom .eco-btn{min-width:190px;border-style:dashed;border-color:var(--user-accent,var(--eco-blue));color:var(--user-accent,var(--eco-blue));background:transparent;}
 #survey-list .eco-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start;}
 @media(max-width:600px){body > .survey-modal-backdrop{padding:0!important;align-items:stretch!important;}body > .survey-modal-backdrop .survey-modal{width:100%!important;max-height:100dvh!important;height:100dvh!important;border-radius:0!important;padding:16px!important;}body > .survey-modal-backdrop #survey-form{padding-bottom:12px!important;}}
-
-.eco-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.eco-tabs [data-pd-tab]{border:1px solid var(--border-color,var(--border));background:var(--surface,var(--card));color:var(--text-primary,var(--text));padding:9px 14px;border-radius:10px}.eco-tabs [data-pd-tab]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

@@ -7,10 +7,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "test:demo-analytics": "node scripts/test-demo-analytics.js",
     "test:db": "node scripts/test-neon.js",
     "setup:ai": "python -m pip install -r requirements-ai.txt",
-    "test:ai": "node scripts/test-local-ai.js",
-    "check": "node --check server.js && node --check js/enterprise.js"
+    "test:ai": "node scripts/test-local-ai.js"
   },
   "engines": {
     "node": ">=20"
