@@ -651,13 +651,13 @@ body[data-user-accent="true"]:not(.focusai-public-view) .projects-view .project-
 body[data-user-accent="true"]:not(.focusai-public-view) .view-container .form-input:focus,body[data-user-accent="true"]:not(.focusai-public-view) .view-container input.form-input:focus,body[data-user-accent="true"]:not(.focusai-public-view) .view-container textarea.form-input:focus{border-color:var(--accent)!important;box-shadow:0 0 0 4px var(--accent-soft)!important}
 body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .ai-talent-suggestions{background:var(--accent-soft);border-color:rgba(var(--accent-rgb),.24)}
 
-/* Contraste consistente en las superficies claras de RR. HH. y Talento. */
+/* Contraste accesible conservando la paleta de blancos y azules suaves. */
 #view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article),
 #view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card),
 #view-container > #my-development-page .eco-card{color:#26364d!important}
-#view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article),
-#view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card),
-#view-container > #my-development-page .eco-card{background-color:#fff!important}
+#view-container > #skills-page .eco-card,
+#view-container > #employees-page .eco-card,
+#view-container > #my-development-page .eco-card{background:linear-gradient(145deg,#fff 0%,#f7faff 100%)!important}
 #view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article) :is(h1,h2,h3,b,strong,label,legend),
 #view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card) :is(h1,h2,h3,b,strong,label,legend),
 #view-container > #my-development-page .eco-card :is(h1,h2,h3,b,strong,label,legend){color:#26364d!important}
