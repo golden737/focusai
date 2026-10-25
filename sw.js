@@ -1,6 +1,6 @@
 // ── FocusAI Service Worker ──────────────────────────────────────────────────
 // Versión: actualizar al desplegar nuevos assets para forzar recarga del caché
-const CACHE_VERSION   = 'focusai-v17-hr-accent-recruitment';
+const CACHE_VERSION   = 'focusai-v18-interview-calendar-contrast';
 const STATIC_CACHE    = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE   = `${CACHE_VERSION}-dynamic`;
 const API_CACHE       = `${CACHE_VERSION}-api`;

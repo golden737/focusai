@@ -23,6 +23,7 @@ window.FlowCalendar = (() => {
       recurrence:  data.recurrence  || null,
       parentId:    data.parentId    || null,
       taskId:      data.taskId      || null,
+      interviewId: data.interviewId || null,
       projectId:   data.projectId   || null,
       attendees:   data.attendees   || [],
       reminder:    data.reminder    ?? 15,       // minutos antes
