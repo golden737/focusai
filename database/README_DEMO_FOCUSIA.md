@@ -5,7 +5,7 @@
 1. Usa una base de desarrollo o una copia de tu Neon, no la base de producción.
 2. Aplica `focusai_neon_schema_completo.sql` si aún no existe el esquema.
 3. Inicia FocusIA una vez con esa base (`npm start`) para que el backend cree `auth_users` y `app_records`.
-4. Despliega el código actualizado; el backend crea/verifica `employee_task_assignments` al iniciar. El propio seed también crea esa tabla si hace falta.
+4. Despliega el código actualizado; el backend crea/verifica `employee_task_assignments` y `employee_development_interviews` al iniciar.
 5. En Neon SQL Editor, ejecuta `DEMO_FOCUSIA_SEED.sql` completo.
 6. Recarga FocusIA y entra con `admin@focusia-demo.test` / `FocusIA-Demo-2026!`.
 
@@ -16,11 +16,12 @@ Todos los nombres y resultados de la muestra son inventados. La cuenta es solo p
 - 1 organización, 3 departamentos, 3 puestos, 1 administrador demo, 1 perfil de RR. HH. y 4 empleados demo.
 - Competencias, requisitos por puesto, evidencia y evaluaciones históricas de ejemplo.
 - 2 cursos y 3 matrículas en distintos estados.
+- 2 entrevistas 1:1 ficticias: una programada y una con acuerdos registrados.
 - 1 encuesta anónima publicada con 2 respuestas ficticias.
 - 12 tareas, guardadas tanto en la tabla relacional como en `app_records`.
 - Atribución segura de las tareas de demostración mediante `employee_task_assignments`; los datos que una persona escriba en sus propias tareas no inflan los KPI de compromisos asignados.
 
-El endpoint de People Analytics debe mostrar **75 %** de tareas completadas (9/12), **2** tareas vencidas y **4** brechas entre **7** competencias evaluadas frente a los requisitos definidos. La página actual de indicadores está en el área de empleados/RR. HH. El proyecto aún no tiene páginas completas de cursos ni un panel analítico con gráficos históricos; este seed llena tablas y vistas que ya existen, no crea módulos faltantes.
+El endpoint de People Analytics debe mostrar **75 %** de tareas completadas (9/12), **2** tareas vencidas y **4** brechas entre **7** competencias evaluadas frente a los requisitos definidos. La demo también permite probar el catálogo/asignación de capacitación, el historial de entrevistas, las sugerencias de desarrollo y el dashboard individual. La IA requiere un proveedor configurado; las recomendaciones por coincidencia de cursos usan los datos del catálogo.
 
 ## Verificación local sin Neon
 

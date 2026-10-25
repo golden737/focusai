@@ -147,4 +147,9 @@ SELECT ar.record_id,'a1000000-0000-4000-8000-000000000001',ar.user_id,'a4000000-
 FROM app_records ar WHERE ar.store_name='tasks' AND ar.record_id LIKE 'demo-t%'
 ON CONFLICT(task_id) DO UPDATE SET organization_id=EXCLUDED.organization_id,employee_id=EXCLUDED.employee_id,assigned_by=EXCLUDED.assigned_by;
 
+INSERT INTO employee_development_interviews(id,organization_id,employee_id,interviewer_id,scheduled_at,interview_type,status,agenda,notes,agreements) VALUES
+ ('ab000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001','a4000000-0000-4000-8000-000000000004','a4000000-0000-4000-8000-000000000002',now()+interval '5 days','development','scheduled','Revisar objetivos de aprendizaje, necesidades de práctica y apoyo de mentoría.','',''),
+ ('ab000000-0000-4000-8000-000000000002','a1000000-0000-4000-8000-000000000001','a4000000-0000-4000-8000-000000000003','a4000000-0000-4000-8000-000000000002',now()-interval '8 days','follow_up','completed','Revisar resultados de la capacitación UX.','Compartió el prototipo validado con cinco participantes.','Preparar una nueva prueba moderada y revisar hallazgos en la próxima sesión.')
+ON CONFLICT(id) DO UPDATE SET scheduled_at=EXCLUDED.scheduled_at,status=EXCLUDED.status,agenda=EXCLUDED.agenda,notes=EXCLUDED.notes,agreements=EXCLUDED.agreements,updated_at=now();
+
 COMMIT;

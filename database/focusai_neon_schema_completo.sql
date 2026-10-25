@@ -358,6 +358,23 @@ CREATE TABLE IF NOT EXISTS training_enrollments (
   UNIQUE (training_id, employee_id)
 );
 
+CREATE TABLE IF NOT EXISTS employee_development_interviews (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  employee_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  interviewer_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  scheduled_at timestamptz NOT NULL,
+  interview_type text NOT NULL DEFAULT 'development' CHECK (interview_type IN ('development','feedback','follow_up','wellbeing')),
+  status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','completed','cancelled')),
+  agenda text NOT NULL DEFAULT '',
+  notes text NOT NULL DEFAULT '',
+  agreements text NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS employee_development_interviews_org_employee_idx
+  ON employee_development_interviews(organization_id,employee_id,scheduled_at DESC);
+
 -- ----------------------------------------------------------------------------
 -- ENCUESTAS FLEXIBLES PARA RR. HH.
 -- ----------------------------------------------------------------------------

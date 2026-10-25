@@ -66,6 +66,21 @@ async function bootstrap() {
     created_at timestamptz NOT NULL DEFAULT now()
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS employee_task_assignments_employee_idx ON employee_task_assignments(organization_id,employee_id,created_at DESC)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS employee_development_interviews (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    employee_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    interviewer_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+    scheduled_at timestamptz NOT NULL,
+    interview_type text NOT NULL DEFAULT 'development' CHECK (interview_type IN ('development','feedback','follow_up','wellbeing')),
+    status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','completed','cancelled')),
+    agenda text NOT NULL DEFAULT '',
+    notes text NOT NULL DEFAULT '',
+    agreements text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS employee_development_interviews_org_employee_idx ON employee_development_interviews(organization_id,employee_id,scheduled_at DESC)');
   await pool.query(`CREATE TABLE IF NOT EXISTS events (
     id text PRIMARY KEY, user_id uuid REFERENCES profiles(id) ON DELETE CASCADE, title text,
     description text, start_date timestamptz, end_date timestamptz, type text, project_id text,
@@ -302,11 +317,11 @@ app.get('/api/enterprise/state',requireAuth,requireRole,async(req,res,next)=>{
       FROM surveys s LEFT JOIN survey_questions q ON q.survey_id=s.id WHERE s.organization_id=$1 GROUP BY s.id ORDER BY s.created_at`,[org]);
     const fullSurveys=[];
     for(const row of surveys.rows){const rr=await pool.query(`SELECT r.id,r.submitted_at,r.respondent_id,r.status,respondent.name respondent_name,COALESCE(jsonb_agg(a.answer_text ORDER BY q.order_index) FILTER(WHERE a.id IS NOT NULL),'[]'::jsonb) answers FROM survey_responses r LEFT JOIN profiles respondent ON respondent.id=r.respondent_id LEFT JOIN survey_answers a ON a.response_id=r.id LEFT JOIN survey_questions q ON q.id=a.question_id WHERE r.survey_id=$1 GROUP BY r.id,respondent.name ORDER BY r.submitted_at`,[row.id]); fullSurveys.push({...row,questions:(row.questions||[]).sort((a,b)=>a.orderIndex-b.orderIndex).map(q=>({id:q.id,text:q.text,type:q.type,options:q.options,required:q.required,orderIndex:q.orderIndex})),responses:rr.rows.map(r=>({id:r.id,date:r.submitted_at,answers:r.answers,anonymous:!r.respondent_id,...(r.respondent_id?{respondentId:r.respondent_id,respondentName:r.respondent_name}: {})}))});}
-    const skills=await pool.query(`SELECT es.id,es.employee_id employee_id,sk.name,es.current_level current,COALESCE(psr.required_level,3) required,es.next_review_date review,sk.id skill_id
+    const skills=await pool.query(`SELECT es.id,es.employee_id employee_id,sk.name,sk.category,sk.description,es.current_level current,COALESCE(psr.required_level,3) required,es.next_review_date review,sk.id skill_id,es.evidence,es.notes,es.assessed_at
       FROM employee_skills es JOIN skills sk ON sk.id=es.skill_id JOIN profiles p ON p.id=es.employee_id LEFT JOIN position_skill_requirements psr ON psr.position_id=p.position_id AND psr.skill_id=sk.id
       WHERE p.organization_id=$1 ORDER BY sk.name`,[org]);
     const mt=await pool.query(`SELECT m.*,ms.summary_text summary,ms.action_items actions FROM meetings m LEFT JOIN meeting_summaries ms ON ms.meeting_id=m.id WHERE m.organization_id=$1 ORDER BY m.created_at`,[org]);
-    res.set('Cache-Control','no-store'); res.json({employees:emp.rows.map(e=>({...e,status:e.employment_status==='active'?'Activo':'Inactivo'})),surveys:fullSurveys.map(s=>({...s,category:s.category||'General',anonymous:s.anonymous,questions:s.questions||[]})),skills:skills.rows.map(x=>({id:x.id,employeeId:x.employee_id,name:x.name,current:Number(x.current),required:Number(x.required),review:x.review,skillId:x.skill_id})),meetings:mt.rows.map(m=>({id:m.id,title:m.title,date:m.scheduled_start||m.created_at,participants:'',summary:m.summary||'',actions:m.actions||[]})),role:req.user.role,organizationId:org});
+    res.set('Cache-Control','no-store'); res.json({employees:emp.rows.map(e=>({...e,status:e.employment_status==='active'?'Activo':'Inactivo'})),surveys:fullSurveys.map(s=>({...s,category:s.category||'General',anonymous:s.anonymous,questions:s.questions||[]})),skills:skills.rows.map(x=>({id:x.id,employeeId:x.employee_id,name:x.name,category:x.category,description:x.description,current:Number(x.current),required:Number(x.required),review:x.review,skillId:x.skill_id,evidence:x.evidence,notes:x.notes,assessedAt:x.assessed_at})),meetings:mt.rows.map(m=>({id:m.id,title:m.title,date:m.scheduled_start||m.created_at,participants:'',summary:m.summary||'',actions:m.actions||[]})),role:req.user.role,organizationId:org});
   }catch(e){next(e);}
 });
 app.put('/api/enterprise/state',requireAuth,requireRole,async(req,res,next)=>{
@@ -405,19 +420,90 @@ app.get('/api/enterprise/employees/:employeeId/profile',requireAuth,requireRole,
     FROM profiles p LEFT JOIN auth_users a ON a.id=p.id LEFT JOIN departments d ON d.id=p.department_id LEFT JOIN job_positions j ON j.id=p.position_id LEFT JOIN profiles m ON m.id=p.manager_id AND m.organization_id=p.organization_id
     WHERE p.id=$1 AND p.organization_id=$2`,[employeeId,org]);
   if(!person.rowCount)return res.status(404).json({error:'No se encontró este perfil en tu organización.'});
-  const [taskRows,skillRows,trainingRows]=await Promise.all([
+  const [taskRows,skillRows,trainingRows,interviewRows,surveyRows]=await Promise.all([
     pool.query(`SELECT ar.data,eta.task_id IS NOT NULL AS managed_task,eta.assigned_by,assigner.name assigned_by_name FROM app_records ar LEFT JOIN employee_task_assignments eta ON eta.task_id=ar.record_id AND eta.employee_id=ar.user_id AND eta.organization_id=$2 LEFT JOIN profiles assigner ON assigner.id=eta.assigned_by WHERE ar.user_id=$1 AND ar.store_name='tasks' ORDER BY ar.updated_at DESC LIMIT 100`,[employeeId,org]),
     pool.query(`SELECT sk.name,es.current_level,COALESCE(psr.required_level,0) required_level,es.assessed_at,es.evidence,es.notes,assessor.name assessor
       FROM employee_skills es JOIN skills sk ON sk.id=es.skill_id LEFT JOIN profiles p ON p.id=es.employee_id LEFT JOIN position_skill_requirements psr ON psr.position_id=p.position_id AND psr.skill_id=es.skill_id LEFT JOIN profiles assessor ON assessor.id=es.assessed_by
       WHERE es.employee_id=$1 AND sk.organization_id=$2 ORDER BY sk.name`,[employeeId,org]),
     pool.query(`SELECT t.title,t.format,t.status training_status,e.status enrollment_status,e.progress,e.score,e.enrolled_at,e.completed_at
-      FROM training_enrollments e JOIN trainings t ON t.id=e.training_id WHERE e.employee_id=$1 AND t.organization_id=$2 ORDER BY e.enrolled_at DESC`,[employeeId,org])
+      FROM training_enrollments e JOIN trainings t ON t.id=e.training_id WHERE e.employee_id=$1 AND t.organization_id=$2 ORDER BY e.enrolled_at DESC`,[employeeId,org]),
+    pool.query(`SELECT i.id,i.scheduled_at,i.interview_type,i.status,i.agenda,i.notes,i.agreements,interviewer.name interviewer FROM employee_development_interviews i LEFT JOIN profiles interviewer ON interviewer.id=i.interviewer_id WHERE i.employee_id=$1 AND i.organization_id=$2 ORDER BY i.scheduled_at DESC LIMIT 30`,[employeeId,org]),
+    pool.query(`SELECT COUNT(DISTINCT s.id) FILTER(WHERE s.status='published' AND (s.audience_roles @> ARRAY[p.role]::text[] OR s.audience_user_ids @> ARRAY[p.id]::uuid[]))::int available,COUNT(DISTINCT r.survey_id)::int responded FROM profiles p LEFT JOIN surveys s ON s.organization_id=p.organization_id LEFT JOIN survey_responses r ON r.survey_id=s.id AND r.respondent_id=p.id AND r.status='submitted' WHERE p.id=$1 AND p.organization_id=$2 GROUP BY p.id`,[employeeId,org])
   ]);
   const tasks=taskRows.rows.map(r=>({...r.data,managedTask:r.managed_task,assignedBy:r.assigned_by,assignedByName:r.assigned_by_name})).filter(x=>x&&typeof x==='object');
   const done=tasks.filter(x=>x.completed===true||['completed','done'].includes(x.status)).length;
   const overdue=tasks.filter(x=>!(x.completed===true||['completed','done'].includes(x.status))&&(x.dueDate||x.due_date||x.deadline)&&Date.parse(x.dueDate||x.due_date||x.deadline)<Date.now()).length;
-  res.set('Cache-Control','no-store');res.json({person:person.rows[0],tasks,summary:{taskCount:tasks.length,completed:done,overdue,completionRate:tasks.length?Math.round(done/tasks.length*100):null},skills:skillRows.rows.map(x=>({...x,currentLevel:Number(x.current_level),requiredLevel:Number(x.required_level)})),training:trainingRows.rows});
+  res.set('Cache-Control','no-store');res.json({person:person.rows[0],tasks,summary:{taskCount:tasks.length,completed:done,overdue,completionRate:tasks.length?Math.round(done/tasks.length*100):null},skills:skillRows.rows.map(x=>({...x,currentLevel:Number(x.current_level),requiredLevel:Number(x.required_level)})),training:trainingRows.rows,interviews:interviewRows.rows,surveys:surveyRows.rows[0]||{available:0,responded:0}});
 }catch(e){next(e);}});
+
+// Centro de talento: cursos del catálogo, inscripciones, entrevistas 1:1 y evaluación con evidencia.
+app.get('/api/enterprise/development',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req);
+  const [courses,enrollments,interviews]=await Promise.all([
+    pool.query(`SELECT t.id,t.title,t.description,t.provider,t.format,t.url,t.start_date,t.end_date,t.duration_hours,t.status,t.created_at,COALESCE(jsonb_agg(DISTINCT jsonb_build_object('id',s.id,'name',s.name,'expectedLevel',ts.expected_level)) FILTER(WHERE s.id IS NOT NULL),'[]'::jsonb) skills FROM trainings t LEFT JOIN training_skills ts ON ts.training_id=t.id LEFT JOIN skills s ON s.id=ts.skill_id AND s.organization_id=t.organization_id WHERE t.organization_id=$1 GROUP BY t.id ORDER BY t.created_at DESC`,[org]),
+    pool.query(`SELECT e.id,e.training_id,e.employee_id,e.status,e.progress,e.score,e.enrolled_at,e.completed_at,e.notes,t.title training_title,p.name employee_name FROM training_enrollments e JOIN trainings t ON t.id=e.training_id JOIN profiles p ON p.id=e.employee_id WHERE t.organization_id=$1 AND p.organization_id=$1 ORDER BY e.enrolled_at DESC`,[org]),
+    pool.query(`SELECT i.id,i.employee_id,p.name employee_name,i.interviewer_id,interviewer.name interviewer,i.scheduled_at,i.interview_type,i.status,i.agenda,i.notes,i.agreements FROM employee_development_interviews i JOIN profiles p ON p.id=i.employee_id LEFT JOIN profiles interviewer ON interviewer.id=i.interviewer_id WHERE i.organization_id=$1 AND p.organization_id=$1 ORDER BY i.scheduled_at DESC LIMIT 100`,[org])
+  ]);
+  res.set('Cache-Control','no-store');res.json({courses:courses.rows,enrollments:enrollments.rows,interviews:interviews.rows});
+}catch(e){next(e);}});
+
+app.post('/api/enterprise/trainings',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),title=String(req.body.title||'').trim().slice(0,180),format=['online','in_person','hybrid','self_paced'].includes(req.body.format)?req.body.format:'online',url=String(req.body.url||'').trim().slice(0,500);
+  if(title.length<3)return res.status(400).json({error:'Escribe un nombre de capacitación de al menos 3 caracteres.'});
+  if(url&&!/^https?:\/\//i.test(url))return res.status(400).json({error:'El enlace debe comenzar con https:// o http://.'});
+  const {rows}=await pool.query(`INSERT INTO trainings(organization_id,title,description,provider,format,url,start_date,end_date,duration_hours,status,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'open',$10) RETURNING id,title,description,provider,format,url,start_date,end_date,duration_hours,status,created_at`,[org,title,String(req.body.description||'').trim().slice(0,2000)||null,String(req.body.provider||'').trim().slice(0,160)||null,format,url||null,req.body.startDate||null,req.body.endDate||null,Number(req.body.durationHours)||null,req.user.id]);
+  const skillIds=[...new Set((Array.isArray(req.body.skillIds)?req.body.skillIds:[]).filter(isUuid))];if(skillIds.length){const valid=await pool.query('SELECT id FROM skills WHERE id=ANY($1::uuid[]) AND organization_id=$2',[skillIds,org]);for(const skill of valid.rows)await pool.query('INSERT INTO training_skills(training_id,skill_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[rows[0].id,skill.id]);}
+  res.status(201).json(rows[0]);
+}catch(e){next(e);}});
+
+app.post('/api/enterprise/trainings/:trainingId/assign',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),trainingId=req.params.trainingId;if(!isUuid(trainingId))return res.status(400).json({error:'Capacitación inválida.'});
+  const course=await pool.query('SELECT id FROM trainings WHERE id=$1 AND organization_id=$2',[trainingId,org]);if(!course.rowCount)return res.status(404).json({error:'No se encontró esa capacitación en la organización.'});
+  const ids=[...new Set((Array.isArray(req.body.employeeIds)?req.body.employeeIds:[]).filter(isUuid))].slice(0,200);if(!ids.length)return res.status(400).json({error:'Selecciona al menos una persona.'});
+  const employees=await pool.query(`SELECT id FROM profiles WHERE id=ANY($1::uuid[]) AND organization_id=$2 AND employment_status IS DISTINCT FROM 'inactive'`,[ids,org]);let assigned=0;
+  for(const employee of employees.rows){const result=await pool.query(`INSERT INTO training_enrollments(training_id,employee_id,status,progress) VALUES($1,$2,'enrolled',0) ON CONFLICT(training_id,employee_id) DO NOTHING`,[trainingId,employee.id]);assigned+=result.rowCount;}
+  res.status(201).json({ok:true,assigned,alreadyAssigned:employees.rowCount-assigned});
+}catch(e){next(e);}});
+
+app.patch('/api/enterprise/training-enrollments/:enrollmentId',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),status=['enrolled','in_progress','completed','cancelled','failed'].includes(req.body.status)?req.body.status:null,progress=Math.max(0,Math.min(100,Number(req.body.progress)||0));if(!isUuid(req.params.enrollmentId))return res.status(400).json({error:'Inscripción inválida.'});
+  const {rows}=await pool.query(`UPDATE training_enrollments e SET status=COALESCE($3,e.status),progress=CASE WHEN COALESCE($3,e.status)='completed' THEN 100 ELSE $4 END,completed_at=CASE WHEN COALESCE($3,e.status)='completed' THEN COALESCE(e.completed_at,now()) WHEN $3 IS NOT NULL THEN NULL ELSE e.completed_at END,score=CASE WHEN $5::numeric IS NULL THEN e.score ELSE $5 END,notes=COALESCE($6,e.notes) FROM trainings t WHERE e.id=$1 AND e.training_id=t.id AND t.organization_id=$2 RETURNING e.id,e.status,e.progress,e.score,e.completed_at,e.notes`,[req.params.enrollmentId,org,status,progress,req.body.score===undefined?null:(Number(req.body.score)||0),req.body.notes===undefined?null:String(req.body.notes).slice(0,1000)]);
+  if(!rows[0])return res.status(404).json({error:'No se encontró esa inscripción.'});res.json(rows[0]);
+}catch(e){next(e);}});
+
+app.get('/api/my-development',requireAuth,async(req,res,next)=>{try{const org=await ensureOrganization(req);const [training,skills,interviews]=await Promise.all([
+  pool.query(`SELECT e.id,e.status,e.progress,e.score,e.enrolled_at,e.completed_at,e.notes,t.title,t.description,t.provider,t.format,t.url,t.duration_hours,COALESCE(jsonb_agg(DISTINCT jsonb_build_object('id',s.id,'name',s.name)) FILTER(WHERE s.id IS NOT NULL),'[]'::jsonb) skills FROM training_enrollments e JOIN trainings t ON t.id=e.training_id LEFT JOIN training_skills ts ON ts.training_id=t.id LEFT JOIN skills s ON s.id=ts.skill_id AND s.organization_id=t.organization_id WHERE e.employee_id=$1 AND t.organization_id=$2 GROUP BY e.id,t.id ORDER BY e.enrolled_at DESC`,[req.user.id,org]),
+  pool.query(`SELECT sk.name,es.current_level,COALESCE(psr.required_level,0) required_level,es.evidence,es.assessed_at,es.next_review_date FROM employee_skills es JOIN skills sk ON sk.id=es.skill_id LEFT JOIN profiles p ON p.id=es.employee_id LEFT JOIN position_skill_requirements psr ON psr.position_id=p.position_id AND psr.skill_id=es.skill_id WHERE es.employee_id=$1 AND sk.organization_id=$2 ORDER BY sk.name`,[req.user.id,org]),
+  pool.query(`SELECT id,scheduled_at,interview_type,status,agenda,agreements FROM employee_development_interviews WHERE employee_id=$1 AND organization_id=$2 AND status<>'cancelled' ORDER BY scheduled_at DESC LIMIT 30`,[req.user.id,org])
+]);res.set('Cache-Control','no-store');res.json({training:training.rows,skills:skills.rows,interviews:interviews.rows});}catch(e){next(e);}});
+
+app.patch('/api/my-development/trainings/:enrollmentId',requireAuth,async(req,res,next)=>{try{if(!isUuid(req.params.enrollmentId))return res.status(400).json({error:'Capacitación asignada inválida.'});const status=['enrolled','in_progress','completed'].includes(req.body.status)?req.body.status:null,progress=Math.max(0,Math.min(100,Number(req.body.progress)||0));const {rows}=await pool.query(`UPDATE training_enrollments SET status=COALESCE($3,status),progress=CASE WHEN $3='completed' THEN 100 ELSE $4 END,completed_at=CASE WHEN $3='completed' THEN COALESCE(completed_at,now()) WHEN $3 IS NOT NULL THEN NULL ELSE completed_at END WHERE id=$1 AND employee_id=$2 RETURNING id,status,progress,completed_at`,[req.params.enrollmentId,req.user.id,status,progress]);if(!rows[0])return res.status(404).json({error:'No se encontró esta capacitación asignada.'});res.json(rows[0]);}catch(e){next(e);}});
+
+app.post('/api/enterprise/interviews',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),employeeId=req.body.employeeId,scheduledAt=new Date(req.body.scheduledAt);
+  if(!isUuid(employeeId))return res.status(400).json({error:'Empleado inválido.'});if(Number.isNaN(scheduledAt.getTime()))return res.status(400).json({error:'Indica fecha y hora válidas.'});
+  const employee=await pool.query(`SELECT id FROM profiles WHERE id=$1 AND organization_id=$2 AND employment_status IS DISTINCT FROM 'inactive'`,[employeeId,org]);if(!employee.rowCount)return res.status(404).json({error:'No se encontró un empleado activo en la organización.'});
+  const type=['development','feedback','follow_up','wellbeing'].includes(req.body.interviewType)?req.body.interviewType:'development';
+  const {rows}=await pool.query(`INSERT INTO employee_development_interviews(organization_id,employee_id,interviewer_id,scheduled_at,interview_type,agenda) VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,[org,employeeId,req.user.id,scheduledAt,type,String(req.body.agenda||'').trim().slice(0,2000)]);res.status(201).json(rows[0]);
+}catch(e){next(e);}});
+
+app.patch('/api/enterprise/interviews/:interviewId',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),status=['scheduled','completed','cancelled'].includes(req.body.status)?req.body.status:null;if(!isUuid(req.params.interviewId))return res.status(400).json({error:'Entrevista inválida.'});
+  const {rows}=await pool.query(`UPDATE employee_development_interviews SET status=COALESCE($3,status),agenda=COALESCE($4,agenda),notes=COALESCE($5,notes),agreements=COALESCE($6,agreements),updated_at=now() WHERE id=$1 AND organization_id=$2 RETURNING *`,[req.params.interviewId,org,status,req.body.agenda===undefined?null:String(req.body.agenda).slice(0,2000),req.body.notes===undefined?null:String(req.body.notes).slice(0,5000),req.body.agreements===undefined?null:String(req.body.agreements).slice(0,3000)]);
+  if(!rows[0])return res.status(404).json({error:'No se encontró esa entrevista.'});res.json(rows[0]);
+}catch(e){next(e);}});
+
+app.post('/api/enterprise/competencies/evaluations',requireAuth,requireRole,async(req,res,next)=>{const client=await pool.connect();try{
+  const org=await ensureOrganization(req),employeeId=req.body.employeeId,name=String(req.body.name||'').trim().slice(0,160),current=Math.max(1,Math.min(5,Number(req.body.currentLevel)||1)),required=Math.max(1,Math.min(5,Number(req.body.requiredLevel)||3));
+  const evidence=String(req.body.evidence||'').trim();if(!isUuid(employeeId)||name.length<2)return res.status(400).json({error:'Selecciona una persona e indica la competencia.'});if(evidence.length<8)return res.status(400).json({error:'Agrega una evidencia concreta de al menos 8 caracteres.'});
+  await client.query('BEGIN');const employee=await client.query('SELECT position_id FROM profiles WHERE id=$1 AND organization_id=$2',[employeeId,org]);if(!employee.rowCount){await client.query('ROLLBACK');return res.status(404).json({error:'No se encontró este perfil en tu organización.'});}
+  const skill=await client.query(`INSERT INTO skills(organization_id,name,description,category,active) VALUES($1,$2,$3,$4,true) ON CONFLICT(organization_id,name) DO UPDATE SET description=COALESCE(EXCLUDED.description,skills.description),category=COALESCE(EXCLUDED.category,skills.category),active=true RETURNING id`,[org,name,String(req.body.description||'').trim().slice(0,1000)||null,String(req.body.category||'').trim().slice(0,80)||null]);const skillId=skill.rows[0].id;
+  const previous=await client.query('SELECT current_level FROM employee_skills WHERE employee_id=$1 AND skill_id=$2 FOR UPDATE',[employeeId,skillId]);
+  await client.query(`INSERT INTO employee_skills(employee_id,skill_id,current_level,assessed_by,assessed_at,evidence,notes,next_review_date,updated_at) VALUES($1,$2,$3,$4,now(),$5,$6,$7,now()) ON CONFLICT(employee_id,skill_id) DO UPDATE SET current_level=EXCLUDED.current_level,assessed_by=EXCLUDED.assessed_by,assessed_at=now(),evidence=EXCLUDED.evidence,notes=EXCLUDED.notes,next_review_date=EXCLUDED.next_review_date,updated_at=now()`,[employeeId,skillId,current,req.user.id,String(req.body.evidence||'').trim().slice(0,2000)||null,String(req.body.notes||'').trim().slice(0,2000)||null,req.body.review||null]);
+  await client.query(`INSERT INTO skill_assessments(employee_id,skill_id,previous_level,assessed_level,assessed_by,assessment_date,method,evidence,notes) VALUES($1,$2,$3,$4,$5,CURRENT_DATE,$6,$7,$8)`,[employeeId,skillId,previous.rows[0]?.current_level??null,current,req.user.id,String(req.body.method||'HR review').slice(0,80),String(req.body.evidence||'').trim().slice(0,2000)||null,String(req.body.notes||'').trim().slice(0,2000)||null]);
+  if(employee.rows[0].position_id)await client.query(`INSERT INTO position_skill_requirements(position_id,skill_id,required_level) VALUES($1,$2,$3) ON CONFLICT(position_id,skill_id) DO UPDATE SET required_level=EXCLUDED.required_level`,[employee.rows[0].position_id,skillId,required]);
+  await client.query('COMMIT');res.status(201).json({ok:true,skillId});
+}catch(e){await client.query('ROLLBACK');next(e);}finally{client.release();}});
 
 app.post('/api/enterprise/employees/:employeeId/tasks',requireAuth,requireRole,async(req,res,next)=>{const client=await pool.connect();try{
   const org=await ensureOrganization(req),employeeId=req.params.employeeId,title=String(req.body.title||'').trim().slice(0,180),description=String(req.body.description||'').trim().slice(0,2000),priority=['high','medium','low','none'].includes(req.body.priority)?req.body.priority:'medium',dueDate=req.body.dueDate||null;
@@ -434,7 +520,7 @@ app.post('/api/enterprise/employees/:employeeId/tasks',requireAuth,requireRole,a
   await client.query('COMMIT');res.status(201).json(task);
 }catch(e){await client.query('ROLLBACK');next(e);}finally{client.release();}});
 
-app.get('/api/enterprise/skills/:employeeId/history',requireAuth,requireRole,async(req,res,next)=>{try{const org=await ensureOrganization(req);if(!isUuid(req.params.employeeId))return res.status(400).json({error:'ID de empleado inválido.'});const exists=await pool.query('SELECT id FROM profiles WHERE id=$1 AND organization_id=$2',[req.params.employeeId,org]);if(!exists.rowCount)return res.status(404).json({error:'Empleado no encontrado en esta organización.'});const {rows}=await pool.query(`SELECT sa.id,sk.name skill,sa.previous_level,sa.assessed_level,sa.assessment_date,sa.method,sa.notes,assessor.name assessed_by FROM skill_assessments sa JOIN skills sk ON sk.id=sa.skill_id LEFT JOIN profiles assessor ON assessor.id=sa.assessed_by WHERE sa.employee_id=$1 ORDER BY sa.assessment_date DESC,sa.created_at DESC`,[req.params.employeeId]);res.set('Cache-Control','no-store');res.json(rows);}catch(e){next(e);}});
+app.get('/api/enterprise/skills/:employeeId/history',requireAuth,requireRole,async(req,res,next)=>{try{const org=await ensureOrganization(req);if(!isUuid(req.params.employeeId))return res.status(400).json({error:'ID de empleado inválido.'});const exists=await pool.query('SELECT id FROM profiles WHERE id=$1 AND organization_id=$2',[req.params.employeeId,org]);if(!exists.rowCount)return res.status(404).json({error:'Empleado no encontrado en esta organización.'});const {rows}=await pool.query(`SELECT sa.id,sk.name skill,sa.previous_level,sa.assessed_level,sa.assessment_date,sa.method,sa.evidence,sa.notes,assessor.name assessed_by FROM skill_assessments sa JOIN skills sk ON sk.id=sa.skill_id LEFT JOIN profiles assessor ON assessor.id=sa.assessed_by WHERE sa.employee_id=$1 AND sk.organization_id=$2 ORDER BY sa.assessment_date DESC,sa.created_at DESC`,[req.params.employeeId,org]);res.set('Cache-Control','no-store');res.json(rows);}catch(e){next(e);}});
 
 // Resumen agregado de cumplimiento y carga de trabajo para RR. HH. y administración.
 app.get('/api/enterprise/overview',requireAuth,requireRole,async(req,res,next)=>{try{
@@ -501,6 +587,15 @@ app.post('/api/superadmin/ai-config/test',requireAuth,requireSuperadmin,async(re
 app.get('/api/ai/models',requireAuth,async(req,res,next)=>{try{const c=await getPlatformAIConfig();res.json({models:await aiListModels(c)});}catch(e){res.status(400).json({error:e.message});}});
 app.post('/api/ai/test',requireAuth,async(req,res,next)=>{try{const c=await getPlatformAIConfig();const models=await aiListModels(c);res.json({ok:true,models});}catch(e){res.json({ok:false,error:e.message});}});
 app.post('/api/ai/chat',requireAuth,async(req,res,next)=>{try{const c=await getPlatformAIConfig();const messages=Array.isArray(req.body.messages)?req.body.messages.slice(-30):[];if(!messages.length)return res.status(400).json({error:'No se recibió un mensaje para la IA.'});const text=await aiGenerate(c,messages,req.body.systemText,req.body.maxTokens);res.json({text});}catch(e){res.status(502).json({error:e.message||'No se pudo consultar el proveedor de IA.'});}});
+app.post('/api/enterprise/competencies/suggestions',requireAuth,requireRole,async(req,res,next)=>{try{
+  const org=await ensureOrganization(req),c=await getPlatformAIConfig();
+  const gaps=await pool.query(`SELECT j.title position,sk.name skill,es.current_level current,psr.required_level required FROM employee_skills es JOIN profiles p ON p.id=es.employee_id JOIN skills sk ON sk.id=es.skill_id JOIN position_skill_requirements psr ON psr.position_id=p.position_id AND psr.skill_id=es.skill_id JOIN job_positions j ON j.id=p.position_id WHERE p.organization_id=$1 AND p.employment_status IS DISTINCT FROM 'inactive' AND es.current_level<psr.required_level ORDER BY (psr.required_level-es.current_level) DESC LIMIT 40`,[org]);
+  if(!gaps.rowCount)return res.json({text:'Todavía no hay brechas evaluadas contra requisitos del puesto. Registra competencias con evidencia para obtener recomendaciones contextualizadas.'});
+  const courses=await pool.query(`SELECT t.title,t.format,t.duration_hours,COALESCE(array_agg(DISTINCT sk.name) FILTER(WHERE sk.id IS NOT NULL),'{}') skills FROM trainings t LEFT JOIN training_skills ts ON ts.training_id=t.id LEFT JOIN skills sk ON sk.id=ts.skill_id AND sk.organization_id=t.organization_id WHERE t.organization_id=$1 AND t.status NOT IN ('cancelled','completed') GROUP BY t.id ORDER BY t.created_at DESC LIMIT 30`,[org]);
+  const context={gaps:gaps.rows,courses:courses.rows};
+  const text=await aiGenerate(c,[{role:'user',content:JSON.stringify(context)}],'Eres un asesor de desarrollo de talento para RR. HH. Analiza brechas agregadas por puesto (sin identidades) y cursos disponibles. En español, entrega hasta 5 recomendaciones accionables y concretas, vinculando curso y brecha cuando haya coincidencia. Si no hay curso adecuado, sugiere una práctica en el trabajo o mentoría. No infieras desempeño, potencial, salud ni atributos personales. Distingue sugerencia de hecho y no inventes cursos, niveles ni resultados.',650);
+  res.json({text:String(text||'No se recibieron sugerencias.').slice(0,8000)});
+}catch(e){res.status(502).json({error:e.message||'No se pudieron generar sugerencias con el proveedor de IA.'});}});
 
 app.get('/api/superadmin/overview',requireAuth,requireSuperadmin,async(req,res,next)=>{try{
  const orgs=await pool.query(`SELECT o.id,o.name,o.slug,o.invite_code,o.status,o.created_at,COUNT(p.id)::int user_count,COUNT(p.id) FILTER(WHERE p.role='admin')::int admin_count FROM organizations o LEFT JOIN profiles p ON p.organization_id=o.id GROUP BY o.id ORDER BY o.created_at DESC`);
