@@ -693,3 +693,68 @@ body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .ai-talent-
 #view-container > #skills-page :is(input:not([type=checkbox]),select,textarea),#view-container > #employees-page :is(input:not([type=checkbox]),select,textarea){background:#fff!important;color:#263b56!important;border-color:#cdd9e8!important}
 #view-container > #skills-page :is(input,select,textarea)::placeholder,#view-container > #employees-page :is(input,select,textarea)::placeholder{color:#71829a!important;opacity:1}
 #view-container > #skills-page .talent-course-card,#view-container > #skills-page .talent-enrollment{border-color:#dfe7f1}
+
+/* Matriz de competencias: fondo claro, columnas ordenadas y texto legible */
+#view-container > #skills-page .eco-table-wrap {
+  overflow-x: auto !important;
+  border: 1px solid #dce6f3 !important;
+  border-radius: 12px !important;
+  background: #f5f9ff !important;
+}
+
+#view-container > #skills-page .eco-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #fff !important;
+}
+
+#view-container > #skills-page .eco-table th {
+  padding: 14px 12px !important;
+  background: #eaf2fc !important;
+  color: #40536d !important;
+  border-bottom: 1px solid #d8e3f0 !important;
+  text-align: left;
+  white-space: nowrap;
+}
+
+#view-container > #skills-page .eco-table td {
+  padding: 14px 12px !important;
+  background: #fff !important;
+  color: #40536d !important;
+  border-bottom: 1px solid #e7edf5 !important;
+  vertical-align: middle;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+#view-container > #skills-page .eco-table tbody tr:nth-child(even) td {
+  background: #f7faff !important;
+}
+
+#view-container > #skills-page .eco-table tbody tr:hover td {
+  background: #edf4ff !important;
+}
+
+#view-container > #skills-page .eco-table td b {
+  display: block;
+  margin-bottom: 3px;
+  color: #263b56 !important;
+  font-size: 12px;
+}
+
+#view-container > #skills-page .eco-table td small {
+  display: block;
+  color: #65758b !important;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+#view-container > #skills-page .eco-table .eco-level {
+  white-space: nowrap;
+}
+
+#view-container > #skills-page .eco-table .eco-status {
+  white-space: nowrap;
+}
