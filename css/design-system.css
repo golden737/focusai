@@ -657,7 +657,7 @@ body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .ai-talent-
 #view-container > #my-development-page .eco-card{color:#26364d!important}
 #view-container > #skills-page .eco-card,
 #view-container > #employees-page .eco-card,
-#view-container > #my-development-page .eco-card{background:linear-gradient(145deg,#fff 0%,#f7faff 100%)!important}
+#view-container > #my-development-page .eco-card{background:linear-gradient(145deg,#fff 0%,#edf4ff 100%)!important;border-color:#dce7f7!important;box-shadow:0 8px 24px rgba(44,83,145,.08)!important}
 #view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article) :is(h1,h2,h3,b,strong,label,legend),
 #view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card) :is(h1,h2,h3,b,strong,label,legend),
 #view-container > #my-development-page .eco-card :is(h1,h2,h3,b,strong,label,legend){color:#26364d!important}
