@@ -651,21 +651,45 @@ body[data-user-accent="true"]:not(.focusai-public-view) .projects-view .project-
 body[data-user-accent="true"]:not(.focusai-public-view) .view-container .form-input:focus,body[data-user-accent="true"]:not(.focusai-public-view) .view-container input.form-input:focus,body[data-user-accent="true"]:not(.focusai-public-view) .view-container textarea.form-input:focus{border-color:var(--accent)!important;box-shadow:0 0 0 4px var(--accent-soft)!important}
 body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .ai-talent-suggestions{background:var(--accent-soft);border-color:rgba(var(--accent-rgb),.24)}
 
-/* Contraste accesible conservando la paleta de blancos y azules suaves. */
-#view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article),
-#view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card),
-#view-container > #my-development-page .eco-card{color:#26364d!important}
-#view-container > #skills-page .eco-card,
-#view-container > #employees-page .eco-card,
-#view-container > #my-development-page .eco-card{background:linear-gradient(145deg,#fff 0%,#edf4ff 100%)!important;border-color:#dce7f7!important;box-shadow:0 8px 24px rgba(44,83,145,.08)!important}
-#view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article) :is(h1,h2,h3,b,strong,label,legend),
-#view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card) :is(h1,h2,h3,b,strong,label,legend),
-#view-container > #my-development-page .eco-card :is(h1,h2,h3,b,strong,label,legend){color:#26364d!important}
-#view-container > #skills-page :is(.eco-card,.talent-interview-card,.talent-overview article) :is(p,small,span),
-#view-container > #employees-page :is(.eco-card,.people-main-section,.people-profile-card) :is(p,small,span),
-#view-container > #my-development-page .eco-card :is(p,small,span){color:#59677c}
-#view-container > #skills-page :is(input:not([type=checkbox]),select,textarea),
-#view-container > #employees-page :is(input:not([type=checkbox]),select,textarea),
-#view-container > #my-development-page :is(input:not([type=checkbox]),select,textarea){background:#fff!important;color:#26364d!important;border-color:#d5dce7!important}
-#view-container > #skills-page .talent-interview-status{color:#42516a}
-#view-container > #skills-page .talent-interview-date{color:var(--accent,#4a61ca)}
+/* Rediseño visual de Directorio y Talento: superficies blancas/azul hielo y texto legible. */
+#view-container > #employees-page,#view-container > #skills-page{--hr-accent:var(--accent,#ff7417);--hr-accent-soft:var(--accent-soft,rgba(255,116,23,.12));}
+#view-container > #employees-page .people-heading h1,#view-container > #skills-page .talent-heading h1{color:#192b45!important}
+#view-container > #employees-page .people-heading p,#view-container > #skills-page .talent-heading p{color:#596b84!important}
+#view-container > #employees-page .people-overview,#view-container > #skills-page .talent-overview{gap:12px;border:0;background:transparent;overflow:visible;box-shadow:none}
+#view-container > #employees-page .people-overview article,#view-container > #skills-page .talent-overview article{min-height:94px;border:1px solid #dce7f5!important;border-radius:15px;background:linear-gradient(145deg,#fff 12%,#edf4ff 100%)!important;box-shadow:0 7px 20px rgba(46,79,125,.07)!important}
+#view-container > #employees-page .people-overview span,#view-container > #skills-page .talent-overview small{color:#52647d!important;font-weight:700}
+#view-container > #employees-page .people-overview strong,#view-container > #skills-page .talent-overview b{color:var(--hr-accent)!important;font-size:28px}
+#view-container > #employees-page .people-overview small,#view-container > #skills-page .talent-overview span{color:#62738b!important}
+#view-container > #employees-page .people-roster,#view-container > #employees-page .people-profile,#view-container > #skills-page .eco-card{border:1px solid #dce6f3!important;background:linear-gradient(155deg,#fff 0%,#f5f9ff 100%)!important;box-shadow:0 9px 28px rgba(32,61,103,.07)!important}
+#view-container > #employees-page .people-roster-head h2,#view-container > #employees-page .people-person-hero h2,#view-container > #employees-page .people-section-head h3,#view-container > #skills-page .eco-card h2,#view-container > #skills-page .eco-card h3{color:#243750!important}
+#view-container > #employees-page .people-roster-head p,#view-container > #employees-page .people-row-content>small,#view-container > #employees-page .people-row-meta{color:#596b84!important}
+#view-container > #employees-page .people-row-content>b,#view-container > #employees-page .people-task-copy b,#view-container > #employees-page .people-skill-top b,#view-container > #employees-page .people-training-row b{color:#2a3e59!important}
+#view-container > #employees-page .people-profile-head{background:linear-gradient(115deg,#fff 12%,#edf4ff 100%);border-bottom:1px solid #dfe8f4}
+#view-container > #employees-page .people-contact-strip{background:#f1f6fd!important;color:#4e617a!important;border-color:#e1e9f3!important}
+#view-container > #employees-page .people-personal-kpis{background:#f7faff;border-color:#e0e9f4!important}
+#view-container > #employees-page .people-personal-kpis article{border-color:#dce6f1!important}
+#view-container > #employees-page .people-personal-kpis small{color:#596b84!important;font-size:10px;font-weight:650}
+#view-container > #employees-page .people-personal-kpis b{color:#263b56!important;font-size:22px}
+#view-container > #employees-page .people-section{border-color:#e0e8f2!important}
+#view-container > #employees-page .people-section-kicker,#view-container > #skills-page .talent-kicker{color:var(--hr-accent)!important}
+#view-container > #employees-page .people-section-head p,#view-container > #employees-page .people-section-intro{color:#596b84!important}
+#view-container > #employees-page .people-side-sections .people-section{margin:12px 12px 0;padding:16px;border:1px solid #dce7f4!important;border-radius:13px;background:linear-gradient(145deg,#fff,#f1f6fd)!important}
+#view-container > #employees-page .people-main-section{background:#fff!important}
+#view-container > #employees-page .people-task-copy small,#view-container > #employees-page .people-skill-row>small,#view-container > #employees-page .people-training-row small,#view-container > #employees-page .people-timeline small{color:#596b84!important;font-size:10px;line-height:1.5}
+#view-container > #employees-page .people-empty-inline{color:#5c6e86!important}
+#view-container > #employees-page .people-level-track{height:7px;background:#e3ebf5}
+#view-container > #employees-page .people-level-track i{background:linear-gradient(90deg,var(--hr-accent),#ffad66)!important}
+#view-container > #skills-page .talent-tabs{padding:6px;background:#eaf1fb!important;border-color:#d9e4f2!important;border-radius:13px}
+#view-container > #skills-page .talent-tabs button{color:#52647d!important}
+#view-container > #skills-page .talent-tabs button.is-active{background:#fff!important;color:var(--hr-accent)!important;box-shadow:0 3px 10px rgba(38,64,103,.13),inset 0 -2px var(--hr-accent)!important}
+#view-container > #skills-page .talent-recommendations{background:linear-gradient(115deg,#eaf2ff,#fff 72%)!important;border-color:#d5e3f5!important}
+#view-container > #skills-page .talent-recommendation{background:#fff!important;border-color:#dfe8f3!important}
+#view-container > #skills-page .talent-recommendation b,#view-container > #skills-page .talent-course-info>b,#view-container > #skills-page .talent-interview-copy h3{color:#2a3e59!important}
+#view-container > #skills-page .talent-recommendation small,#view-container > #skills-page .talent-no-match,#view-container > #skills-page .talent-course-info small,#view-container > #skills-page .talent-course-info p,#view-container > #skills-page .talent-interview-copy>small,#view-container > #skills-page .talent-interview-copy p{color:#596b84!important}
+#view-container > #skills-page .talent-interview-card{background:linear-gradient(145deg,#fff,#f2f7ff)!important;border-color:#dce6f3!important}
+#view-container > #skills-page .talent-interview-date{background:#e7f0ff!important;color:var(--hr-accent)!important}
+#view-container > #skills-page .talent-interview-status{color:#52647d}
+#view-container > #skills-page .talent-form label,#view-container > #skills-page .talent-enrollment label{color:#40536e!important}
+#view-container > #skills-page :is(input:not([type=checkbox]),select,textarea),#view-container > #employees-page :is(input:not([type=checkbox]),select,textarea){background:#fff!important;color:#263b56!important;border-color:#cdd9e8!important}
+#view-container > #skills-page :is(input,select,textarea)::placeholder,#view-container > #employees-page :is(input,select,textarea)::placeholder{color:#71829a!important;opacity:1}
+#view-container > #skills-page .talent-course-card,#view-container > #skills-page .talent-enrollment{border-color:#dfe7f1}
