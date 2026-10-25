@@ -341,7 +341,7 @@
     // Lo que se restringe por rol son las áreas sensibles, no el acceso a toda la aplicación.
     const access={
       superadmin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','admin','timer','habits','goals','focus','personal','stats','gamification','settings'],
-      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','timer','habits','goals','focus','personal','stats','gamification','settings'],
+      admin:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','settings'],
       hr:['dashboard','tasks','calendar','projects','teams','meetings','employees','surveys','my-surveys','skills','timer','habits','goals','focus','personal','stats','gamification','settings'],
       employee:['dashboard','tasks','calendar','projects','teams','meetings','my-surveys','my-development','join-organization','timer','habits','goals','focus','personal','stats','gamification','settings']
     };

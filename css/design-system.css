@@ -594,12 +594,14 @@ body[data-user-accent="true"]:not(.focusai-public-view) .view-container .color-o
   box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
 /* The public welcome and login pages keep their original FocusAI palette. */
-body.focusai-public-view .auth-page,
-body.focusai-public-view .welcome-page {
+body.focusai-public-view {
   --accent: #6366f1;
   --accent-hover: #4f52d3;
   --accent-soft: rgba(99,102,241,.12);
+  --accent-rgb: 99,102,241;
+  --accent-glow: rgba(99,102,241,.28);
   --eco-blue: #6366f1;
+  --eco-blue-rgb: 99,102,241;
   --eco-blue-hover: #4f52d3;
   --eco-blue-soft: rgba(99,102,241,.12);
 }

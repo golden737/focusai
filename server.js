@@ -36,10 +36,11 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false 
 app.use(express.json({ limit: '2mb' }));
 app.use('/api', (_req,res,next) => { res.set('Cache-Control','no-store, private'); res.set('Pragma','no-cache'); next(); });
 app.use(session({
-  store: new PgSession({ pool, tableName: 'app_sessions', createTableIfMissing: true, pruneSessionInterval: 15 * 60 }),
+  // Mantiene alineada la expiración de la sesión persistida en Postgres con la cookie del navegador.
+  store: new PgSession({ pool, tableName: 'app_sessions', createTableIfMissing: true, pruneSessionInterval: 15 * 60, ttl: 30 * 24 * 60 * 60 }),
   name: 'focusai.sid', secret: process.env.SESSION_SECRET,
-  resave: false, saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 }
+  resave: false, saveUninitialized: false, rolling: true,
+  cookie: { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 30 * 24 * 60 * 60 * 1000 }
 }));
 
 async function bootstrap() {

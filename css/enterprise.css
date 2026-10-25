@@ -384,3 +384,38 @@ body > .survey-modal-backdrop #survey-form{min-height:0!important;overflow-y:aut
 .talent-my-course{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(160px,.45fr);gap:12px;align-items:start;padding:15px 0;border-bottom:1px solid var(--eco-line)}.talent-my-course .talent-course-info p{max-width:650px}.talent-my-course .talent-level-track{height:5px;overflow:hidden;border-radius:8px;background:#edf0f6;margin:9px 0}.talent-my-course .talent-level-track i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#526be1,#42b49a)}.my-training-form{display:grid;gap:8px;padding:10px;border:1px solid var(--eco-line);border-radius:11px;background:#fafbfe}.my-training-form label{display:grid;gap:4px;font-size:9px;color:#68758c}.my-training-form select,.my-training-form input[type=range]{width:100%;box-sizing:border-box}.my-training-form a{justify-content:center;text-decoration:none}.talent-my-interview{display:grid;gap:5px;padding:9px 0;border-bottom:1px solid var(--eco-line);font-size:10px;color:#44536b}.talent-my-interview small,.talent-my-interview span{font-size:9px;color:#818da1;line-height:1.5}
 @media(max-width:900px){.talent-overview{grid-template-columns:repeat(2,1fr)}.talent-recommendations,.talent-two-col{grid-template-columns:1fr}.talent-enrollment{grid-template-columns:1fr 1fr}.talent-enrollment>div{grid-column:1/-1}}
 @media(max-width:600px){.talent-heading,.talent-interview-intro{align-items:stretch;flex-direction:column}.talent-overview{gap:7px}.talent-overview article{padding:12px}.talent-overview b{font-size:22px}.talent-tabs{width:100%;box-sizing:border-box}.talent-tabs button{padding:9px 11px}.talent-form-row,.people-extra-grid,.people-dashboard-columns{grid-template-columns:1fr}.talent-interview-card{grid-template-columns:52px 1fr}.talent-interview-card>.eco-btn{grid-column:2;justify-self:start}.people-dashboard-kpis{grid-template-columns:repeat(2,1fr)}.talent-my-course{grid-template-columns:34px 1fr}.talent-my-course .my-training-form{grid-column:2}}
+
+/* Consistencia visual para directorio y talento con el acento elegido. */
+#employees-page,#skills-page,#my-development-page{--hr-accent:var(--accent,#6366f1);--hr-accent-soft:var(--accent-soft,rgba(99,102,241,.12));--hr-accent-rgb:var(--accent-rgb,99,102,241);--eco-blue:var(--hr-accent);--eco-blue-hover:var(--accent-hover,#4f52d3);--eco-blue-soft:var(--hr-accent-soft)}
+#employees-page .people-overview article,#skills-page .talent-overview article,#my-development-page .talent-overview article{position:relative;overflow:hidden;border-color:#e7eaf1;border-radius:16px;background:linear-gradient(145deg,#fff,#fafbff);box-shadow:0 8px 24px rgba(31,45,74,.045);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+#employees-page .people-overview article:hover,#skills-page .talent-overview article:hover,#my-development-page .talent-overview article:hover{transform:translateY(-2px);border-color:rgba(var(--hr-accent-rgb),.28);box-shadow:0 12px 28px rgba(31,45,74,.08)}
+#employees-page .people-overview article:before,#skills-page .talent-overview article:before,#my-development-page .talent-overview article:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--hr-accent);opacity:.72}
+#employees-page .people-overview strong,#skills-page .talent-overview b,#my-development-page .talent-overview b{color:var(--hr-accent)}
+#employees-page .people-person-row:hover,#employees-page .people-roster-entry:hover{background:var(--hr-accent-soft)}
+#employees-page .people-person-row.is-selected{background:var(--hr-accent-soft);border-color:rgba(var(--hr-accent-rgb),.28);box-shadow:inset 3px 0 var(--hr-accent)}
+#employees-page .people-avatar,#employees-page .people-avatar-large{background:var(--hr-accent-soft);color:var(--hr-accent)}
+#employees-page .people-row-dashboard:hover{color:var(--hr-accent);border-color:rgba(var(--hr-accent-rgb),.3);background:var(--hr-accent-soft)}
+#employees-page .people-section-kicker,#skills-page .talent-kicker,#my-development-page .talent-kicker{color:var(--hr-accent)}
+#employees-page .people-assign-form{border-color:rgba(var(--hr-accent-rgb),.17);background:linear-gradient(135deg,var(--hr-accent-soft),#fff 70%)}
+#employees-page .people-assign-form :is(input,textarea,select):focus,#skills-page .talent-form :is(input,textarea,select):focus,#skills-page .talent-enrollment :is(input,select):focus,#my-development-page :is(input,select,textarea):focus{border-color:var(--hr-accent);box-shadow:0 0 0 3px var(--hr-accent-soft);outline:0}
+#employees-page .people-level-track i{background:linear-gradient(90deg,var(--hr-accent),rgba(var(--hr-accent-rgb),.55))}
+#employees-page .people-dashboard-hero{background:linear-gradient(120deg,var(--hr-accent-soft),#fff)}
+#employees-page .people-dashboard-hero .people-avatar{box-shadow:0 0 0 4px #fff,0 0 0 6px var(--hr-accent-soft)}
+#employees-page .people-extra-grid>div,#employees-page .people-dashboard-columns section{border-color:#e8ebf2;background:linear-gradient(145deg,#fff,#fafbfe)}
+#skills-page .talent-tabs{background:#f8f9fc;border-color:#e6e9f0;box-shadow:inset 0 1px 2px rgba(20,34,60,.025)}
+#skills-page .talent-tabs button{transition:color .16s ease,background .16s ease,box-shadow .16s ease}
+#skills-page .talent-tabs button:hover{color:var(--hr-accent)}
+#skills-page .talent-tabs button.is-active{background:#fff;color:var(--hr-accent);box-shadow:0 2px 8px rgba(22,34,58,.1),inset 0 -2px var(--hr-accent)}
+#skills-page .talent-recommendations{border-color:rgba(var(--hr-accent-rgb),.18);background:linear-gradient(120deg,var(--hr-accent-soft),#fff 66%)}
+#skills-page .talent-rec-icon,#skills-page .talent-course-symbol{color:var(--hr-accent);background:var(--hr-accent-soft)}
+#skills-page .talent-interview-date{background:var(--hr-accent-soft);color:var(--hr-accent)}
+#skills-page .talent-agreement{border-left-color:var(--hr-accent);background:var(--hr-accent-soft)}
+#skills-page .talent-interview-card{transition:border-color .16s ease,box-shadow .16s ease}
+#skills-page .talent-interview-card:hover{border-color:rgba(var(--hr-accent-rgb),.23);box-shadow:0 8px 24px rgba(31,45,74,.07)}
+#skills-page .talent-my-course .talent-level-track i{background:linear-gradient(90deg,var(--hr-accent),#45ad91)}
+#skills-page .talent-skill-checks{background:#fcfcfe}
+#skills-page .talent-check-grid label:has(input:checked){background:var(--hr-accent-soft);color:var(--hr-accent)}
+#employees-page :is(button,a):focus-visible,#skills-page :is(button,a):focus-visible,#my-development-page :is(button,a):focus-visible{outline:3px solid var(--hr-accent-soft);outline-offset:2px}
+body[data-user-accent="true"]:not(.focusai-public-view) #employees-page .eco-btn-primary,body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .eco-btn-primary,body[data-user-accent="true"]:not(.focusai-public-view) #my-development-page .eco-btn-primary{background:var(--hr-accent);border-color:var(--hr-accent);color:#fff}
+body[data-user-accent="true"]:not(.focusai-public-view) #employees-page .eco-btn-primary:hover,body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .eco-btn-primary:hover,body[data-user-accent="true"]:not(.focusai-public-view) #my-development-page .eco-btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+@media(prefers-reduced-motion:reduce){#employees-page *,#skills-page *,#my-development-page *{scroll-behavior:auto!important;transition-duration:.01ms!important}}

@@ -200,10 +200,18 @@ window.FlowApp = (() => {
   }
 
   function _applyAccent(color) {
-    // El acento elegido pertenece a la interfaz privada del usuario.
-    // Se aplica al body (no a :root) para no recolorear el login ni la portada pública.
     const target = document.body;
-    const chosen = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? String(color) : DEFAULT_ACCENT;
+    const publicView = Boolean(document.querySelector('.auth-page, .welcome-page'));
+    const validColor = /^#[0-9a-f]{6}$/i.test(String(color || ''));
+    const canUsePersonalAccent = Boolean(FlowState.get('user.id')) && !publicView && validColor;
+    const properties = ['--user-accent','--accent','--accent-hover','--accent-soft','--accent-rgb','--accent-glow','--border-focus','--shadow-accent','--eco-blue','--eco-blue-rgb','--eco-blue-soft','--eco-blue-hover','--focusai-accent-gradient'];
+    target.classList.toggle('focusai-public-view', publicView);
+    if (!canUsePersonalAccent) {
+      properties.forEach(name => target.style.removeProperty(name));
+      delete target.dataset.userAccent;
+      return;
+    }
+    const chosen = String(color);
     const rgb = chosen.match(/[0-9a-f]{2}/ig).map(v => parseInt(v, 16));
     const mix = (a, b, t) => Math.round(a + (b - a) * t);
     const toHex = (v) => v.toString(16).padStart(2, '0');
@@ -211,6 +219,7 @@ window.FlowApp = (() => {
     const soft = `rgba(${rgb.join(',')},.16)`;
     const glow = `rgba(${rgb.join(',')},.28)`;
     const vars = {
+      '--user-accent': chosen,
       '--accent': chosen,
       '--accent-hover': hover,
       '--accent-soft': soft,
@@ -226,12 +235,6 @@ window.FlowApp = (() => {
     };
     Object.entries(vars).forEach(([name, value]) => target.style.setProperty(name, value));
     target.dataset.userAccent = 'true';
-    // Vistas públicas mantienen siempre el tema original de FocusAI.
-    const keepBrandColors = () => {
-      const publicView = document.querySelector('.auth-page, .welcome-page');
-      target.classList.toggle('focusai-public-view', Boolean(publicView));
-    };
-    keepBrandColors();
   }
 
   // Las vistas se inyectan dinámicamente; detectar login/portada para conservar sus colores de marca.
@@ -239,6 +242,7 @@ window.FlowApp = (() => {
     window.__focusAccentViewObserver = new MutationObserver(() => {
       const isPublic = Boolean(document.querySelector('.auth-page, .welcome-page'));
       document.body.classList.toggle('focusai-public-view', isPublic);
+      if (isPublic) _applyAccent(null);
     });
     window.__focusAccentViewObserver.observe(document.getElementById('view-container') || document.body, { childList: true, subtree: true });
   }
