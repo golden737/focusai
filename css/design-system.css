@@ -184,7 +184,7 @@ html, body, .app-shell, .main-content, .app-main, .view-container {
 .view-container .eco-page { color:#edf2ff !important; }
 .view-container .eco-heading h1 { color:#f3f6ff !important; }
 .view-container .eco-heading p { color:#aab8d0 !important; }
-.view-container .eyebrow { color:#9a99ff !important; }
+.view-container .eyebrow { color:var(--accent) !important; }
 .view-container .eco-card,
 .view-container .eco-stat,
 .view-container .eco-panel,
@@ -626,3 +626,27 @@ body[data-user-accent="true"]:not(.focusai-public-view) .view-container .accent-
 body[data-user-accent="true"]:not(.focusai-public-view) .view-container .section-accent {
   background: var(--accent) !important;
 }
+
+/* Acento configurable también en títulos y componentes de RR. HH. */
+body[data-user-accent="true"]:not(.focusai-public-view) #view-container :is(.eyebrow,.talent-kicker,.people-section-kicker,.text-accent,.accent-text),
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog :is(.eyebrow,.talent-kicker,.people-section-kicker,.text-accent,.accent-text){color:var(--accent)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog{--accent:var(--user-accent);--eco-blue:var(--user-accent);--eco-blue-soft:var(--accent-soft);border-color:rgba(var(--accent-rgb),.3);box-shadow:0 24px 70px rgba(7,13,25,.32),0 0 0 1px rgba(var(--accent-rgb),.08)}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog .modal-title{color:var(--accent)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog .people-avatar{background:var(--accent-soft)!important;color:var(--accent)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog .people-dashboard-hero{background:linear-gradient(120deg,var(--accent-soft),var(--bg-surface))!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog .people-dashboard-kpis b{color:var(--accent)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog :is(input,select,textarea):focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-soft)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog input[type="checkbox"],body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog input[type="radio"],body[data-user-accent="true"]:not(.focusai-public-view) #global-dialog input[type="range"]{accent-color:var(--accent)!important}
+/* Override de alto contraste para la tarea asignada dentro de la ficha de empleado. */
+#view-container > #employees-page .people-main-section,#view-container > #employees-page .people-assign-form{background:#fff!important;color:#26364d!important}
+#view-container > #employees-page .people-assign-form :is(input,textarea,select){background:#fff!important;color:#24344b!important;border-color:#d8dee8!important}
+#view-container > #employees-page .people-assign-form :is(input,textarea,select)::placeholder{color:#77849a!important}
+#view-container > #employees-page .people-assign-controls label{color:#42516a!important}
+/* Accentos restantes que también se derivan del tema elegido. */
+body[data-user-accent="true"]:not(.focusai-public-view) ::selection{background:rgba(var(--accent-rgb),.32);color:#fff}
+body[data-user-accent="true"]:not(.focusai-public-view) .sidebar-logo{filter:drop-shadow(0 5px 12px rgba(var(--accent-rgb),.24))}
+body[data-user-accent="true"]:not(.focusai-public-view) .projects-view .empty-state{background:radial-gradient(ellipse at 50% 0%,rgba(var(--accent-rgb),.09),transparent 58%),#101827}
+body[data-user-accent="true"]:not(.focusai-public-view) .projects-view .empty-state .empty-icon{background:rgba(var(--accent-rgb),.13);border-color:rgba(var(--accent-rgb),.22)}
+body[data-user-accent="true"]:not(.focusai-public-view) .projects-view .project-tab.active{background:rgba(var(--accent-rgb),.14)!important;border-color:rgba(var(--accent-rgb),.55)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) .view-container .form-input:focus,body[data-user-accent="true"]:not(.focusai-public-view) .view-container input.form-input:focus,body[data-user-accent="true"]:not(.focusai-public-view) .view-container textarea.form-input:focus{border-color:var(--accent)!important;box-shadow:0 0 0 4px var(--accent-soft)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .ai-talent-suggestions{background:var(--accent-soft);border-color:rgba(var(--accent-rgb),.24)}

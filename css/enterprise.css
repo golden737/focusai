@@ -42,7 +42,7 @@ body { background: var(--eco-canvas); }
 .eco-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; padding: 4px 0 3px; }
 .eco-heading h1 { margin:7px 0 6px; color:#15243a; font-size: clamp(27px,3vw,35px); letter-spacing:-.055em; line-height:1.1; font-weight:750; }
 .eco-heading p { margin:0; color:var(--eco-muted); font-size:14px; line-height:1.6; max-width:720px; }
-.eyebrow { font-size:10px; color:#3c64c7; font-weight:800; letter-spacing:.14em; }
+.eyebrow { font-size:10px; color:var(--accent,#3c64c7); font-weight:800; letter-spacing:.14em; }
 .eco-pill { display:inline-flex; align-items:center; gap:8px; background:#e8f7f3; color:#087a64; border:1px solid #ccefe5; padding:8px 12px; border-radius:999px; font-size:11px; font-weight:750; white-space:nowrap; }
 .eco-pill i { width:7px; height:7px; border-radius:50%; background:#14b88a; }
 .eco-pill-warning { background:#fff4df; border-color:#ffe4b1; color:#9b6205; }
@@ -419,3 +419,18 @@ body > .survey-modal-backdrop #survey-form{min-height:0!important;overflow-y:aut
 body[data-user-accent="true"]:not(.focusai-public-view) #employees-page .eco-btn-primary,body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .eco-btn-primary,body[data-user-accent="true"]:not(.focusai-public-view) #my-development-page .eco-btn-primary{background:var(--hr-accent);border-color:var(--hr-accent);color:#fff}
 body[data-user-accent="true"]:not(.focusai-public-view) #employees-page .eco-btn-primary:hover,body[data-user-accent="true"]:not(.focusai-public-view) #skills-page .eco-btn-primary:hover,body[data-user-accent="true"]:not(.focusai-public-view) #my-development-page .eco-btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
 @media(prefers-reduced-motion:reduce){#employees-page *,#skills-page *,#my-development-page *{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+/* Asignación integrada: una sola superficie blanca, espaciosa y legible. */
+#employees-page .people-main-section{background:#fff!important;color:#26364d!important}
+#employees-page .people-assign-form{display:grid;gap:12px;margin:14px 0 10px;padding:12px 0 16px;border:0;border-bottom:1px solid #e7ebf1;border-radius:0;background:#fff!important;color:#26364d!important}
+#employees-page .people-assign-title b{color:#24344b;font-size:13px}
+#employees-page .people-assign-title small{color:#617087;font-size:11px;line-height:1.45}
+#employees-page .people-assign-form input,#employees-page .people-assign-form textarea,#employees-page .people-assign-controls select{min-height:42px;padding:10px 12px;border:1px solid #d8dee8;border-radius:9px;background:#fff!important;color:#24344b!important;font:500 13px var(--font-sans)}
+#employees-page .people-assign-form textarea{min-height:72px}
+#employees-page .people-assign-form :is(input,textarea,select)::placeholder{color:#77849a;opacity:1}
+#employees-page .people-assign-controls{grid-template-columns:minmax(130px,.7fr) minmax(160px,1fr) auto;gap:12px}
+#employees-page .people-assign-controls label{gap:6px;color:#42516a;font-size:11px}
+#employees-page .people-assign-controls .eco-btn{min-height:42px;padding:9px 16px;font-size:12px}
+#my-development-page .talent-overview{grid-template-columns:repeat(3,minmax(0,1fr))}
+body[data-user-accent="true"]:not(.focusai-public-view) #employees-page .people-assign-form :is(input,textarea,select):focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-soft)!important}
+body[data-user-accent="true"]:not(.focusai-public-view) #employees-page .people-assign-form .eco-btn-primary{background:var(--focusai-accent-gradient)!important;border-color:var(--accent)!important;color:#fff!important}
+@media(max-width:720px){#employees-page .people-assign-controls{grid-template-columns:1fr 1fr}#employees-page .people-assign-controls button{grid-column:1/-1}#my-development-page .talent-overview{grid-template-columns:1fr 1fr}}

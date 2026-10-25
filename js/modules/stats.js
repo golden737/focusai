@@ -3,6 +3,8 @@
 
 window.FlowStats = (() => {
 
+ function _accentColor(){return getComputedStyle(document.body).getPropertyValue('--accent').trim()||'#6366f1';}
+
  // ── Métricas generales ────────────────────────────────────────────────────
 
  function getDashboardMetrics() {
@@ -159,7 +161,7 @@ window.FlowStats = (() => {
  });
  return {
  labels: Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2,'0')}:00`),
- datasets: [{ label: 'Min trabajados', data: byHour, backgroundColor: '#6366f1', borderRadius: 4 }],
+ datasets: [{ label: 'Min trabajados', data: byHour, backgroundColor: _accentColor(), borderRadius: 4 }],
  };
  }
 
@@ -190,8 +192,8 @@ window.FlowStats = (() => {
  labels: days,
  timeChart: {
  datasets: [
- { label: 'Esta semana (h)', data: thisWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: '#6366f1', borderRadius: 4 },
- { label: 'Semana anterior (h)', data: lastWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: '#a5b4fc', borderRadius: 4 },
+ { label: 'Esta semana (h)', data: thisWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: _accentColor(), borderRadius: 4 },
+ { label: 'Semana anterior (h)', data: lastWeekMin.map((m) => Math.round(m/60*10)/10), backgroundColor: FlowHelpers.hexToRgba(_accentColor(),.48), borderRadius: 4 },
  ],
  },
  tasksChart: {
@@ -264,7 +266,7 @@ window.FlowStats = (() => {
  });
  return {
  labels,
- datasets: [{ label, data: Object.values(obj), backgroundColor: '#6366f1', borderRadius: 6 }],
+ datasets: [{ label, data: Object.values(obj), backgroundColor: _accentColor(), borderRadius: 6 }],
  };
  }
 

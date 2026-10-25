@@ -12,8 +12,10 @@ window.FlowCharts = (() => {
     danger:    '#ef4444',
     info:      '#3b82f6',
     muted:     '#64748b',
-    palette: ['#6366f1','#22c55e','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316','#a855f7'],
+    palette: ['#6366f1','#22c55e','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316','#64748b'],
   };
+  function _accentColor(){return getComputedStyle(document.body).getPropertyValue('--accent').trim()||COLORS.primary;}
+  function _palette(){return [_accentColor(),...COLORS.palette.slice(1)];}
 
   // ── Defaults globales de Chart.js ─────────────────────────────────────────
 
@@ -74,8 +76,8 @@ window.FlowCharts = (() => {
     const coloredData = {
       ...data,
       datasets: data.datasets.map((ds, i) => ({
-        borderColor:     ds.borderColor || COLORS.palette[i % COLORS.palette.length],
-        backgroundColor: ds.backgroundColor || FlowHelpers.hexToRgba(COLORS.palette[i % COLORS.palette.length], 0.1),
+        borderColor:     ds.borderColor || _palette()[i % _palette().length],
+        backgroundColor: ds.backgroundColor || FlowHelpers.hexToRgba(_palette()[i % _palette().length], 0.1),
         borderWidth:     2,
         pointRadius:     4,
         pointHoverRadius:6,
@@ -146,9 +148,9 @@ window.FlowCharts = (() => {
       data: {
         ...data,
         datasets: data.datasets.map((ds, i) => ({
-          borderColor:     COLORS.palette[i],
-          backgroundColor: FlowHelpers.hexToRgba(COLORS.palette[i], 0.2),
-          pointBackgroundColor: COLORS.palette[i],
+          borderColor:     _palette()[i % _palette().length],
+          backgroundColor: FlowHelpers.hexToRgba(_palette()[i % _palette().length], 0.2),
+          pointBackgroundColor: _palette()[i % _palette().length],
           borderWidth: 2,
           ...ds,
         })),
@@ -163,7 +165,7 @@ window.FlowCharts = (() => {
 
   // ── Mini sparkline (sin ejes, inline) ─────────────────────────────────────
 
-  function sparkline(canvasId, values, color = COLORS.primary) {
+  function sparkline(canvasId, values, color = null) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return null;
     _destroyExisting(canvasId);
@@ -174,8 +176,8 @@ window.FlowCharts = (() => {
         labels:   values.map(() => ''),
         datasets: [{
           data:            values,
-          borderColor:     color,
-          backgroundColor: FlowHelpers.hexToRgba(color, 0.15),
+          borderColor:     color||_accentColor(),
+          backgroundColor: FlowHelpers.hexToRgba(color||_accentColor(), 0.15),
           borderWidth:     2,
           pointRadius:     0,
           fill:            true,
@@ -222,8 +224,8 @@ window.FlowCharts = (() => {
     return {
       ...data,
       datasets: data.datasets.map((ds, i) => ({
-        backgroundColor: ds.backgroundColor || COLORS.palette.map((c) => FlowHelpers.hexToRgba(c, 0.85)),
-        borderColor:     ds.borderColor     || COLORS.palette[i % COLORS.palette.length],
+        backgroundColor: ds.backgroundColor || _palette().map((c) => FlowHelpers.hexToRgba(c, 0.85)),
+        borderColor:     ds.borderColor     || _palette()[i % _palette().length],
         borderWidth:     ds.borderWidth     ?? 0,
         borderRadius:    ds.borderRadius    ?? 6,
         ...ds,

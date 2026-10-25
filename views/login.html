@@ -166,7 +166,6 @@
  const data = await FlowSupabase.signIn(fd.get('email'), fd.get('password'));
  FlowState.update('user', { id:data.user.id, email:data.user.email, name:data.user.user_metadata?.name || data.user.name || fd.get('email').split('@')[0], role:data.user.role || 'employee' });
  FlowState.persist();
- window.dispatchEvent(new Event('focusai:authenticated'));
  await FlowRouter.navigate('dashboard', {}, { replace: true });
  } catch(err) {
  error.textContent = err.message || 'Error al iniciar sesión';
@@ -194,9 +193,11 @@
  btn.disabled = true;
 
  try {
- await FlowSupabase.signUp(fd.get('email'), fd.get('password'), fd.get('name'));
- FlowApp.toast('¡Cuenta creada! Ya puedes iniciar sesión.', 'success', { duration: 6000 });
- document.querySelector('.auth-tab[data-tab="login"]').click();
+ const data = await FlowSupabase.signUp(fd.get('email'), fd.get('password'), fd.get('name'));
+ FlowState.update('user', { id:data.user.id, email:data.user.email, name:data.user.name, role:data.user.role || 'employee', accentColor:data.user.accentColor || '#6366f1' });
+ FlowState.persist();
+ FlowApp.applyAccent(data.user.accentColor || '#6366f1');
+ await FlowRouter.navigate('dashboard', {}, { replace: true });
  } catch(err) {
  error.textContent = err.message || 'Error al crear la cuenta';
  error.hidden = false;

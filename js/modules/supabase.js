@@ -6,7 +6,7 @@ window.FlowSupabase = (() => {
   async function api(path, opts={}) { const r=await fetch(path,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(opts.headers||{})},...opts}); const b=await r.json().catch(()=>({})); if(!r.ok) throw new Error(b.error||'Error del servidor'); return b; }
   function isConfigured(){return true;}
   function getClient(){return null;}
-  async function signUp(email,password,name){const d=await api('/api/auth/signup',{method:'POST',body:JSON.stringify({email,password,name})});return d;}
+  async function signUp(email,password,name){const d=await api('/api/auth/signup',{method:'POST',body:JSON.stringify({email,password,name})});currentUser=d.user;listeners.forEach(cb=>cb('SIGNED_IN',currentUser));window.dispatchEvent(new Event('focusai:authenticated'));return d;}
   async function signIn(email,password){const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email,password})});currentUser=d.user;listeners.forEach(cb=>cb('SIGNED_IN',currentUser));window.dispatchEvent(new Event('focusai:authenticated'));return d;}
   async function signOut(){await api('/api/auth/logout',{method:'POST',body:'{}'});currentUser=null;listeners.forEach(cb=>cb('SIGNED_OUT',null));}
   async function getSession(){try{const d=await api('/api/auth/me');currentUser=d.user;return {user:d.user};}catch{return null;}}
