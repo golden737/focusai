@@ -514,6 +514,8 @@ window.FlowApp = (() => {
         FlowState.set('user.id', null);
         FlowState.set('user.email', null);
         FlowState.set('user.name', null);
+        if (window.FlowAI?.clearHistory) FlowAI.clearHistory();
+        FlowState.set('ai.chatHistoryOwner', '');
         FlowRouter.navigate('login', {}, { replace: true });
       } else if (user) {
         await _hydrateAuthenticatedUser(user);
@@ -529,6 +531,7 @@ window.FlowApp = (() => {
     const name = profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario';
     const accentColor = profile?.accent_color || '#6366f1';
     FlowState.update('user', { id: user.id, email: user.email, name, accentColor, role: profile?.role || user.role || 'employee' });
+    if (window.FlowAI?.prepareUserSession) FlowAI.prepareUserSession();
     _applyAccent(accentColor);
     FlowState.persist();
     // La primera carga puede ocurrir antes de resolver la cookie de sesión.
@@ -546,6 +549,8 @@ window.FlowApp = (() => {
     FlowState.set('user.name', null);
     FlowState.set('user.email', null);
     FlowState.set('user.accentColor', null);
+    if (window.FlowAI?.clearHistory) FlowAI.clearHistory();
+    FlowState.set('ai.chatHistoryOwner', '');
     _applyAccent(null);
     // Los datos persistentes están en Neon; la sesión se invalida en el backend.
     FlowRouter.navigate('login');

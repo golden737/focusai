@@ -90,8 +90,10 @@
  function _renderMessage(m){
  const isBot = m.role === 'assistant';
  const time = m.ts ? new Date(m.ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '';
+ const content = isBot ? FlowAI.sanitizeAssistantText(m.content) : String(m.content || '');
+ const safeContent = content || (isBot ? 'No pude interpretar esa respuesta. Intenta preguntarlo de otra manera.' : '');
  return `<div class="ai-message ${isBot?'ai-message-bot':'ai-message-user'}">
- <div class="ai-message-bubble">${FlowHelpers.nl2br(FlowHelpers.escapeHTML(m.content))}</div>
+ <div class="ai-message-bubble">${FlowHelpers.nl2br(FlowHelpers.escapeHTML(safeContent))}</div>
  <div class="ai-message-time">${time}</div>
  </div>`;
  }

@@ -203,9 +203,25 @@ NAVIGATE → { view: "dashboard"|"tasks"|"timer"|"habits"|"goals"|"projects"|"ca
 PLAN_DAY → { tasks: [{ id, order, estimatedMin }] }
 SHOW_TOAST → { message, type }`;
 
- if (mode === 'planning') return base + '\n\nMODO: Planificador del día. Propón un plan optimizado con la acción PLAN_DAY.';
- if (mode === 'analysis') return base + '\n\nMODO: Analista. Detecta patrones, sobrecarga y oportunidades de mejora. Sé conciso.';
- return base + '\n\nMODO ASISTENTE: Ayuda al usuario. Sé proactivo y usa acciones cuando sea útil.';
+ const scopeNote = `
+LÍMITES DE CONTEXTO: Solo conoces los datos personales enumerados arriba. No tienes acceso al directorio de empleados, expedientes de RR. HH., encuestas ni desempeño individual, salvo que esos datos estén incluidos explícitamente. Si preguntan por ellos, dilo claramente y orienta a la persona al Directorio de empleados. Nunca sustituyas una pregunta de empleados por un resumen de proyectos ni inventes métricas.`;
+
+ if (mode === 'planning') return base + scopeNote + '\n\nMODO: Planificador del día. Propón un plan optimizado con la acción PLAN_DAY.';
+ if (mode === 'analysis') return base + scopeNote + '\n\nMODO: Analista. Detecta patrones, sobrecarga y oportunidades de mejora. Sé conciso.';
+ return base + scopeNote + '\n\nMODO ASISTENTE: Ayuda al usuario. Sé proactivo y usa acciones cuando sea útil.';
+ }
+
+ const ACTION_NAMES = 'CREATE_TASK|UPDATE_TASK|COMPLETE_TASK|DELETE_TASK|RESCHEDULE_TASK|SET_PRIORITY|CREATE_HABIT|CREATE_GOAL|CREATE_PROJECT|CREATE_EVENT|START_POMODORO|START_STOPWATCH|PAUSE_TIMER|RESUME_TIMER|STOP_TIMER|COMPLETE_HABIT|SET_GOAL_PROGRESS|NAVIGATE|PLAN_DAY|SHOW_TOAST|ASSIGN_EMPLOYEE_TASK|CREATE_TRAINING|ASSIGN_TRAINING|EVALUATE_COMPETENCY|SCHEDULE_RECRUITMENT_INTERVIEW|UPDATE_MY_TRAINING';
+
+ function _stripInternalActionMarkup(value) {
+ const source=String(value || '');
+ const hasLegacyAction=new RegExp(`<\\s*(?:${ACTION_NAMES})\\b`, 'i').test(source);
+ const cleaned=source
+ .replace(new RegExp(`<\\s*(?:${ACTION_NAMES})\\b[\\s\\S]*?>`, 'gi'), '')
+ .replace(new RegExp(`<\\/\\s*(?:${ACTION_NAMES})\\s*>`, 'gi'), '')
+ .replace(/```(?:json|xml)?\s*[\s\S]*?```/gi, (block) => /"type"\s*:\s*"(?:CREATE_TASK|UPDATE_TASK|COMPLETE_TASK|DELETE_TASK|RESCHEDULE_TASK|SET_PRIORITY|CREATE_HABIT|CREATE_GOAL|CREATE_PROJECT|CREATE_EVENT|START_POMODORO|START_STOPWATCH|PAUSE_TIMER|RESUME_TIMER|STOP_TIMER|COMPLETE_HABIT|SET_GOAL_PROGRESS|NAVIGATE|PLAN_DAY|SHOW_TOAST|ASSIGN_EMPLOYEE_TASK|CREATE_TRAINING|ASSIGN_TRAINING|EVALUATE_COMPETENCY|SCHEDULE_RECRUITMENT_INTERVIEW|UPDATE_MY_TRAINING)"/i.test(block) ? '' : block)
+ .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+ return hasLegacyAction ? 'Esa respuesta anterior tuvo un error. Vuelve a hacer la pregunta y te responderé sin mostrar instrucciones internas.' : cleaned;
  }
 
  // ── Ejecutar acciones embebidas ───────────────────────────────────────────
@@ -214,6 +230,7 @@ SHOW_TOAST → { message, type }`;
  const regex = /<action>\s*([\s\S]*?)\s*<\/action>/gi;
  let match;
  const results = [];
+ const failures = [];
  const seen = new Set();
  while ((match = regex.exec(text)) !== null) {
  try {
@@ -225,10 +242,12 @@ SHOW_TOAST → { message, type }`;
  }
  } catch (e) {
  console.warn('[AI] Error en acción:', e.message, match[1]);
+ failures.push(e.message || 'No se pudo completar una acción.');
  }
  }
+ const cleanedText=_stripInternalActionMarkup(text.replace(/<action>[\s\S]*?<\/action>/gi, ''));
  return {
- text: text.replace(/<action>[\s\S]*?<\/action>/g, '').trim(),
+ text: failures.length ? `${cleanedText}${cleanedText?'\n\n':''}No pude completar una acción: ${failures.join('; ')}` : cleanedText,
  actions: results,
  };
  }
@@ -256,6 +275,37 @@ SHOW_TOAST → { message, type }`;
  case 'COMPLETE_HABIT': return FlowHabits.complete(payload.id);
  case 'SET_GOAL_PROGRESS': return FlowGoals.setProgress(payload.id, payload.progress);
  case 'SHOW_TOAST': return FlowApp.toast(payload.message, payload.type || 'info');
+ case 'ASSIGN_EMPLOYEE_TASK': {
+ const employeeId=String(payload.employeeId||'').trim();
+ if (!employeeId) throw new Error('No se identificó a la persona para asignar la tarea.');
+ return _apiRequest(`/api/enterprise/employees/${encodeURIComponent(employeeId)}/tasks`, { method: 'POST', body: JSON.stringify({ title: payload.title, description: payload.description || '', priority: payload.priority || 'medium', dueDate: payload.dueDate || null }) });
+ }
+ case 'CREATE_TRAINING': return _apiRequest('/api/enterprise/trainings', { method: 'POST', body: JSON.stringify(payload) });
+ case 'ASSIGN_TRAINING': return _apiRequest(`/api/enterprise/trainings/${encodeURIComponent(payload.trainingId)}/assign`, { method: 'POST', body: JSON.stringify({ employeeIds: Array.isArray(payload.employeeIds) ? payload.employeeIds : [payload.employeeId].filter(Boolean) }) });
+ case 'EVALUATE_COMPETENCY': return _apiRequest('/api/enterprise/competencies/evaluations', { method: 'POST', body: JSON.stringify(payload) });
+ case 'SCHEDULE_RECRUITMENT_INTERVIEW': {
+ const data={...payload};
+ if(data.scheduledAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(data.scheduledAt)) data.scheduledAt=new Date(data.scheduledAt).toISOString();
+ const interview=await _apiRequest('/api/enterprise/interviews', { method: 'POST', body: JSON.stringify(data) });
+ try {
+  const start=new Date(interview.scheduled_at||data.scheduledAt);
+  if(Number.isFinite(start.getTime())){
+   const pad=n=>String(n).padStart(2,'0');
+   const startDate=`${start.getFullYear()}-${pad(start.getMonth()+1)}-${pad(start.getDate())}`;
+   const startTime=`${pad(start.getHours())}:${pad(start.getMinutes())}`;
+   const end=new Date(start.getTime()+60*60*1000);
+   await FlowCalendar.createEvent({interviewId:interview.id,title:`Entrevista · ${data.candidateName} — ${data.positionTitle}`,description:[data.candidateEmail,data.candidatePhone,data.agenda].filter(Boolean).join('\n'),type:'meeting',color:'var(--accent)',startDate,endDate:startDate,startTime,endTime:`${pad(end.getHours())}:${pad(end.getMinutes())}`,attendees:data.candidateEmail?[data.candidateEmail]:[]});
+  }
+ } catch(calendarError){console.warn('[AI] Entrevista guardada, pero no se pudo sincronizar con el calendario:',calendarError.message);}
+ return interview;
+ }
+ case 'UPDATE_MY_TRAINING': {
+ const enrollmentId=String(payload.enrollmentId||'').trim();
+ if(!enrollmentId) throw new Error('No se identificó la capacitación asignada.');
+ const isEmployee=!['admin','hr','superadmin'].includes(FlowState.get('user.role'));
+ const endpoint=isEmployee?`/api/my-development/trainings/${encodeURIComponent(enrollmentId)}`:`/api/enterprise/training-enrollments/${encodeURIComponent(enrollmentId)}`;
+ return _apiRequest(endpoint,{method:'PATCH',body:JSON.stringify({status:payload.status,progress:payload.progress})});
+ }
  case 'PLAN_DAY': {
  for (const item of payload.tasks || []) {
  await FlowTasks.update(item.id, { order: item.order, estimatedMin: item.estimatedMin });
@@ -383,6 +433,7 @@ SHOW_TOAST → { message, type }`;
  /** Chat conversacional */
  async function chat(userMessage) {
  if (!isConfigured()) throw new Error('Configura la IA local en Ajustes primero');
+ prepareUserSession();
  _addToHistory('user', userMessage);
  // Las órdenes sencillas se resuelven localmente. Así siguen funcionando
  // aunque un modelo pequeño responda con SQL o no respete el formato action.
@@ -475,8 +526,18 @@ SHOW_TOAST → { message, type }`;
  FlowState.set('ai.chatHistory', [...history, entry].slice(-100));
  }
 
+ function prepareUserSession() {
+ const userId=String(FlowState.get('user.id')||'');
+ if(FlowState.get('ai.chatHistoryOwner')!==userId){
+  FlowState.set('ai.chatHistory',[]);
+  FlowState.set('ai.chatHistoryOwner',userId);
+  FlowState.persist();
+ }
+ }
+
  function clearHistory() {
  FlowState.set('ai.chatHistory', []);
+ FlowState.set('ai.chatHistoryOwner', String(FlowState.get('user.id')||''));
  }
 
  function getSuggestions() {
@@ -521,9 +582,9 @@ SHOW_TOAST → { message, type }`;
  PROVIDERS, RECOMMENDED_MODELS,
  testConnection, listModels, saveConfig, isConfigured,
  // IA
- chat, planDay, estimateTask,
+ chat, planDay, estimateTask, sanitizeAssistantText: _stripInternalActionMarkup,
  detectOverload, suggestPriorities, dailySummary,
- analyzeDayContext, clearHistory, getSuggestions,
+ analyzeDayContext, clearHistory, prepareUserSession, getSuggestions,
  };
 
 })();

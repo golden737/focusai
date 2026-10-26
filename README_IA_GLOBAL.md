@@ -13,9 +13,17 @@ La IA seleccionada por el superadministrador se guarda en `platform_ai_settings`
 
 Todos los módulos que usan `FlowAI` consultan el proveedor global. Los resúmenes de reuniones también utilizan el proveedor elegido; la transcripción sigue dependiendo del motor Whisper instalado/configurado en el servidor.
 
+## Asistente conversacional y permisos por rol
+
+El chat arma su contexto en el backend a partir del usuario autenticado; ignora las instrucciones de sistema/contexto que mande el navegador. Las cuentas `employee` y el rol legado `user` solo aportan sus propios registros, competencias, capacitaciones, entrevistas de desarrollo y estado de encuestas. Si una persona pregunta por un compañero o por métricas de un equipo, el backend devuelve una negativa sin consultar al modelo.
+
+Los roles `admin`, `hr` y `superadmin` reciben contexto de RR. HH. limitado a su organización: directorio, tareas asignadas, competencias, capacitaciones, entrevistas, encuestas agregadas y resúmenes de reuniones. No se incluyen diarios ni registros privados de productividad de otros empleados, ni datos de otras organizaciones. Las acciones de RR. HH. disponibles en el chat vuelven a pasar por las rutas existentes, que verifican rol y organización antes de guardar cambios.
+
+Las preguntas fuera de FocusAI reciben un mensaje fijo de alcance y no se envían al proveedor de IA. El historial del chat se separa por usuario y se limpia al cerrar sesión o cambiar de cuenta.
+
 ## Costes y privacidad
 
-Gemini API se factura según la cuenta, el modelo y el uso. No está incluida automáticamente en una suscripción de ChatGPT. Las solicitudes enviadas a Gemini salen del servidor y pueden incluir el contexto de productividad necesario para la tarea. La IA local envía ese contexto a la URL local configurada.
+Gemini API se factura según la cuenta, el modelo y el uso. No está incluida automáticamente en una suscripción de ChatGPT. Las solicitudes enviadas a Gemini salen del servidor y pueden incluir datos a los que el rol autenticado tiene acceso en FocusAI; la IA local envía ese contexto a la URL configurada. Selecciona un proveedor conforme a las políticas de privacidad de tu organización.
 
 Si se cambia `SESSION_SECRET`, las claves cifradas previamente guardadas podrían dejar de descifrarse; vuelve a guardar la clave de Gemini después de rotar ese secreto.
 
