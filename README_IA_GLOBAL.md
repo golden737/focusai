@@ -21,6 +21,10 @@ Los roles `admin`, `hr` y `superadmin` reciben contexto de RR. HH. limitado a su
 
 Las preguntas fuera de FocusAI reciben un mensaje fijo de alcance y no se envían al proveedor de IA. El historial del chat se separa por usuario y se limpia al cerrar sesión o cambiar de cuenta.
 
+El contexto se recupera según el tema preguntado para evitar enviar al modelo módulos que no vienen al caso. El chat limita su historial y la cantidad de texto generada, y Ollama mantiene el modelo cargado durante cinco minutos después de usarlo para reducir la espera de las consultas siguientes.
+
+La configuración guardada en `platform_ai_settings` es global y no se borra al cerrar sesión el superadministrador. Para que una IA local siga disponible, la PC que ejecuta Ollama debe permanecer encendida y conectada, y el túnel ngrok debe seguir ejecutándose con la misma URL configurada. Cerrar la sesión del superadministrador no detiene Ollama ni ngrok; apagar la PC o cerrar el túnel sí interrumpe temporalmente la conexión.
+
 ## Costes y privacidad
 
 Gemini API se factura según la cuenta, el modelo y el uso. No está incluida automáticamente en una suscripción de ChatGPT. Las solicitudes enviadas a Gemini salen del servidor y pueden incluir datos a los que el rol autenticado tiene acceso en FocusAI; la IA local envía ese contexto a la URL configurada. Selecciona un proveedor conforme a las políticas de privacidad de tu organización.

@@ -443,8 +443,8 @@ LÍMITES DE CONTEXTO: Solo conoces los datos personales enumerados arriba. No ti
  return { text: direct.text, actions: [direct.result] };
  }
  const history = (FlowState.get('ai.chatHistory') || [])
- .slice(-20)
- .map((m) => ({ role: m.role, content: m.content }));
+ .slice(-6)
+ .map((m) => ({ role: m.role, content: String(m.content||'').slice(0,1400) }));
  try {
  const text = await _call(history, _systemPrompt('assistant'), 1000);
  const { text: clean, actions } = await _executeActions(text);

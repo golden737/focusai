@@ -141,7 +141,16 @@ window.FlowApp = (() => {
     const sidebar = document.getElementById('sidebar');
     const toggle  = document.getElementById('sidebar-toggle');
     const mobileToggle = document.getElementById('mobile-nav-toggle');
+    const mobileBackdrop = document.getElementById('mobile-nav-backdrop');
     if (!sidebar || !toggle) return;
+
+    const closeMobileNavigation=()=>{
+      sidebar.classList.remove('mobile-open');
+      mobileBackdrop?.setAttribute('hidden','');
+      mobileToggle?.setAttribute('aria-expanded','false');
+      mobileToggle?.setAttribute('aria-label','Abrir navegación');
+      document.body.classList.remove('mobile-navigation-open');
+    };
 
     // Restaurar estado colapsado
     const collapsed = FlowState.get('ui.sidebarCollapsed');
@@ -155,17 +164,20 @@ window.FlowApp = (() => {
 
     mobileToggle?.addEventListener('click', () => {
       const isOpen = sidebar.classList.toggle('mobile-open');
+      if(mobileBackdrop){if(isOpen)mobileBackdrop.removeAttribute('hidden');else mobileBackdrop.setAttribute('hidden','');}
+      document.body.classList.toggle('mobile-navigation-open',isOpen);
       mobileToggle.setAttribute('aria-expanded', String(isOpen));
       mobileToggle.setAttribute('aria-label', isOpen ? 'Cerrar navegación' : 'Abrir navegación');
     });
+    mobileBackdrop?.addEventListener('click',closeMobileNavigation);
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileNavigation();});
+    window.addEventListener('resize',()=>{if(window.innerWidth>768)closeMobileNavigation();},{passive:true});
 
     sidebar.querySelectorAll('.nav-item').forEach((item) => {
       const label = item.querySelector('span:not(.nav-badge):not(.nav-emoji)')?.textContent?.trim();
       if (label) item.setAttribute('title', label);
       item.addEventListener('click', () => {
-      sidebar.classList.remove('mobile-open');
-      mobileToggle?.setAttribute('aria-expanded', 'false');
-      mobileToggle?.setAttribute('aria-label', 'Abrir navegación');
+      closeMobileNavigation();
       });
     });
     document.getElementById('logout-btn')?.addEventListener('click', logout);

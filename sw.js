@@ -1,6 +1,6 @@
 // ── FocusAI Service Worker ──────────────────────────────────────────────────
 // Versión: actualizar al desplegar nuevos assets para forzar recarga del caché
-const CACHE_VERSION   = 'focusai-v22-role-aware-assistant';
+const CACHE_VERSION   = 'focusai-v23-mobile-fast-ai';
 const STATIC_CACHE    = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE   = `${CACHE_VERSION}-dynamic`;
 const API_CACHE       = `${CACHE_VERSION}-api`;
@@ -21,6 +21,7 @@ const STATIC_ASSETS = [
   '/css/welcome.css',
   '/css/enterprise.css',
   '/css/design-system.css',
+  '/css/mobile.css',
   '/js/app.js',
   '/js/enterprise.js',
   '/js/state.js',

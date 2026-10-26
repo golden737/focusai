@@ -1,0 +1,156 @@
+/* FocusAI mobile experience: touch-first layout shared by every module. */
+.mobile-nav-backdrop { display:none; }
+
+@media (max-width: 768px) {
+  :root { --mobile-gutter: 16px; --mobile-bottom-space: 88px; }
+  html, body { width:100%; min-width:320px; overflow-x:hidden; overscroll-behavior-x:none; }
+  body { -webkit-tap-highlight-color:transparent; }
+  body.mobile-navigation-open { overflow:hidden; }
+  .app-shell { position:relative; width:100%; height:100vh; height:100dvh; min-height:100dvh; overflow:hidden; }
+  .main-content { width:100%; min-width:0; height:100%; overflow:hidden; }
+  .mobile-nav-backdrop:not([hidden]) { display:block; position:fixed; inset:0; z-index:109; width:100%; height:100%; padding:0; border:0; border-radius:0; background:rgba(3,8,18,.64); backdrop-filter:blur(5px); }
+  .sidebar { position:fixed!important; z-index:110!important; inset:0 auto 0 0!important; width:min(88vw,350px)!important; min-width:min(88vw,350px)!important; height:100vh!important; height:100dvh!important; padding-bottom:env(safe-area-inset-bottom); transform:translateX(-105%); transition:transform .28s cubic-bezier(.2,.75,.25,1)!important; box-shadow:16px 0 48px rgba(0,0,0,.34)!important; }
+  .sidebar.mobile-open { left:0!important; transform:translateX(0); }
+  .sidebar.collapsed { width:min(88vw,350px)!important; min-width:min(88vw,350px)!important; }
+  .sidebar.collapsed .sidebar-brand,.sidebar.collapsed .nav-item span:not(.nav-emoji):not(.nav-badge),.sidebar.collapsed .user-info { width:auto; max-width:none; overflow:visible; opacity:1; }
+  .sidebar.collapsed .sidebar-brand { flex:1; }
+  .sidebar.collapsed .nav-item { justify-content:flex-start; padding:10px 12px!important; }
+  .sidebar.collapsed .sidebar-header { justify-content:flex-start; }
+  .sidebar-header { min-height:70px; padding:12px 16px; }
+  .sidebar-nav { overscroll-behavior:contain; padding:8px 11px 18px!important; }
+  .sidebar .nav-item { min-height:46px!important; padding:10px 12px!important; font-size:.88rem!important; }
+  .sidebar-footer { padding:8px 12px calc(12px + env(safe-area-inset-bottom)); }
+  .mobile-nav-toggle { position:fixed; display:grid; align-content:center; justify-items:center; gap:4px; top:calc(10px + env(safe-area-inset-top)); left:var(--mobile-gutter); z-index:120; width:44px; height:44px; padding:0; border:1px solid var(--border); border-radius:14px; background:color-mix(in srgb,var(--bg-elevated) 94%,transparent); color:var(--text-primary); box-shadow:0 8px 22px rgba(0,0,0,.22); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+  .mobile-nav-toggle span { display:block; width:17px; height:2px; border-radius:5px; background:currentColor; }
+  .view-container { width:100%; min-width:0; height:100%; overflow-x:hidden; overscroll-behavior:contain; padding:calc(68px + env(safe-area-inset-top)) var(--mobile-gutter) calc(var(--mobile-bottom-space) + env(safe-area-inset-bottom))!important; scrollbar-gutter:auto; }
+  .view-container > * { min-width:0; max-width:100%; }
+  .view { width:100%; max-width:none; min-height:0; margin:0; padding:0!important; }
+  .view-header { display:flex; align-items:stretch; flex-direction:column; gap:12px; margin:0 0 18px; padding:0 0 0 53px; }
+  .view-header > :first-child { min-width:0; }
+  .view-title { font-size:clamp(1.4rem,6vw,1.8rem); line-height:1.15; overflow-wrap:anywhere; }
+  .view-subtitle { font-size:.83rem; line-height:1.5; }
+  .header-actions { width:100%; gap:8px; }
+  .header-actions > * { min-width:0; }
+  .header-actions .btn-primary { flex:1 1 auto; }
+  .btn,.eco-btn,.icon-btn,.view-btn,.mode-tab,.filter-tab { min-height:42px; }
+  .icon-btn.btn-sm,.eco-btn-small { min-height:36px; }
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea,.form-input { min-height:44px; font-size:16px!important; }
+  textarea { min-height:94px; }
+  .search-inline { width:100%; min-width:0; }
+  .search-inline input { width:100%; }
+  .metrics-grid,.stats-kpi-row,.goals-stats-row,.people-overview,.talent-overview,.people-dashboard-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .metrics-grid { margin-bottom:14px; }
+  .metric-card,.dash-section,.stat-card,.stats-card,.panel,.card,.settings-section,.settings-card,.eco-card { min-width:0; padding:15px; border-radius:16px!important; }
+  .metric-value { font-size:1.45rem; }
+  .dash-body,.focus-body,.personal-body,.stats-grid,.eco-grid-main,.eco-grid-3,.talent-two-col,.talent-recommendations { grid-template-columns:minmax(0,1fr)!important; gap:12px; }
+  .stats-card-wide { grid-column:auto!important; }
+  .task-card { padding:13px; }
+  .task-card-actions { opacity:1; }
+  .tasks-toolbar,.tasks-view .header-actions,.project-selector,.project-list-header { align-items:stretch; flex-direction:column; gap:10px; }
+  .filter-tabs,.project-tabs,.talent-tabs,.view-toggle,.calendar-view .view-toggle { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; scrollbar-width:none; }
+  .filter-tabs::-webkit-scrollbar,.project-tabs::-webkit-scrollbar,.talent-tabs::-webkit-scrollbar { display:none; }
+  .filter-tab,.project-tab,.mode-tab,.talent-tabs button { flex:0 0 auto; white-space:nowrap; }
+  .task-list,.habits-grid,.goals-list { grid-template-columns:minmax(0,1fr)!important; gap:10px; }
+  .habit-card { min-width:0; padding:13px; gap:11px; }
+  .habit-card-actions { flex-direction:row; }
+  .habits-day-stats { gap:9px; padding:12px; }
+  .day-stat-value { font-size:1.2rem; }
+  .week-grid-wrap,.calendar-scroll,.cal-container,.table-wrap,.eco-table-wrap,.meeting-table-wrap { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; -webkit-overflow-scrolling:touch; }
+  .week-grid-header,.week-grid-row { min-width:700px; }
+  .calendar-view .view-header { padding-left:53px; }
+  .cal-nav { display:grid; grid-template-columns:42px minmax(0,1fr) 42px auto; align-items:center; gap:5px; width:100%; }
+  .cal-nav .view-title { text-align:center; font-size:1.05rem; }
+  .calendar-view .header-actions { flex-wrap:nowrap; }
+  .calendar-view .view-toggle { flex:1; }
+  .calendar-view .view-toggle button { padding-inline:8px; }
+  .calendar-view #new-event-btn { flex:none; }
+  .kanban-board { min-height:0; padding:0 1px 12px; scroll-snap-type:x mandatory; }
+  .kanban-col { min-width:min(84vw,330px); max-width:min(84vw,330px); min-height:300px; scroll-snap-align:start; }
+  .project-content { min-height:0; }
+  .project-stats-bar { gap:10px; font-size:.8rem; }
+  .goals-stats-row { display:grid; }
+  .goal-stat { min-width:0; }
+  .stats-grid { display:grid; }
+  .chart-container { min-height:190px; }
+  canvas { max-width:100%; }
+  .timer-body { grid-template-columns:minmax(0,1fr)!important; }
+  .timer-display { font-size:clamp(3rem,19vw,5.6rem); }
+  .timer-controls { gap:10px; flex-wrap:wrap; justify-content:center; }
+  .timer-controls .btn { min-height:48px; }
+  .pom-settings-grid,.form-row,.people-extra-grid,.people-dashboard-columns,.talent-form-row { grid-template-columns:minmax(0,1fr)!important; }
+  .form-row { display:grid; gap:12px; }
+  .settings-body { max-width:none; gap:12px; }
+  .settings-data-actions,.settings-ai-status { align-items:stretch; flex-direction:column; }
+  .settings-data-actions .btn { width:100%; }
+  .welcome-nav { gap:12px; }
+  .welcome-nav-actions { flex-wrap:wrap; }
+  .welcome-hero { padding-top:2.5rem; }
+  .welcome-copy h1 { font-size:clamp(2.6rem,12vw,4.1rem); }
+  .welcome-preview { overflow:hidden; }
+  .preview-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .auth-right { padding:calc(14px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); }
+  .auth-card { width:100%; max-width:480px; padding:clamp(20px,7vw,34px); }
+  .auth-form .form-row { display:grid; grid-template-columns:minmax(0,1fr); }
+  .eco-heading { gap:10px; }
+  .eco-heading p { font-size:13px; }
+  .eco-list-item { min-width:0; }
+  .eco-actions,.meeting-list-actions { width:100%; }
+  .eco-actions > *, .meeting-list-actions > * { flex:1 1 auto; }
+  .eco-table { min-width:650px; }
+  .people-workspace { grid-template-columns:minmax(0,1fr)!important; gap:12px; }
+  .people-roster { position:static; max-height:none; }
+  .people-roster-list { max-height:270px; overscroll-behavior:contain; }
+  .people-side-sections { grid-template-columns:minmax(0,1fr)!important; }
+  .people-side-sections .people-section:last-child { grid-column:auto; }
+  .people-section { min-width:0; padding:14px; }
+  .people-profile-head { flex-wrap:wrap; }
+  .people-profile-actions { width:100%; justify-content:stretch; }
+  .people-profile-actions > * { flex:1 1 auto; }
+  .people-task-row { grid-template-columns:18px minmax(0,1fr) auto; }
+  .people-task-due { grid-column:2; }
+  .talent-overview article { min-width:0; }
+  .talent-enrollment { grid-template-columns:minmax(0,1fr)!important; }
+  .talent-enrollment>div { grid-column:auto; }
+  .talent-interview-card { grid-template-columns:44px minmax(0,1fr); }
+  .talent-interview-card>.eco-btn { grid-column:2; justify-self:start; }
+  .survey-modal-backdrop { padding:0!important; align-items:stretch!important; }
+  .survey-modal { width:100%!important; height:100dvh!important; max-height:100dvh!important; border-radius:0!important; padding:16px!important; overflow:auto; }
+  .modal-backdrop { align-items:flex-end; padding:0; }
+  .modal-content,.modal-card { width:100%; max-width:none; max-height:min(90dvh,900px); overflow:auto; border-radius:22px 22px 0 0!important; padding:20px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .modal-actions,.modal-footer { position:sticky; bottom:calc(-18px - env(safe-area-inset-bottom)); padding:12px 0 calc(10px + env(safe-area-inset-bottom)); background:var(--bg-elevated); }
+  #ai-fab { position:fixed!important; left:auto!important; right:16px!important; bottom:calc(16px + env(safe-area-inset-bottom))!important; width:54px; height:54px; transform:none!important; z-index:300!important; }
+  #ai-fab:hover { transform:scale(1.04)!important; }
+  #ai-panel { position:fixed!important; left:auto!important; right:10px!important; bottom:calc(80px + env(safe-area-inset-bottom))!important; width:calc(100vw - 20px)!important; height:min(76dvh,690px)!important; max-height:calc(100dvh - 104px - env(safe-area-inset-top))!important; border-radius:20px!important; }
+  .toast-container { left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); align-items:stretch; transform:none; }
+  .toast { width:100%; min-width:0; max-width:none; }
+  .jitsi-call-container.call-fullscreen .jitsi-call-toolbar { padding-top:env(safe-area-inset-top); }
+}
+
+@media (max-width: 420px) {
+  :root { --mobile-gutter:13px; }
+  .view-container { padding-inline:var(--mobile-gutter)!important; }
+  .view-header { padding-left:50px; }
+  .header-actions { flex-wrap:wrap; }
+  .header-actions > .btn { flex:1 1 auto; }
+  .metrics-grid,.stats-kpi-row,.goals-stats-row,.people-overview,.talent-overview,.people-dashboard-kpis { gap:8px; }
+  .metric-card { padding:12px; }
+  .metric-label,.metric-sub { font-size:.68rem; }
+  .eco-card { padding:13px; }
+  .people-overview article { padding:11px; }
+  .people-assign-controls { grid-template-columns:minmax(0,1fr)!important; }
+  .people-assign-controls button { grid-column:auto; }
+  .cal-nav { grid-template-columns:38px minmax(0,1fr) 38px auto; }
+  .cal-nav .view-title { font-size:.9rem; }
+  .calendar-view .header-actions { flex-wrap:wrap; }
+  .calendar-view #new-event-btn { width:100%; }
+  .ai-message { max-width:92%; }
+}
+
+@media (hover:none) and (pointer:coarse) {
+  .task-card-actions { opacity:1; }
+  .metric-card:hover,.habit-card:hover,.kanban-card:hover,.eco-btn:hover { transform:none; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .sidebar,.mobile-nav-backdrop,#ai-panel,#ai-fab { transition:none!important; animation:none!important; }
+}
