@@ -2,10 +2,10 @@
 <div class="ai-chat">
  <div class="ai-chat-header">
  <div class="ai-chat-title">
- <span class="ai-chat-icon"></span>
+ <span class="ai-chat-icon" aria-hidden="true"></span>
  <div>
- <div class="ai-chat-name">FocusAI AI</div>
- <div class="ai-chat-status" id="ai-chat-status">IA Local</div>
+ <div class="ai-chat-name">Asistente FocusAI</div>
+ <div class="ai-chat-status" id="ai-chat-status">Listo para ayudarte</div>
  </div>
  </div>
  <div class="ai-chat-header-actions">
@@ -16,6 +16,7 @@
 
  <!-- Sugerencias rápidas -->
  <div class="ai-quick-actions">
+ <span class="ai-quick-label">Prueba con</span>
  <button class="ai-quick-btn" data-prompt="Planifica mi día de hoy"> Planificar día</button>
  <button class="ai-quick-btn" data-prompt="¿Tengo sobrecarga de trabajo?"> Detectar sobrecarga</button>
  <button class="ai-quick-btn" data-prompt="Sugiere prioridades para mis tareas"> Prioridades</button>
@@ -26,7 +27,7 @@
  <div class="ai-chat-messages" id="ai-messages">
  <div class="ai-message ai-message-bot">
  <div class="ai-message-bubble">
- ¡Hola! Soy tu asistente de productividad con IA local. Puedo ayudarte a planificar tu día, crear tareas, analizar tu productividad y mucho más. ¿En qué te ayudo?
+ ¡Hola! Soy tu asistente FocusAI. Puedo ayudarte a planificar tu día, organizar tareas y entender tu productividad. ¿Qué necesitas resolver?
  </div>
  </div>
  </div>
@@ -39,7 +40,7 @@
 
  <!-- Input -->
  <div class="ai-chat-input-row">
- <textarea class="ai-chat-input" id="ai-chat-input" rows="1" placeholder="Escribe un mensaje… (Enter para enviar)" maxlength="2000"></textarea>
+ <div class="ai-chat-input-wrap"><textarea class="ai-chat-input" id="ai-chat-input" rows="1" placeholder="Escribe tu mensaje…" maxlength="2000"></textarea><span class="ai-input-hint">Enter para enviar · Shift + Enter para nueva línea</span></div>
  <button class="btn btn-primary ai-send-btn" id="ai-send-btn">↑</button>
  </div>
 </div>
@@ -56,14 +57,13 @@
 
  function _updateStatus(){
  const el = document.getElementById('ai-chat-status');
- const cfg = FlowState.get('ai');
  if(!el) return;
  if(FlowAI.isConfigured()){
- el.textContent = `${cfg.provider||'ollama'} · ${cfg.model||'—'}`;
- el.style.color = '#22c55e';
+ el.textContent = 'Listo para ayudarte';
+ el.dataset.configured = 'true';
  } else {
  el.textContent = ' Sin configurar — ve a Ajustes';
- el.style.color = '#f59e0b';
+  el.dataset.configured = 'false';
  }
  }
 
@@ -80,8 +80,11 @@
  const history = FlowState.get('ai.chatHistory')||[];
  const el = document.getElementById('ai-messages');
  if(!el) return;
+ const followLatest = _isNearBottom(el);
+ const previousTop = el.scrollTop;
  el.innerHTML = history.slice(-30).map(_renderMessage).join('');
- _scrollToBottom();
+ if(followLatest) _scrollToBottom('smooth');
+ else el.scrollTop = previousTop;
  }
 
  function _renderMessage(m){
@@ -106,7 +109,9 @@
  input.style.height = 'auto';
 
  try {
- await FlowAI.chat(text);
+ const pending = FlowAI.chat(text);
+ _scrollToBottom('smooth');
+ await pending;
  } catch(e) {
  // FlowAI ya registra los errores en el historial; evitar mensajes duplicados.
  }
@@ -126,12 +131,17 @@
  if(el) el.hidden = !isThinking;
  const btn = document.getElementById('ai-send-btn');
  if(btn) btn.disabled = isThinking;
- _scrollToBottom();
+ const messages=document.getElementById('ai-messages');
+ if(messages&&_isNearBottom(messages)) _scrollToBottom('smooth');
  }
 
- function _scrollToBottom(){
+ function _isNearBottom(el){
+ return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+ }
+
+ function _scrollToBottom(behavior='auto'){
  const el = document.getElementById('ai-messages');
- if(el) requestAnimationFrame(()=>{ el.scrollTop = el.scrollHeight; });
+ if(el) requestAnimationFrame(()=>{ el.scrollTo({top:el.scrollHeight,behavior}); });
  }
 
  function _bind(){
