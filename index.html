@@ -141,8 +141,16 @@
  <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Abrir navegación" aria-expanded="false">
  <span></span><span></span><span></span>
  </button>
+ <div class="mobile-topbar"><span class="mobile-topbar-brand">FocusAI</span><span id="mobile-current-section" class="mobile-current-section">Inicio</span></div>
  <!-- Las vistas se inyectan aquí por router.js -->
  <div id="view-container" class="view-container"></div>
+ <nav class="mobile-tabbar" aria-label="Navegación rápida">
+  <a href="#dashboard" data-view="dashboard" aria-label="Inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>Inicio</span></a>
+  <a href="#tasks" data-view="tasks" aria-label="Tareas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Tareas</span></a>
+  <a href="#calendar" data-view="calendar" aria-label="Calendario"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Agenda</span></a>
+  <a href="#employees" data-view="employees" aria-label="Personas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M23 11h-6"/></svg><span>Personas</span></a>
+  <button id="mobile-more-toggle" type="button" aria-label="Abrir menú completo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>Más</span></button>
+ </nav>
  </main>
 
  <!-- Botón flotante IA -->

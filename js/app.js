@@ -172,6 +172,24 @@ window.FlowApp = (() => {
     mobileBackdrop?.addEventListener('click',closeMobileNavigation);
     document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileNavigation();});
     window.addEventListener('resize',()=>{if(window.innerWidth>768)closeMobileNavigation();},{passive:true});
+    const mobileMore=document.getElementById('mobile-more-toggle');
+    mobileMore?.addEventListener('click',()=>mobileToggle?.click());
+    const quickNav=document.querySelector('.mobile-tabbar');
+    const syncMobileNav=()=>{
+      const current=decodeURIComponent((location.hash||'#dashboard').replace(/^#\/?/,'').split('?')[0])||'dashboard';
+      const sectionName=sidebar.querySelector(`.nav-item[data-view="${CSS.escape(current)}"] span:not(.nav-badge):not(.nav-emoji)`)?.textContent?.trim()||'FocusAI';
+      const title=document.getElementById('mobile-current-section');
+      if(title)title.textContent=sectionName;
+      document.body.dataset.currentView=current;
+      quickNav?.querySelectorAll('[data-view]').forEach(link=>{
+        const sidebarLink=sidebar.querySelector(`.nav-item[data-view="${CSS.escape(link.dataset.view)}"]`);
+        link.hidden=!!sidebarLink?.hidden;
+        if(link.dataset.view===current)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+      });
+    };
+    window.addEventListener('hashchange',syncMobileNav);
+    if(window.MutationObserver){new MutationObserver(syncMobileNav).observe(sidebar,{subtree:true,attributes:true,attributeFilter:['hidden']});}
+    syncMobileNav();
 
     sidebar.querySelectorAll('.nav-item').forEach((item) => {
       const label = item.querySelector('span:not(.nav-badge):not(.nav-emoji)')?.textContent?.trim();
