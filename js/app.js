@@ -156,7 +156,7 @@ window.FlowApp = (() => {
     const openMobileNavigation=()=>{
       if(document.getElementById('app')?.classList.contains('public-shell'))return;
       sidebar.classList.add('mobile-open');
-      mobileBackdrop?.setAttribute('hidden','');
+      mobileBackdrop?.removeAttribute('hidden');
       mobileToggle?.setAttribute('aria-expanded','true');
       mobileToggle?.setAttribute('aria-label','Cerrar navegación');
       mobileToggle?.classList.add('is-open');
