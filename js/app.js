@@ -141,6 +141,7 @@ window.FlowApp = (() => {
     const sidebar = document.getElementById('sidebar');
     const toggle  = document.getElementById('sidebar-toggle');
     const mobileToggle = document.getElementById('mobile-nav-toggle');
+    const mobileClose = document.getElementById('mobile-nav-close');
     const mobileBackdrop = document.getElementById('mobile-nav-backdrop');
     if (!sidebar || !toggle) return;
 
@@ -149,12 +150,22 @@ window.FlowApp = (() => {
       mobileBackdrop?.setAttribute('hidden','');
       mobileToggle?.setAttribute('aria-expanded','false');
       mobileToggle?.setAttribute('aria-label','Abrir navegación');
+      mobileToggle?.classList.remove('is-open');
       document.body.classList.remove('mobile-navigation-open');
+    };
+    const openMobileNavigation=()=>{
+      if(document.getElementById('app')?.classList.contains('public-shell'))return;
+      sidebar.classList.add('mobile-open');
+      mobileBackdrop?.setAttribute('hidden','');
+      mobileToggle?.setAttribute('aria-expanded','true');
+      mobileToggle?.setAttribute('aria-label','Cerrar navegación');
+      mobileToggle?.classList.add('is-open');
+      document.body.classList.add('mobile-navigation-open');
     };
 
     // Restaurar estado colapsado
     const collapsed = FlowState.get('ui.sidebarCollapsed');
-    if (collapsed) sidebar.classList.add('collapsed');
+    if (collapsed && window.innerWidth>768) sidebar.classList.add('collapsed');
 
     toggle.addEventListener('click', () => {
       const isCollapsed = sidebar.classList.toggle('collapsed');
@@ -163,30 +174,24 @@ window.FlowApp = (() => {
     });
 
     mobileToggle?.addEventListener('click', () => {
-      const isOpen = sidebar.classList.toggle('mobile-open');
-      if(mobileBackdrop){if(isOpen)mobileBackdrop.removeAttribute('hidden');else mobileBackdrop.setAttribute('hidden','');}
-      document.body.classList.toggle('mobile-navigation-open',isOpen);
-      mobileToggle.setAttribute('aria-expanded', String(isOpen));
-      mobileToggle.setAttribute('aria-label', isOpen ? 'Cerrar navegación' : 'Abrir navegación');
+      if(sidebar.classList.contains('mobile-open'))closeMobileNavigation();else openMobileNavigation();
     });
+    mobileClose?.addEventListener('click',closeMobileNavigation);
     mobileBackdrop?.addEventListener('click',closeMobileNavigation);
     document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileNavigation();});
-    window.addEventListener('resize',()=>{if(window.innerWidth>768)closeMobileNavigation();},{passive:true});
-    const mobileMore=document.getElementById('mobile-more-toggle');
-    mobileMore?.addEventListener('click',()=>mobileToggle?.click());
-    const quickNav=document.querySelector('.mobile-tabbar');
+    window.addEventListener('resize',()=>{
+      closeMobileNavigation();
+      sidebar.classList.toggle('collapsed',window.innerWidth>768&&Boolean(FlowState.get('ui.sidebarCollapsed')));
+    },{passive:true});
     const syncMobileNav=()=>{
-      const current=decodeURIComponent((location.hash||'#dashboard').replace(/^#\/?/,'').split('?')[0])||'dashboard';
+      const current=FlowState.get('ui.currentView')||decodeURIComponent((location.hash||'#dashboard').replace(/^#\/?/,'').split('?')[0])||'dashboard';
       const sectionName=sidebar.querySelector(`.nav-item[data-view="${CSS.escape(current)}"] span:not(.nav-badge):not(.nav-emoji)`)?.textContent?.trim()||'FocusAI';
       const title=document.getElementById('mobile-current-section');
       if(title)title.textContent=sectionName;
       document.body.dataset.currentView=current;
-      quickNav?.querySelectorAll('[data-view]').forEach(link=>{
-        const sidebarLink=sidebar.querySelector(`.nav-item[data-view="${CSS.escape(link.dataset.view)}"]`);
-        link.hidden=!!sidebarLink?.hidden;
-        if(link.dataset.view===current)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
-      });
+      if(document.getElementById('app')?.classList.contains('public-shell'))closeMobileNavigation();
     };
+    window.addEventListener('flowrouter:navigate',syncMobileNav);
     window.addEventListener('hashchange',syncMobileNav);
     if(window.MutationObserver){new MutationObserver(syncMobileNav).observe(sidebar,{subtree:true,attributes:true,attributeFilter:['hidden']});}
     syncMobileNav();
